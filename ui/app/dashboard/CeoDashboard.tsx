@@ -6,6 +6,7 @@ import { ApprovalCenter } from '../../components/widgets/ApprovalCenter';
 import { InsightTable } from '../../components/tables/InsightTable';
 import { DetailDrawer } from '../../components/modals/DetailDrawer';
 import { NotificationLog } from '../../components/widgets/NotificationLog';
+import { EstimateEntryPanel } from '../estimate/EstimateEntryPanel';
 import { useDashboardStore } from '../../state/dashboard-store/useDashboardStore';
 import { useApprovalStore } from '../../state/approval-store/useApprovalStore';
 import { useSoundStore } from '../../state/sound-store/useSoundStore';
@@ -52,7 +53,8 @@ export function CeoDashboard() {
       openFinance: 'finance',
       openSales: 'sales',
       openClientContract: 'client',
-      openProfitTemplates: 'profitTemplates'
+      openProfitTemplates: 'profitTemplates',
+      openProfitAutomation: 'profitAutomation'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
@@ -66,6 +68,8 @@ export function CeoDashboard() {
 
   return (
     <main className="app-shell command-room">
+      <EstimateEntryPanel onOpen={openView} />
+
       <TopBar kpis={dashboard.data.topBar} onAction={handleAction} />
 
       <section className="red-alert-strip">
@@ -112,6 +116,7 @@ export function CeoDashboard() {
                 <strong>{String(dashboard.data.profitSummary.scalableTemplateCount || 0)}개</strong>
                 <p>35% 이상, 하자 없음, 일정 준수 프로젝트만 등록됩니다.</p>
                 <button onClick={() => openView('profitTemplates', 'confirm')}>Template Library</button>
+                <button onClick={() => openView('profitAutomation', 'confirm')}>Automation Loop</button>
               </div>
             </div>
             <div className="today-action-list">
@@ -212,7 +217,7 @@ export function CeoDashboard() {
       <NotificationLog logs={dashboard.data.notificationLog} />
 
       <div className="floating-actions">
-        <button onClick={() => openView('estimate', 'click')}>New Estimate</button>
+        <button onClick={() => openView('bathroomEstimate', 'click')}>새 견적</button>
         <button onClick={() => openView('ontology', 'click')}>3D Ontology View</button>
         <button onClick={() => openView('project', 'click')}>Project Drill Down</button>
         <button onClick={() => openView('masterDb', 'click')}>Master DB Review</button>
@@ -224,6 +229,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('finance', 'warning')}>Finance</button>
         <button onClick={() => openView('sales', 'click')}>Sales</button>
         <button onClick={() => openView('profitTemplates', 'confirm')}>Profit Templates</button>
+        <button onClick={() => openView('profitAutomation', 'confirm')}>Profit Loop</button>
         <button onClick={() => openView('client', 'click')}>Client Contract</button>
         <button onClick={() => openView('caseLibrary', 'click')}>Case Library</button>
         <button onClick={() => openView('settings', 'click')}>Backup</button>

@@ -1,6 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
+const {
+  calculateBathroomEstimate,
+  buildCustomerEstimateView,
+  buildInternalCostView
+} = require('./bathroomEstimateService');
 
 function nowIso() {
   return new Date().toISOString();
@@ -85,6 +90,44 @@ function createSqliteService({ app }) {
         amount_text TEXT NOT NULL,
         payload_json TEXT NOT NULL,
         created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS bathroom_estimates (
+        id TEXT PRIMARY KEY,
+        customer_name TEXT NOT NULL,
+        site_name TEXT NOT NULL,
+        bathroom_count INTEGER NOT NULL,
+        bathroom_area_m2 REAL NOT NULL,
+        ceiling_height_mm INTEGER NOT NULL,
+        construction_method TEXT NOT NULL,
+        waterproof_method TEXT NOT NULL,
+        tile_wall_type TEXT NOT NULL,
+        tile_floor_type TEXT NOT NULL,
+        options_json TEXT NOT NULL,
+        revenue INTEGER NOT NULL,
+        total_cost INTEGER NOT NULL,
+        expected_margin INTEGER NOT NULL,
+        expected_margin_rate REAL NOT NULL,
+        pce_decision TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS bathroom_estimate_items (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        item_name TEXT NOT NULL,
+        quantity REAL NOT NULL,
+        unit TEXT NOT NULL,
+        customer_unit_price INTEGER NOT NULL,
+        customer_total INTEGER NOT NULL,
+        material_cost INTEGER NOT NULL,
+        labor_cost INTEGER NOT NULL,
+        subcontract_cost INTEGER NOT NULL,
+        internal_total INTEGER NOT NULL,
+        margin INTEGER NOT NULL,
+        margin_rate REAL NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS portfolio_projects (
@@ -411,6 +454,54 @@ function createSqliteService({ app }) {
         override_decision TEXT NOT NULL,
         reason TEXT NOT NULL,
         created_by TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS profit_automation_events (
+        id TEXT PRIMARY KEY,
+        source_module TEXT NOT NULL,
+        trigger_event TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        decision TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        before_state TEXT NOT NULL,
+        after_state TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS live_margin_events (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        estimate_id TEXT,
+        current_margin_rate REAL NOT NULL,
+        threshold REAL NOT NULL,
+        decision TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS auto_block_rules (
+        id TEXT PRIMARY KEY,
+        rule_type TEXT NOT NULL,
+        target_key TEXT NOT NULL,
+        occurrence_count INTEGER NOT NULL,
+        risk_buffer_adjustment INTEGER NOT NULL,
+        decision TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        override_allowed INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS profit_template_recommendations (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        template_id TEXT NOT NULL,
+        match_score REAL NOT NULL,
+        expected_margin REAL NOT NULL,
+        risk_buffer_recommendation INTEGER NOT NULL,
+        recommendation_payload_json TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
 
@@ -1742,6 +1833,14 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'leads', 'location_ko', "location_ko TEXT NOT NULL DEFAULT 'UNKNOWN'");
     ensureColumn(db.project, 'leads', 'client_type', "client_type TEXT NOT NULL DEFAULT 'RESIDENTIAL'");
     ensureColumn(db.project, 'leads', 'qualification_decision', "qualification_decision TEXT NOT NULL DEFAULT 'CONDITIONAL'");
+    ensureColumn(db.project, 'profit_templates', 'location_ko', "location_ko TEXT NOT NULL DEFAULT 'UNKNOWN'");
+    ensureColumn(db.project, 'profit_templates', 'estimate_structure_json', "estimate_structure_json TEXT NOT NULL DEFAULT '{}'");
+    ensureColumn(db.project, 'profit_templates', 'schedule_structure_json', "schedule_structure_json TEXT NOT NULL DEFAULT '{}'");
+    ensureColumn(db.project, 'profit_templates', 'root_cause_summary_json', "root_cause_summary_json TEXT NOT NULL DEFAULT '[]'");
+    ensureColumn(db.project, 'profit_templates', 'prevention_rules_applied_json', "prevention_rules_applied_json TEXT NOT NULL DEFAULT '[]'");
+    ensureColumn(db.project, 'cost_leak_root_causes', 'estimate_id', 'estimate_id TEXT');
+    ensureColumn(db.project, 'cost_leak_root_causes', 'financial_impact', 'financial_impact INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'cost_leak_root_causes', 'recommended_prevention', "recommended_prevention TEXT NOT NULL DEFAULT 'NEEDS_REVIEW'");
     ensureColumn(db.project, 'final_estimates', 'estimated_cost', 'estimated_cost INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'final_estimates', 'estimated_margin', 'estimated_margin INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'final_estimates', 'estimated_margin_rate', 'estimated_margin_rate REAL NOT NULL DEFAULT 0');
@@ -2538,6 +2637,120 @@ function createSqliteService({ app }) {
     );
   }
 
+  function logProfitAutomationEvent({
+    sourceModule,
+    triggerEvent,
+    entityType,
+    entityId,
+    decision,
+    reason,
+    beforeState = 'UNKNOWN',
+    afterState = 'UNKNOWN',
+    createdAt = nowIso()
+  }) {
+    const id = `PAE-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+    db.project.prepare(`
+      INSERT INTO profit_automation_events (
+        id, source_module, trigger_event, entity_type, entity_id,
+        decision, reason, before_state, after_state, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      sourceModule,
+      triggerEvent,
+      entityType,
+      entityId,
+      decision,
+      reason,
+      typeof beforeState === 'string' ? beforeState : toJson(beforeState),
+      typeof afterState === 'string' ? afterState : toJson(afterState),
+      createdAt
+    );
+    return { id, sourceModule, triggerEvent, entityType, entityId, decision, reason, createdAt };
+  }
+
+  const automationRootCauseMap = {
+    MATERIAL_PRICE_INCREASE: { nameKo: '자재 단가 상승', prevention: '해당 자재군 risk buffer를 상향합니다.' },
+    LABOR_OVERRUN: { nameKo: '인건비 초과', prevention: '품수 기준과 생산성 계수를 보정합니다.' },
+    SCHEDULE_DELAY: { nameKo: '공기 지연', prevention: '공정 여유일과 발주 리드타임을 상향합니다.' },
+    DEFECT_REWORK: { nameKo: '하자 재작업', prevention: '검수 포인트와 재시공 예비비를 강화합니다.' },
+    ESTIMATE_MISSING_ITEM: { nameKo: '견적 누락', prevention: '다음 견적 체크리스트에 필수 항목으로 추가합니다.' },
+    VENDOR_PRICE_CHANGE: { nameKo: '거래처 단가 변동', prevention: '거래처 가격 이력과 승인 단가 기준을 재검토합니다.' },
+    CLIENT_CHANGE_ORDER: { nameKo: '고객 추가 변경', prevention: '추가공사 승인 전 견적/수금 조건을 강제합니다.' },
+    CREW_PRODUCTIVITY_DROP: { nameKo: '작업 생산성 저하', prevention: '팀별 생산성 기준과 배정 룰을 보정합니다.' },
+    UNKNOWN: { nameKo: '원인 미분류', prevention: '대표 검토 후 원인을 확정합니다.' }
+  };
+
+  function normalizeAutomationRootCause(type) {
+    const normalized = String(type || 'UNKNOWN').toUpperCase();
+    return automationRootCauseMap[normalized] ? normalized : 'UNKNOWN';
+  }
+
+  function mapLegacyRootCauseToAutomation(type = '') {
+    const source = String(type);
+    if (source.includes('labor')) return 'LABOR_OVERRUN';
+    if (source.includes('vendor')) return 'VENDOR_PRICE_CHANGE';
+    if (source.includes('defect')) return 'DEFECT_REWORK';
+    if (source.includes('estimate_missing') || source.includes('missing')) return 'ESTIMATE_MISSING_ITEM';
+    if (source.includes('unit_price') || source.includes('accessory')) return 'MATERIAL_PRICE_INCREASE';
+    return 'UNKNOWN';
+  }
+
+  function createAutomationRootCause({
+    projectId,
+    estimateId = null,
+    rootCause,
+    financialImpact = 0,
+    recommendedPrevention = null,
+    sourceLeak = null,
+    createdAt = nowIso()
+  }) {
+    const normalized = normalizeAutomationRootCause(rootCause);
+    const meta = automationRootCauseMap[normalized];
+    const rootCauseId = `AUTO-RCA-${projectId}-${normalized}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO cost_leak_root_causes (
+        root_cause_id, leak_id, project_id, requirement_id, process_id,
+        cost_category, item_name_ko, root_cause_type, root_cause_name_ko,
+        reason_ko, status, approval_required, case_library_link_json,
+        evidence_json, created_at, updated_at, estimate_id, financial_impact, recommended_prevention
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      rootCauseId,
+      sourceLeak?.leak_id || `AUTO-LEAK-${projectId}-${normalized}`,
+      projectId,
+      sourceLeak?.requirement_id || 'AUTO',
+      sourceLeak?.process_id || 'AUTO',
+      sourceLeak?.cost_category || normalized,
+      sourceLeak?.item_name_ko || meta.nameKo,
+      normalized,
+      meta.nameKo,
+      `${meta.nameKo}: ${recommendedPrevention || meta.prevention}`,
+      'CANDIDATE',
+      1,
+      toJson({ projectId, estimateId, automationLoop: true }),
+      toJson({ financialImpact, sourceLeak }),
+      createdAt,
+      createdAt,
+      estimateId,
+      Math.round(Number(financialImpact || 0)),
+      recommendedPrevention || meta.prevention
+    );
+    logProfitAutomationEvent({
+      sourceModule: 'RootCauseLearning',
+      triggerEvent: 'COST_LEAK_DETECTED',
+      entityType: 'Project',
+      entityId: projectId,
+      decision: normalized,
+      reason: recommendedPrevention || meta.prevention,
+      beforeState: sourceLeak ? toJson(sourceLeak) : 'AUTO',
+      afterState: rootCauseId,
+      createdAt
+    });
+    syncRootCausePatterns(createdAt);
+    return { rootCauseId, rootCause: normalized, rootCauseNameKo: meta.nameKo, financialImpact, recommendedPrevention: recommendedPrevention || meta.prevention };
+  }
+
   function normalizeAreaM2(value) {
     const area = Number(value || 0);
     return Number.isFinite(area) && area > 0 ? area : 0;
@@ -2607,6 +2820,17 @@ function createSqliteService({ app }) {
       reasons.length ? reasons.join('; ') : `PASS: price_per_m2=${Math.round(pricePerM2)}`,
       createdAt
     );
+    logProfitAutomationEvent({
+      sourceModule: 'QualificationEngine',
+      triggerEvent: 'LEAD_CREATED_OR_UPDATED',
+      entityType: 'Lead',
+      entityId: leadId,
+      decision,
+      reason: reasons.length ? reasons.join('; ') : `PASS: price_per_m2=${Math.round(pricePerM2)}`,
+      beforeState: toJson({ estimatedBudget: normalizedBudget, areaM2: normalizedArea, location, clientType }),
+      afterState: toJson({ score, decision }),
+      createdAt
+    });
     return { id, leadId, score, decision, reason: reasons.join('; ') || 'PASS', estimatedPricePerM2: pricePerM2, createdAt };
   }
 
@@ -2663,6 +2887,20 @@ function createSqliteService({ app }) {
       decision,
       createdAt
     );
+    logProfitAutomationEvent({
+      sourceModule: 'PCE',
+      triggerEvent: 'ESTIMATE_PROFIT_VALIDATION',
+      entityType: 'Estimate',
+      entityId: estimateId || 'UNKNOWN_ESTIMATE',
+      decision,
+      reason: `real_margin=${realMargin}, risk_buffer=${riskBuffer}`,
+      beforeState: toJson({ revenue: normalizedRevenue, totalCost: normalizedTotalCost }),
+      afterState: toJson({ decision, realMargin, riskBuffer }),
+      createdAt
+    });
+    if (decision === 'BLOCK') {
+      syncAutoBlockRules(createdAt);
+    }
     return { id, estimateId: estimateId || 'UNKNOWN_ESTIMATE', revenue: normalizedRevenue, totalCost: normalizedTotalCost, riskBuffer, realMargin, decision, createdAt };
   }
 
@@ -2693,6 +2931,153 @@ function createSqliteService({ app }) {
       createdAt
     });
     return { id, estimateId, originalDecision, overrideDecision, reason, createdBy, createdAt };
+  }
+
+  function calculateBathroomEstimatePreview(payload = {}) {
+    const estimate = calculateBathroomEstimate(payload);
+    const estimateId = payload.estimateId || `BATH-PREVIEW-${Date.now()}`;
+    const pce = runProfitControlEngine({
+      estimateId,
+      revenue: estimate.revenue,
+      totalCost: estimate.total_cost,
+      vendorRisk: payload.vendorRisk || 0,
+      laborVariance: payload.laborVariance || 0,
+      scheduleRisk: payload.scheduleRisk || 0,
+      defectRisk: payload.defectRisk || 0
+    });
+    const pceLabelsKo = {
+      BLOCK: '위험',
+      MODIFY: '수정 필요',
+      GO: '진행 가능',
+      SCALE: '고마진 복제 대상'
+    };
+    const pceEstimate = {
+      ...estimate,
+      pce_decision: pce.decision,
+      pce_label_ko: pceLabelsKo[pce.decision] || estimate.pce_label_ko
+    };
+    return {
+      estimate: pceEstimate,
+      pce,
+      customerView: buildCustomerEstimateView(pceEstimate),
+      internalView: buildInternalCostView(pceEstimate)
+    };
+  }
+
+  function saveBathroomEstimate(payload = {}) {
+    const createdAt = nowIso();
+    const estimateId = payload.estimateId || `BATH-EST-${Date.now()}`;
+    const calculated = calculateBathroomEstimate(payload);
+    const pce = runProfitControlEngine({
+      estimateId,
+      revenue: calculated.revenue,
+      totalCost: calculated.total_cost,
+      vendorRisk: payload.vendorRisk || 0,
+      laborVariance: payload.laborVariance || 0,
+      scheduleRisk: payload.scheduleRisk || 0,
+      defectRisk: payload.defectRisk || 0,
+      createdAt
+    });
+
+    if (pce.decision === 'BLOCK' && !payload.adminOverrideReason) {
+      throw new Error('PCE BLOCK: 25% 미만 마진 견적은 저장 전 관리자 예외 승인 사유가 필요합니다.');
+    }
+
+    if (pce.decision === 'BLOCK' && payload.adminOverrideReason) {
+      overrideProfitDecision({
+        estimateId,
+        originalDecision: 'BLOCK',
+        overrideDecision: 'MODIFY',
+        reason: payload.adminOverrideReason,
+        createdBy: payload.actor || 'CEO'
+      });
+    }
+
+    db.project.prepare(`
+      INSERT OR REPLACE INTO bathroom_estimates (
+        id, customer_name, site_name, bathroom_count, bathroom_area_m2, ceiling_height_mm,
+        construction_method, waterproof_method, tile_wall_type, tile_floor_type, options_json,
+        revenue, total_cost, expected_margin, expected_margin_rate, pce_decision, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      estimateId,
+      calculated.input.customerName || 'UNKNOWN',
+      calculated.input.siteName || 'UNKNOWN',
+      calculated.input.bathroomCount,
+      calculated.input.bathroomAreaM2,
+      calculated.input.ceilingHeightMm,
+      calculated.input.constructionMethod,
+      calculated.input.waterproofMethod,
+      calculated.input.tileWallType,
+      calculated.input.tileFloorType,
+      toJson(calculated.input.options),
+      calculated.revenue,
+      calculated.total_cost,
+      calculated.expected_margin,
+      calculated.expected_margin_rate,
+      pce.decision,
+      createdAt,
+      createdAt
+    );
+
+    db.project.prepare('DELETE FROM bathroom_estimate_items WHERE estimate_id = ?').run(estimateId);
+    const insertItem = db.project.prepare(`
+      INSERT INTO bathroom_estimate_items (
+        id, estimate_id, category, item_name, quantity, unit, customer_unit_price,
+        customer_total, material_cost, labor_cost, subcontract_cost, internal_total, margin, margin_rate
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    calculated.line_items.forEach((item, index) => {
+      insertItem.run(
+        `${estimateId}-ITEM-${String(index + 1).padStart(3, '0')}`,
+        estimateId,
+        item.category,
+        item.itemName,
+        item.quantity,
+        item.unit,
+        item.customerUnitPrice,
+        item.customerTotal,
+        item.materialCost,
+        item.laborCost,
+        item.subcontractCost,
+        item.internalTotal,
+        item.margin,
+        item.marginRate
+      );
+    });
+
+    insertNotification({
+      level: pce.decision === 'BLOCK' ? 'RED' : pce.decision === 'MODIFY' ? 'WARNING' : 'INFO',
+      messageKo: `욕실 견적 저장: ${estimateId} / PCE ${pce.decision} / 마진율 ${(calculated.expected_margin_rate * 100).toFixed(1)}%`,
+      relatedProjectId: estimateId,
+      actionKo: '욕실 견적 저장',
+      createdAt
+    });
+
+    db.logs.prepare(`
+      INSERT INTO action_logs (
+        action_log_id, action_type, actor, project_id, approval_id,
+        payload_json, reason_ko, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      `ACT-BATH-EST-${Date.now()}`,
+      'SAVE_BATHROOM_ESTIMATE',
+      payload.actor || 'CEO',
+      estimateId,
+      null,
+      toJson({ pceDecision: pce.decision, revenue: calculated.revenue, totalCost: calculated.total_cost }),
+      '욕실 자동견적 저장',
+      createdAt
+    );
+
+    return {
+      estimateId,
+      pce,
+      estimate: { ...calculated, pce_decision: pce.decision },
+      customerView: buildCustomerEstimateView(calculated),
+      internalView: buildInternalCostView({ ...calculated, pce_decision: pce.decision }),
+      dashboardData: getDashboardData()
+    };
   }
 
   function profitGateForWonLead({ lead, payload = {}, actor = 'CEO', createdAt = nowIso() }) {
@@ -2803,8 +3188,10 @@ function createSqliteService({ app }) {
     db.project.prepare(`
       INSERT INTO profit_templates (
         id, project_type, area_range, cost_structure_json,
-        crew_structure_json, duration, margin, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        crew_structure_json, duration, margin, created_at,
+        location_ko, estimate_structure_json, schedule_structure_json,
+        root_cause_summary_json, prevention_rules_applied_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       projectType,
@@ -2813,8 +3200,27 @@ function createSqliteService({ app }) {
       toJson({ sourceProjectId: projectId, laborCost: actualCosts.laborCost || 0 }),
       Number(actualDurationDays || 0),
       normalizedMargin,
-      createdAt
+      createdAt,
+      actualCosts.locationKo || 'UNKNOWN',
+      toJson({ sourceProjectId: projectId, finalMarginRate, finalContractAmount: actualCosts.finalContractAmount || 0 }),
+      toJson({ actualDurationDays, estimatedDurationDays, completedOnTime }),
+      toJson(db.project.prepare('SELECT * FROM cost_leak_root_causes WHERE project_id = ?').all(projectId).map((row) => ({
+        rootCauseType: row.root_cause_type,
+        financialImpact: row.financial_impact || 0
+      }))),
+      toJson(db.project.prepare("SELECT * FROM prevention_rules WHERE status = 'ACTIVE' AND project_type = ?").all(projectType).map((row) => row.rule_id))
     );
+    logProfitAutomationEvent({
+      sourceModule: 'TemplateCreation',
+      triggerEvent: 'PROJECT_COMPLETED',
+      entityType: 'Project',
+      entityId: projectId,
+      decision: 'TEMPLATE_CREATED',
+      reason: `final_margin ${finalMarginRate}% and clean completion`,
+      beforeState: 'COMPLETED',
+      afterState: id,
+      createdAt
+    });
     return { id, projectType, areaRange: areaRangeFor(areaM2), margin: normalizedMargin };
   }
 
@@ -2841,7 +3247,129 @@ function createSqliteService({ app }) {
         id, estimate_id, template_id, match_score, applied, created_at
       ) VALUES (?, ?, ?, ?, ?, ?)
     `).run(id, estimateId, best.template.id, Number(best.score.toFixed(4)), apply ? 1 : 0, createdAt);
-    return { id, estimateId, templateId: best.template.id, matchScore: Number(best.score.toFixed(4)), applied: Boolean(apply) };
+    const recommendationId = `PTR-${estimateId}-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO profit_template_recommendations (
+        id, estimate_id, template_id, match_score, expected_margin,
+        risk_buffer_recommendation, recommendation_payload_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      recommendationId,
+      estimateId,
+      best.template.id,
+      Number(best.score.toFixed(4)),
+      Number(best.template.margin || 0),
+      Number(best.template.margin || 0) >= 0.35 ? 0 : Math.round(PROFIT_POLICY.minimumBudget * 0.03),
+      toJson({
+        projectType,
+        areaRange,
+        previousMargin: best.template.margin,
+        suggestedCostStructure: fromJson(best.template.cost_structure_json, {}),
+        suggestedCrewStructure: fromJson(best.template.crew_structure_json, {}),
+        suggestedScheduleStructure: fromJson(best.template.schedule_structure_json, {}),
+        riskBufferRecommendationKo: '고마진 템플릿 기준 원가 구조를 우선 적용합니다.'
+      }),
+      createdAt
+    );
+    logProfitAutomationEvent({
+      sourceModule: 'TemplateRecommendation',
+      triggerEvent: 'ESTIMATE_CREATED',
+      entityType: 'Estimate',
+      entityId: estimateId,
+      decision: 'RECOMMENDED',
+      reason: `Matched profit template ${best.template.id}`,
+      beforeState: 'NO_TEMPLATE',
+      afterState: recommendationId,
+      createdAt
+    });
+    return { id, recommendationId, estimateId, templateId: best.template.id, matchScore: Number(best.score.toFixed(4)), applied: Boolean(apply) };
+  }
+
+  function syncAutoBlockRules(createdAt = nowIso()) {
+    const rules = [];
+    const lowMarginDecisions = db.project.prepare(`
+      SELECT decision.*, draft.lead_id, leads.client_type, leads.location_ko, leads.interested_scope
+      FROM profit_decisions decision
+      LEFT JOIN estimate_drafts draft ON draft.estimate_draft_id = decision.estimate_id
+      LEFT JOIN leads ON leads.lead_id = draft.lead_id
+      WHERE decision.real_margin < ?
+    `).all(PROFIT_POLICY.blockMarginRate);
+    const counters = new Map();
+    lowMarginDecisions.forEach((row) => {
+      let enriched = row;
+      if (!row.client_type && String(row.estimate_id || '').startsWith('EST-LEAD-')) {
+        const leadId = String(row.estimate_id).replace(/^EST-LEAD-/, '');
+        const lead = db.project.prepare('SELECT * FROM leads WHERE lead_id = ?').get(leadId);
+        if (lead) {
+          enriched = {
+            ...row,
+            client_type: lead.client_type,
+            location_ko: lead.location_ko,
+            interested_scope: lead.interested_scope
+          };
+        }
+      }
+      [
+        ['CLIENT_TYPE', enriched.client_type],
+        ['REGION', enriched.location_ko],
+        ['PROJECT_TYPE', enriched.interested_scope]
+      ].forEach(([ruleType, value]) => {
+        if (!value) return;
+        const key = `${ruleType}:${value}`;
+        counters.set(key, { ruleType, value, count: (counters.get(key)?.count || 0) + 1 });
+      });
+    });
+    counters.forEach((item) => {
+      if (item.count < 2) return;
+      const id = `ABR-${item.ruleType}-${String(item.value).replace(/[^A-Za-z0-9_-]/g, '_')}`;
+      const decision = item.count >= 3 ? 'BLOCK' : 'WARN';
+      const riskBufferAdjustment = item.count >= 3 ? Math.round(PROFIT_POLICY.minimumBudget * 0.05) : Math.round(PROFIT_POLICY.minimumBudget * 0.03);
+      db.project.prepare(`
+        INSERT OR REPLACE INTO auto_block_rules (
+          id, rule_type, target_key, occurrence_count, risk_buffer_adjustment,
+          decision, reason, override_allowed, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM auto_block_rules WHERE id = ?), ?), ?)
+      `).run(
+        id,
+        item.ruleType,
+        String(item.value),
+        item.count,
+        riskBufferAdjustment,
+        decision,
+        `${item.ruleType} ${item.value}에서 25% 미만 저마진 패턴이 ${item.count}회 반복되었습니다.`,
+        1,
+        id,
+        createdAt,
+        createdAt
+      );
+      rules.push({ id, ruleType: item.ruleType, targetKey: item.value, occurrenceCount: item.count, decision, riskBufferAdjustment });
+      logProfitAutomationEvent({
+        sourceModule: 'LowMarginAutoBlock',
+        triggerEvent: 'REPEATED_LOW_MARGIN_PATTERN',
+        entityType: item.ruleType,
+        entityId: String(item.value),
+        decision,
+        reason: `${item.count} repeated low-margin decisions`,
+        beforeState: 'MONITORING',
+        afterState: id,
+        createdAt
+      });
+    });
+    return rules;
+  }
+
+  function getAutoBlockRiskForLead(lead) {
+    const rules = db.project.prepare(`
+      SELECT *
+      FROM auto_block_rules
+      WHERE decision IN ('WARN', 'BLOCK')
+      ORDER BY occurrence_count DESC, updated_at DESC
+    `).all();
+    return rules.filter((rule) => (
+      (rule.rule_type === 'CLIENT_TYPE' && rule.target_key === lead.client_type) ||
+      (rule.rule_type === 'REGION' && rule.target_key === lead.location_ko) ||
+      (rule.rule_type === 'PROJECT_TYPE' && rule.target_key === lead.interested_scope)
+    ));
   }
 
   function createLead(payload = {}) {
@@ -3241,9 +3769,11 @@ function createSqliteService({ app }) {
 
   function getProfitGenerationData() {
     const summary = getProfitGenerationSummary();
+    const automationDashboard = getProfitAutomationDashboardData();
     return {
       policy: PROFIT_POLICY,
       summary,
+      automationDashboard,
       qualificationResults: db.project.prepare('SELECT * FROM qualification_results ORDER BY created_at DESC LIMIT 100').all(),
       profitDecisions: db.project.prepare('SELECT * FROM profit_decisions ORDER BY created_at DESC LIMIT 100').all(),
       profitTemplates: db.project.prepare('SELECT * FROM profit_templates ORDER BY margin DESC, created_at DESC LIMIT 100').all().map((row) => ({
@@ -3253,6 +3783,61 @@ function createSqliteService({ app }) {
       })),
       templateMatches: db.project.prepare('SELECT * FROM template_matches ORDER BY created_at DESC LIMIT 100').all(),
       decisionOverrides: db.project.prepare('SELECT * FROM decision_overrides ORDER BY created_at DESC LIMIT 100').all()
+    };
+  }
+
+  function getProfitAutomationDashboardData() {
+    syncPreventionRulesFromRootCauses(nowIso());
+    syncAutoBlockRules(nowIso());
+    const pceCounts = db.project.prepare(`
+      SELECT decision, COUNT(*) AS count
+      FROM profit_decisions
+      GROUP BY decision
+    `).all().reduce((acc, row) => ({ ...acc, [row.decision]: row.count }), {});
+    return {
+      snapshotDate: new Date().toISOString().slice(0, 10),
+      leadQualificationStatus: db.project.prepare(`
+        SELECT decision, COUNT(*) AS count
+        FROM qualification_results
+        GROUP BY decision
+      `).all(),
+      pceStatus: pceCounts,
+      liveMarginRiskProjects: db.project.prepare(`
+        SELECT * FROM live_margin_events
+        ORDER BY created_at DESC
+        LIMIT 20
+      `).all(),
+      costLeakRootCauses: db.project.prepare(`
+        SELECT * FROM cost_leak_root_causes
+        ORDER BY updated_at DESC
+        LIMIT 30
+      `).all(),
+      preventionRules: db.project.prepare(`
+        SELECT * FROM prevention_rules
+        WHERE status = 'ACTIVE'
+        ORDER BY occurrence_count DESC, updated_at DESC
+        LIMIT 30
+      `).all(),
+      autoBlockRules: db.project.prepare(`
+        SELECT * FROM auto_block_rules
+        ORDER BY occurrence_count DESC, updated_at DESC
+        LIMIT 30
+      `).all(),
+      highMarginTemplates: db.project.prepare(`
+        SELECT * FROM profit_templates
+        ORDER BY margin DESC, created_at DESC
+        LIMIT 20
+      `).all(),
+      templateRecommendations: db.project.prepare(`
+        SELECT * FROM profit_template_recommendations
+        ORDER BY created_at DESC
+        LIMIT 30
+      `).all(),
+      automationLogs: db.project.prepare(`
+        SELECT * FROM profit_automation_events
+        ORDER BY created_at DESC
+        LIMIT 80
+      `).all()
     };
   }
 
@@ -5062,6 +5647,34 @@ function createSqliteService({ app }) {
     const missingPriceWarnings = draft?.missingPriceWarnings || [];
     const marginSafety = computeMarginSafetyFromMinimumInput(minimumInput);
     const leadId = minimumInput?.leadId || draft?.leadId || null;
+    if (leadId) {
+      const lead = db.project.prepare('SELECT * FROM leads WHERE lead_id = ?').get(leadId);
+      const latestQualification = db.project.prepare('SELECT * FROM qualification_results WHERE lead_id = ? ORDER BY created_at DESC LIMIT 1').get(leadId);
+      const qualificationDecision = latestQualification?.decision || lead?.qualification_decision || 'CONDITIONAL';
+      if (qualificationDecision === 'FAIL' && !minimumInput?.qualificationOverrideReason) {
+        logProfitAutomationEvent({
+          sourceModule: 'SalesBranching',
+          triggerEvent: 'ESTIMATE_CREATE_BLOCKED',
+          entityType: 'Lead',
+          entityId: leadId,
+          decision: 'BLOCK',
+          reason: 'Qualification FAIL lead cannot create estimate without admin override.',
+          beforeState: qualificationDecision,
+          afterState: 'ESTIMATE_BLOCKED',
+          createdAt
+        });
+        throw new Error('Estimate creation blocked: Qualification FAIL requires admin override.');
+      }
+      if (qualificationDecision === 'CONDITIONAL') {
+        insertNotification({
+          level: 'WARNING',
+          messageKo: `Qualification CONDITIONAL: ${leadId} 견적 생성 전 대표 검토가 필요합니다.`,
+          relatedProjectId: leadId,
+          actionKo: 'Qualification Warning',
+          createdAt
+        });
+      }
+    }
 
     db.project.prepare(`
       INSERT INTO projects (
@@ -5666,12 +6279,33 @@ function createSqliteService({ app }) {
     const updatedAt = nowIso();
     const projectId = row.project_id;
     const marginSafety = computeMarginSafetyFromMinimumInput(minimumInput);
+    const profitDecision = marginSafety.customerOfferPrice && marginSafety.estimatedCost
+      ? runProfitControlEngine({
+        estimateId: estimateDraftId,
+        revenue: marginSafety.customerOfferPrice,
+        totalCost: marginSafety.estimatedCost,
+        vendorRisk: 0,
+        laborVariance: 0,
+        scheduleRisk: 0,
+        defectRisk: 0,
+        createdAt: updatedAt
+      })
+      : null;
+    const templateMatch = matchProfitTemplateForEstimate({
+      estimateId: estimateDraftId,
+      projectType: minimumInput?.projectType || minimumInput?.constructionScope || 'unknown',
+      areaM2: minimumInput?.areaM2 || minimumInput?.area_m2 || 0,
+      apply: true,
+      createdAt: updatedAt
+    });
     const afterPayload = {
       ...beforePayload,
       minimumInput,
       draft: {
         ...draft,
         marginSafety,
+        profitDecision,
+        templateMatch,
         status: 'PRELIMINARY',
         priceStatus: 'UNKNOWN_PRICE_INCLUDED'
       },
@@ -7024,6 +7658,29 @@ function createSqliteService({ app }) {
         createdAt,
         createdAt
       );
+      db.project.prepare(`
+        UPDATE cost_leak_root_causes
+        SET estimate_id = COALESCE(estimate_id, (SELECT estimate_draft_id FROM estimate_drafts WHERE project_id = ? ORDER BY updated_at DESC LIMIT 1)),
+            financial_impact = ?,
+            recommended_prevention = ?
+        WHERE root_cause_id = ?
+      `).run(
+        leak.project_id,
+        Math.max(0, Number(leak.variance_amount || 0)),
+        rootCause.reasonKo,
+        rootCauseId
+      );
+      logProfitAutomationEvent({
+        sourceModule: 'RootCauseLearning',
+        triggerEvent: 'PROCESS_COST_LEAK',
+        entityType: 'Project',
+        entityId: leak.project_id,
+        decision: mapLegacyRootCauseToAutomation(rootCause.rootCauseType),
+        reason: rootCause.reasonKo,
+        beforeState: toJson({ baselineAmount: leak.baseline_amount, actualAmount: leak.actual_amount }),
+        afterState: rootCauseId,
+        createdAt
+      });
     });
 
     syncRootCausePatterns(createdAt);
@@ -7537,6 +8194,50 @@ function createSqliteService({ app }) {
     return snapshotId;
   }
 
+  function recordLiveMarginEvent(snapshot, createdAt = nowIso()) {
+    if (!snapshot || snapshot.currentForecastMarginRate >= PROFIT_POLICY.blockMarginRate) return null;
+    const decision = snapshot.currentForecastMarginRate < 0.2 ? 'RED_ALERT' : 'PROFIT_ALERT';
+    const id = `LME-${snapshot.projectId}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const estimate = db.project.prepare('SELECT estimate_draft_id FROM estimate_drafts WHERE project_id = ? ORDER BY updated_at DESC LIMIT 1').get(snapshot.projectId);
+    db.project.prepare(`
+      INSERT INTO live_margin_events (
+        id, project_id, estimate_id, current_margin_rate, threshold,
+        decision, reason, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      snapshot.projectId,
+      estimate?.estimate_draft_id || null,
+      snapshot.currentForecastMarginRate,
+      decision === 'RED_ALERT' ? 0.2 : PROFIT_POLICY.blockMarginRate,
+      decision,
+      `Live margin ${(snapshot.currentForecastMarginRate * 100).toFixed(2)}% below threshold.`,
+      createdAt
+    );
+    logProfitAutomationEvent({
+      sourceModule: 'LiveMarginTracking',
+      triggerEvent: 'MARGIN_THRESHOLD_CROSSED',
+      entityType: 'Project',
+      entityId: snapshot.projectId,
+      decision,
+      reason: `current_margin=${snapshot.currentForecastMarginRate}`,
+      beforeState: toJson({ initialMarginRate: snapshot.initialEstimatedMarginRate }),
+      afterState: toJson({ currentMarginRate: snapshot.currentForecastMarginRate, marginDropRate: snapshot.marginDropRate }),
+      createdAt
+    });
+    if (decision === 'RED_ALERT' || decision === 'PROFIT_ALERT') {
+      createAutomationRootCause({
+        projectId: snapshot.projectId,
+        estimateId: estimate?.estimate_draft_id || null,
+        rootCause: snapshot.marginDropRate >= 0.05 ? 'LABOR_OVERRUN' : 'UNKNOWN',
+        financialImpact: Math.abs(snapshot.currentForecastMargin),
+        recommendedPrevention: decision === 'RED_ALERT' ? '관리자 검토 전 Completion 승인을 차단합니다.' : '원가 누수 원인을 확인하고 risk buffer를 조정합니다.',
+        createdAt
+      });
+    }
+    return { id, decision };
+  }
+
   function getLatestLiveMarginSnapshot(projectId) {
     const row = db.project.prepare(`
       SELECT *
@@ -7580,7 +8281,10 @@ function createSqliteService({ app }) {
     const updatedAt = nowIso();
     recomputeProcessCostLeaks(projectId, updatedAt);
     const liveMargin = buildLiveMarginSnapshot(projectId, revenue, capturedCost, updatedAt);
-    if (recordSnapshot) insertLiveMarginSnapshot(liveMargin);
+    if (recordSnapshot) {
+      insertLiveMarginSnapshot(liveMargin);
+      recordLiveMarginEvent(liveMargin, updatedAt);
+    }
     const forecastMargin = liveMargin.currentForecastMargin;
     const forecastMarginRate = liveMargin.currentForecastMarginRate;
     const completionBlocked = missingCriticalCount > 0 || liveMargin.alertLevel === 'RED' ? 1 : 0;
@@ -8033,9 +8737,9 @@ function createSqliteService({ app }) {
     capturedBy = 'CEO',
     notesKo = ''
   }) {
-    requirePermission({ actor, permissionKey: 'COST_CAPTURE_INPUT', actionType: 'CAPTURE_ACTUAL_COST', payload: { projectId, requirementId } });
     const requirement = db.project.prepare('SELECT * FROM cost_capture_requirements WHERE requirement_id = ?').get(requirementId);
     if (!requirement) throw new Error(`Cost capture requirement not found: ${requirementId}`);
+    requirePermission({ actor: capturedBy, permissionKey: 'COST_CAPTURE_INPUT', actionType: 'CAPTURE_ACTUAL_COST', payload: { projectId: requirement.project_id, requirementId } });
     const createdAt = nowIso();
     const entryId = `CCE-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     const safeAmount = toInteger(amount);
@@ -9883,6 +10587,8 @@ function createSqliteService({ app }) {
       permissionCount: countRows(db.logs, 'permissions'),
       userPermissionLogCount: countRows(db.logs, 'user_permission_logs'),
       estimateDraftCount: countRows(db.project, 'estimate_drafts'),
+      bathroomEstimateCount: countRows(db.project, 'bathroom_estimates'),
+      bathroomEstimateItemCount: countRows(db.project, 'bathroom_estimate_items'),
       portfolioProjectCount: countRows(db.project, 'portfolio_projects'),
       resourceAllocationCount: countRows(db.project, 'resource_allocations'),
       resourceConflictCount: countRows(db.project, 'resource_conflicts'),
@@ -9909,6 +10615,10 @@ function createSqliteService({ app }) {
       profitTemplateCount: countRows(db.project, 'profit_templates'),
       templateMatchCount: countRows(db.project, 'template_matches'),
       decisionOverrideCount: countRows(db.project, 'decision_overrides'),
+      profitAutomationEventCount: countRows(db.project, 'profit_automation_events'),
+      liveMarginEventCount: countRows(db.project, 'live_margin_events'),
+      autoBlockRuleCount: countRows(db.project, 'auto_block_rules'),
+      profitTemplateRecommendationCount: countRows(db.project, 'profit_template_recommendations'),
       clientCount: countRows(db.project, 'clients'),
       contractCount: countRows(db.project, 'contracts'),
       contractDocumentCount: countRows(db.project, 'contract_documents'),
@@ -9981,6 +10691,8 @@ function createSqliteService({ app }) {
     saveEstimateDraft,
     loadEstimateDraftForProject,
     updateEstimateDraft,
+    calculateBathroomEstimatePreview,
+    saveBathroomEstimate,
     getProjectExecutionReadiness,
     transitionProjectToExecution,
     getSiteOperationStatus,

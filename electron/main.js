@@ -16,6 +16,8 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:estimate-draft:save', (_event, payload) => sqliteService.saveEstimateDraft(payload));
   ipcMain.handle('boc:estimate-draft:load', (_event, payload) => sqliteService.loadEstimateDraftForProject(payload));
   ipcMain.handle('boc:estimate-draft:update', (_event, payload) => sqliteService.updateEstimateDraft(payload));
+  ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
+  ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:execution:readiness', (_event, payload) => sqliteService.getProjectExecutionReadiness(payload));
   ipcMain.handle('boc:execution:transition', (_event, payload) => sqliteService.transitionProjectToExecution(payload));
   ipcMain.handle('boc:site:status', (_event, payload) => sqliteService.getSiteOperationStatus(payload));

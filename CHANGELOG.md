@@ -1728,3 +1728,12 @@
 - Added Profit Template Library UI for high-margin project structures and template matches.
 - Updated Sales Pipeline lead ordering to prioritize profitable leads by qualification score, budget density, and budget size.
 - Added monthly profit generation summary with expected net profit, loss-defense amount, blocked estimate count, and average real margin.
+
+### Profit Automation Loop
+
+- Added profit automation event logging across Qualification, PCE, sales branching, live margin, root cause learning, prevention rules, template creation, template recommendation, and repeated low-margin blocking.
+- Added `profit_automation_events`, `live_margin_events`, `auto_block_rules`, and `profit_template_recommendations` tables while extending existing root cause and profit template structures.
+- Added Profit Automation Dashboard view with Korean display labels for automation status, PCE counts, live margin risk, root causes, prevention rules, high-margin templates, recommendations, and automation logs.
+- Connected live margin threshold events to root cause generation and management review alerts.
+- Added high-margin template recommendation records for new estimate drafts.
+- Added smoke test coverage for the full profit loop scenarios.

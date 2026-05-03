@@ -28,6 +28,8 @@ declare global {
         saveEstimateDraft: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; savedDraft: Record<string, unknown> }>;
         loadEstimateDraftForProject: (payload: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
         updateEstimateDraft: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; savedDraft: Record<string, unknown> }>;
+        calculateBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        saveBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getProjectExecutionReadiness: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         transitionProjectToExecution: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; executionProject: Record<string, unknown> }>;
         getSiteOperationStatus: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
