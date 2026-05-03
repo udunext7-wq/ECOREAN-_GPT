@@ -1,6 +1,6 @@
 export type Severity = 'GREEN' | 'YELLOW' | 'RED';
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'BLOCKING';
-export type ViewKey = 'dashboard' | 'project' | 'approvals' | 'risks' | 'ontology' | 'masterDb' | 'estimate' | 'caseLibrary' | 'costCapture' | 'marginSafety' | 'vendorPrice' | 'portfolio' | 'crew' | 'finance' | 'sales' | 'client' | 'settings';
+export type ViewKey = 'dashboard' | 'project' | 'approvals' | 'risks' | 'ontology' | 'masterDb' | 'estimate' | 'caseLibrary' | 'costCapture' | 'marginSafety' | 'vendorPrice' | 'portfolio' | 'crew' | 'finance' | 'sales' | 'client' | 'settings' | 'profitTemplates';
 
 export type TopBarKpi = {
   id: string;
@@ -83,6 +83,9 @@ export type DashboardData = {
   redAlerts: RedAlert[];
   approvals: ApprovalItem[];
   immediateActions: ImmediateAction[];
+  profitSummary: Record<string, unknown>;
+  profitAlerts: Array<Record<string, unknown>>;
+  profitTemplates: Array<Record<string, unknown>>;
   estimateVsActualTop: VarianceItem[];
   repeatedDefectsTop: VarianceItem[];
   repeatedLossProcessTop: VarianceItem[];

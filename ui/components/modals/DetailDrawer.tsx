@@ -13,6 +13,7 @@ import { NewEstimateWizard } from '../../app/estimate/NewEstimateWizard';
 import { MasterDbAdminView } from '../../app/master-db/MasterDbAdminView';
 import { Ontology3DView } from '../../app/ontology/Ontology3DView';
 import { PortfolioDashboardView } from '../../app/portfolio/PortfolioDashboardView';
+import { ProfitTemplateLibraryView } from '../../app/profit/ProfitTemplateLibraryView';
 import { ProjectDetailView } from '../../app/projects/ProjectDetailView';
 import { SettingsView } from '../../app/settings/SettingsView';
 import { VendorPriceAdminView } from '../../app/vendor/VendorPriceAdminView';
@@ -48,10 +49,11 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     finance: 'Company Finance',
     sales: 'Sales Pipeline',
     client: 'Client & Contract',
-    settings: 'Settings'
+    settings: 'Settings',
+    profitTemplates: 'Profit Template Library'
   };
 
-  const isWideView = ['masterDb', 'estimate', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology'].includes(view);
+  const isWideView = ['masterDb', 'estimate', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'profitTemplates'].includes(view);
 
   return (
     <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
@@ -80,6 +82,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'crew' ? <CrewDashboardView /> : null}
       {view === 'finance' ? <CompanyFinanceDashboard /> : null}
       {view === 'sales' ? <LeadDashboardView /> : null}
+      {view === 'profitTemplates' ? <ProfitTemplateLibraryView /> : null}
       {view === 'client' ? <ClientDashboardView /> : null}
       {view === 'settings' ? <SettingsView /> : null}
       {view === 'estimate' ? <NewEstimateWizard /> : null}

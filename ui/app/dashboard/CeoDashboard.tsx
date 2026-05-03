@@ -51,7 +51,8 @@ export function CeoDashboard() {
       openCrew: 'crew',
       openFinance: 'finance',
       openSales: 'sales',
-      openClientContract: 'client'
+      openClientContract: 'client',
+      openProfitTemplates: 'profitTemplates'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
@@ -94,6 +95,39 @@ export function CeoDashboard() {
         />
 
         <section className="decision-main">
+          <SectionCard title="Profit Alert" eyebrow="PROFIT GENERATION ENGINE">
+            <div className="case-library-grid">
+              <div className="estimate-preview-card">
+                <h5>월 예상 순이익</h5>
+                <strong>{Number(dashboard.data.profitSummary.monthlyExpectedNetProfit || 0).toLocaleString('ko-KR')}원</strong>
+                <p>저마진 차단 이후 진행 가능한 프로젝트 기준입니다.</p>
+              </div>
+              <div className="estimate-preview-card warning-row">
+                <h5>손실 방어 금액</h5>
+                <strong>{Number(dashboard.data.profitSummary.lossDefenseAmount || 0).toLocaleString('ko-KR')}원</strong>
+                <p>BLOCK 처리로 방어한 최소 마진 부족분입니다.</p>
+              </div>
+              <div className="estimate-preview-card">
+                <h5>고마진 복제 템플릿</h5>
+                <strong>{String(dashboard.data.profitSummary.scalableTemplateCount || 0)}개</strong>
+                <p>35% 이상, 하자 없음, 일정 준수 프로젝트만 등록됩니다.</p>
+                <button onClick={() => openView('profitTemplates', 'confirm')}>Template Library</button>
+              </div>
+            </div>
+            <div className="today-action-list">
+              {dashboard.data.profitAlerts.slice(0, 4).map((alert) => (
+                <button key={String(alert.id)} className={String(alert.decision) === 'BLOCK' ? 'action-row warning-row' : 'action-row'} onClick={() => openView('sales', 'warning')}>
+                  <span>{String(alert.decision)}</span>
+                  <div>
+                    <strong>{String(alert.estimateId)}</strong>
+                    <p>실질 마진율 {(Number(alert.realMargin || 0) * 100).toFixed(2)}%</p>
+                  </div>
+                  <em>검토</em>
+                </button>
+              ))}
+            </div>
+          </SectionCard>
+
           <SectionCard title="Approval Center" eyebrow="CEO DECISION">
             <ApprovalCenter
               approvals={approval.approvals}
@@ -189,6 +223,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('crew', 'click')}>Crew</button>
         <button onClick={() => openView('finance', 'warning')}>Finance</button>
         <button onClick={() => openView('sales', 'click')}>Sales</button>
+        <button onClick={() => openView('profitTemplates', 'confirm')}>Profit Templates</button>
         <button onClick={() => openView('client', 'click')}>Client Contract</button>
         <button onClick={() => openView('caseLibrary', 'click')}>Case Library</button>
         <button onClick={() => openView('settings', 'click')}>Backup</button>

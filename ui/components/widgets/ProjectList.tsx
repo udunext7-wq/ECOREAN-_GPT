@@ -18,6 +18,11 @@ const sortOptions: Array<{ key: ProjectSortKey; labelKo: string }> = [
 ];
 
 export function ProjectList({ projects, activeProjectId, sortKey, onSortChange, onProjectSelect }: Props) {
+  function isLowMargin(project: ProjectSummary) {
+    const parsed = Number(String(project.profitRate || '').replace('%', ''));
+    return Number.isFinite(parsed) && parsed > 0 && parsed < 25;
+  }
+
   return (
     <aside className="left-panel">
       <div className="panel-title">
@@ -35,7 +40,7 @@ export function ProjectList({ projects, activeProjectId, sortKey, onSortChange, 
         {projects.map((project) => (
           <button
             key={project.projectId}
-            className={`project-row ${activeProjectId === project.projectId ? 'selected' : ''}`}
+            className={`project-row ${activeProjectId === project.projectId ? 'selected' : ''} ${isLowMargin(project) ? 'warning-row' : ''}`}
             onClick={() => onProjectSelect(project.projectId)}
           >
             <div>

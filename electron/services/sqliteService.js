@@ -49,6 +49,14 @@ function createSqliteService({ app }) {
     logs: openDatabase(dbPaths.logs)
   };
 
+  const PROFIT_POLICY = {
+    minimumBudget: 7000000,
+    minimumPricePerM2: 1500000,
+    blockMarginRate: 0.25,
+    modifyMarginRate: 0.3,
+    goMarginRate: 0.35
+  };
+
   function migrate() {
     db.project.exec(`
       CREATE TABLE IF NOT EXISTS projects (
@@ -352,6 +360,56 @@ function createSqliteService({ app }) {
         reason_ko TEXT NOT NULL,
         competitor_ko TEXT,
         lost_amount INTEGER NOT NULL,
+        created_by TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS qualification_results (
+        id TEXT PRIMARY KEY,
+        lead_id TEXT NOT NULL,
+        score INTEGER NOT NULL,
+        decision TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS profit_decisions (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        revenue INTEGER NOT NULL,
+        total_cost INTEGER NOT NULL,
+        risk_buffer INTEGER NOT NULL,
+        real_margin REAL NOT NULL,
+        decision TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS profit_templates (
+        id TEXT PRIMARY KEY,
+        project_type TEXT NOT NULL,
+        area_range TEXT NOT NULL,
+        cost_structure_json TEXT NOT NULL,
+        crew_structure_json TEXT NOT NULL,
+        duration INTEGER NOT NULL,
+        margin REAL NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS template_matches (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        template_id TEXT NOT NULL,
+        match_score REAL NOT NULL,
+        applied INTEGER NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS decision_overrides (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        original_decision TEXT NOT NULL,
+        override_decision TEXT NOT NULL,
+        reason TEXT NOT NULL,
         created_by TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
@@ -1680,6 +1738,10 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'estimate_drafts', 'estimated_margin_rate', 'estimated_margin_rate REAL NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'estimate_drafts', 'margin_safety_status', "margin_safety_status TEXT NOT NULL DEFAULT 'NOT_EVALUATED'");
     ensureColumn(db.project, 'estimate_drafts', 'lead_id', 'lead_id TEXT');
+    ensureColumn(db.project, 'leads', 'area_m2', 'area_m2 REAL NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'leads', 'location_ko', "location_ko TEXT NOT NULL DEFAULT 'UNKNOWN'");
+    ensureColumn(db.project, 'leads', 'client_type', "client_type TEXT NOT NULL DEFAULT 'RESIDENTIAL'");
+    ensureColumn(db.project, 'leads', 'qualification_decision', "qualification_decision TEXT NOT NULL DEFAULT 'CONDITIONAL'");
     ensureColumn(db.project, 'final_estimates', 'estimated_cost', 'estimated_cost INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'final_estimates', 'estimated_margin', 'estimated_margin INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'final_estimates', 'estimated_margin_rate', 'estimated_margin_rate REAL NOT NULL DEFAULT 0');
@@ -2460,53 +2522,404 @@ function createSqliteService({ app }) {
     );
   }
 
-  function createLead(payload = {}) {
-    const createdAt = nowIso();
-    const leadId = payload.leadId || `LEAD-${Date.now()}`;
-    const customerNameKo = payload.customerNameKo || payload.customerName || '미입력 고객';
-    const contactPhone = payload.contactPhone || payload.contact || 'UNKNOWN';
-    const sourceChannel = payload.sourceChannel || 'NAVER';
-    const interestedScope = payload.interestedScope || 'bathroom';
-    const expectedBudget = Number(payload.expectedBudget || 0);
-    const consultationMemoKo = payload.consultationMemoKo || payload.memoKo || '상담 메모 미입력';
-    const actor = payload.actor || 'CEO';
-    db.project.prepare(`
-      INSERT INTO leads (
-        lead_id, customer_name_ko, contact_phone, source_channel, consultation_status,
-        interested_scope, expected_budget, consultation_memo_ko, assigned_owner,
-        next_action_ko, lost_reason_required, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      leadId,
-      customerNameKo,
-      contactPhone,
-      sourceChannel,
-      'NEW',
-      interestedScope,
-      expectedBudget,
-      consultationMemoKo,
-      payload.assignedOwner || 'Estimator',
-      '24시간 내 1차 상담',
-      0,
-      createdAt,
-      createdAt
-    );
-    logLeadActivity({ leadId, activityType: 'LEAD_CREATED', memoKo: '신규 리드 생성', actor, createdAt });
+  function insertNotification({ level = 'INFO', messageKo, relatedProjectId = 'PROFIT', actionKo = 'Profit Check', createdAt = nowIso() }) {
     db.logs.prepare(`
       INSERT INTO notification_logs (
         log_id, time_label, level, message_ko, related_project_id, action_ko, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(
-      `LOG-${Date.now()}-LEAD`,
+      `LOG-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
       new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }),
-      'INFO',
-      `신규 리드 생성: ${customerNameKo} / ${scopeLabelKo(interestedScope)}`,
-      'SALES',
-      '상담 시작',
+      level,
+      messageKo,
+      relatedProjectId,
+      actionKo,
       createdAt
     );
+  }
+
+  function normalizeAreaM2(value) {
+    const area = Number(value || 0);
+    return Number.isFinite(area) && area > 0 ? area : 0;
+  }
+
+  function scoreLead({ estimatedBudget, areaM2, location = '', clientType = 'RESIDENTIAL' }) {
+    let score = 0;
+    const pricePerM2 = areaM2 > 0 ? estimatedBudget / areaM2 : 0;
+    if (estimatedBudget >= PROFIT_POLICY.minimumBudget * 2) score += 35;
+    else if (estimatedBudget >= PROFIT_POLICY.minimumBudget) score += 25;
+    else score += 5;
+
+    if (pricePerM2 >= PROFIT_POLICY.minimumPricePerM2 * 1.2) score += 35;
+    else if (pricePerM2 >= PROFIT_POLICY.minimumPricePerM2) score += 25;
+    else score += 5;
+
+    if (String(location).includes('서울') || String(location).includes('경기')) score += 15;
+    else if (location && location !== 'UNKNOWN') score += 10;
+
+    if (clientType === 'COMMERCIAL' || clientType === 'DEVELOPER') score += 15;
+    else score += 10;
+
+    return Math.min(score, 100);
+  }
+
+  function runQualificationEngine({
+    leadId,
+    estimatedBudget = 0,
+    areaM2 = 0,
+    location = 'UNKNOWN',
+    clientType = 'RESIDENTIAL',
+    createdAt = nowIso()
+  }) {
+    const normalizedBudget = Number(estimatedBudget || 0);
+    const normalizedArea = normalizeAreaM2(areaM2);
+    const pricePerM2 = normalizedArea > 0 ? normalizedBudget / normalizedArea : 0;
+    const score = scoreLead({ estimatedBudget: normalizedBudget, areaM2: normalizedArea, location, clientType });
+    let decision = 'PASS';
+    const reasons = [];
+
+    if (normalizedBudget < PROFIT_POLICY.minimumBudget) {
+      decision = 'FAIL';
+      reasons.push(`estimated_budget below ${PROFIT_POLICY.minimumBudget}`);
+    }
+    if (normalizedArea <= 0) {
+      decision = decision === 'FAIL' ? 'FAIL' : 'CONDITIONAL';
+      reasons.push('area_m2 missing');
+    } else if (pricePerM2 < PROFIT_POLICY.minimumPricePerM2) {
+      decision = 'FAIL';
+      reasons.push(`price_per_m2 below ${PROFIT_POLICY.minimumPricePerM2}`);
+    }
+    if (decision === 'PASS' && score < 70) {
+      decision = 'CONDITIONAL';
+      reasons.push('score below pass threshold');
+    }
+
+    const id = `QUAL-${leadId}-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO qualification_results (
+        id, lead_id, score, decision, reason, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      leadId,
+      score,
+      decision,
+      reasons.length ? reasons.join('; ') : `PASS: price_per_m2=${Math.round(pricePerM2)}`,
+      createdAt
+    );
+    return { id, leadId, score, decision, reason: reasons.join('; ') || 'PASS', estimatedPricePerM2: pricePerM2, createdAt };
+  }
+
+  function latestEstimateForLead(leadId) {
+    const link = db.project.prepare(`
+      SELECT * FROM lead_estimate_links
+      WHERE lead_id = ?
+      ORDER BY updated_at DESC, linked_at DESC
+      LIMIT 1
+    `).get(leadId);
+    if (!link) return null;
+    const estimateDraftId = link.estimate_draft_id || link.estimate_id;
+    if (!estimateDraftId) return { link };
+    const draft = db.project.prepare('SELECT * FROM estimate_drafts WHERE estimate_draft_id = ?').get(estimateDraftId);
+    return { link, draft };
+  }
+
+  function runProfitControlEngine({
+    estimateId,
+    revenue = 0,
+    totalCost = 0,
+    vendorRisk = 0,
+    laborVariance = 0,
+    scheduleRisk = 0,
+    defectRisk = 0,
+    forceDecision = null,
+    createdAt = nowIso()
+  }) {
+    const normalizedRevenue = Math.max(0, Math.round(Number(revenue || 0)));
+    const normalizedTotalCost = Math.max(0, Math.round(Number(totalCost || 0)));
+    const riskBuffer = Math.max(0, Math.round(Number(vendorRisk || 0) + Number(laborVariance || 0) + Number(scheduleRisk || 0) + Number(defectRisk || 0)));
+    const realMargin = normalizedRevenue > 0
+      ? Number(((normalizedRevenue - normalizedTotalCost - riskBuffer) / normalizedRevenue).toFixed(4))
+      : 0;
+    let decision = 'BLOCK';
+    if (forceDecision) decision = forceDecision;
+    else if (realMargin < PROFIT_POLICY.blockMarginRate) decision = 'BLOCK';
+    else if (realMargin < PROFIT_POLICY.modifyMarginRate) decision = 'MODIFY';
+    else if (realMargin < PROFIT_POLICY.goMarginRate) decision = 'GO';
+    else decision = 'SCALE';
+
+    const id = `PCE-${estimateId || 'NOEST'}-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO profit_decisions (
+        id, estimate_id, revenue, total_cost, risk_buffer, real_margin, decision, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      estimateId || 'UNKNOWN_ESTIMATE',
+      normalizedRevenue,
+      normalizedTotalCost,
+      riskBuffer,
+      realMargin,
+      decision,
+      createdAt
+    );
+    return { id, estimateId: estimateId || 'UNKNOWN_ESTIMATE', revenue: normalizedRevenue, totalCost: normalizedTotalCost, riskBuffer, realMargin, decision, createdAt };
+  }
+
+  function latestApprovedOverride(estimateId) {
+    if (!estimateId) return null;
+    return db.project.prepare(`
+      SELECT * FROM decision_overrides
+      WHERE estimate_id = ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).get(estimateId);
+  }
+
+  function overrideProfitDecision({ estimateId, originalDecision, overrideDecision, reason, createdBy = 'CEO' }) {
+    if (!estimateId || !overrideDecision || !reason) throw new Error('estimateId, overrideDecision, and reason are required');
+    const createdAt = nowIso();
+    const id = `PCE-OVERRIDE-${estimateId}-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO decision_overrides (
+        id, estimate_id, original_decision, override_decision, reason, created_by, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(id, estimateId, originalDecision || 'UNKNOWN', overrideDecision, reason, createdBy, createdAt);
+    insertNotification({
+      level: overrideDecision === 'GO' || overrideDecision === 'SCALE' ? 'WARNING' : 'INFO',
+      messageKo: `PCE override recorded: ${estimateId} ${originalDecision || 'UNKNOWN'} -> ${overrideDecision}`,
+      relatedProjectId: estimateId,
+      actionKo: 'PCE Override',
+      createdAt
+    });
+    return { id, estimateId, originalDecision, overrideDecision, reason, createdBy, createdAt };
+  }
+
+  function profitGateForWonLead({ lead, payload = {}, actor = 'CEO', createdAt = nowIso() }) {
+    const estimate = latestEstimateForLead(lead.lead_id);
+    const estimateDraftId = payload.estimateId || estimate?.draft?.estimate_draft_id || estimate?.link?.estimate_id || `EST-LEAD-${lead.lead_id}`;
+    const draftPayload = fromJson(estimate?.draft?.preliminary_estimate_json, {});
+    const marginSafety = draftPayload?.marginSafety || {};
+    const revenue = Number(payload.revenue ?? marginSafety.customerOfferPrice ?? lead.expected_budget ?? 0);
+    const totalCost = Number(payload.totalCost ?? marginSafety.estimatedCost ?? estimate?.draft?.estimated_cost ?? 0);
+    const hasEnoughCostData = revenue > 0 && totalCost > 0;
+    const pce = runProfitControlEngine({
+      estimateId: estimateDraftId,
+      revenue,
+      totalCost: hasEnoughCostData ? totalCost : revenue,
+      vendorRisk: payload.vendorRisk || 0,
+      laborVariance: payload.laborVariance || 0,
+      scheduleRisk: payload.scheduleRisk || 0,
+      defectRisk: payload.defectRisk || 0,
+      forceDecision: hasEnoughCostData ? null : 'MODIFY',
+      createdAt
+    });
+    const override = latestApprovedOverride(estimateDraftId);
+    const effectiveDecision = override?.override_decision || pce.decision;
+    const canCreateProject = effectiveDecision === 'GO' || effectiveDecision === 'SCALE';
+
+    if (!canCreateProject) {
+      const nextStatus = effectiveDecision === 'BLOCK' ? 'LOST' : 'ESTIMATE_SENT';
+      const nextActionKo = effectiveDecision === 'BLOCK'
+        ? 'PCE BLOCK: profit validation failed'
+        : 'PCE MODIFY: estimate revision required';
+      db.project.prepare(`
+        UPDATE leads
+        SET consultation_status = ?, next_action_ko = ?, lost_reason_required = ?, updated_at = ?
+        WHERE lead_id = ?
+      `).run(nextStatus, nextActionKo, effectiveDecision === 'BLOCK' ? 1 : 0, createdAt, lead.lead_id);
+      logLeadActivity({
+        leadId: lead.lead_id,
+        activityType: `PCE_${effectiveDecision}`,
+        memoKo: `${nextActionKo} / real_margin=${Math.round(pce.realMargin * 10000) / 100}%`,
+        actor,
+        createdAt
+      });
+      if (effectiveDecision === 'BLOCK') {
+        db.project.prepare(`
+          INSERT INTO lost_reason_logs (
+            lost_reason_id, lead_id, reason_category, reason_ko, competitor_ko,
+            lost_amount, created_by, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          `LOST-PCE-${lead.lead_id}-${Date.now()}`,
+          lead.lead_id,
+          'LOW_MARGIN_BLOCKED',
+          `PCE BLOCK: real margin ${Math.round(pce.realMargin * 10000) / 100}% is below 25%`,
+          null,
+          Number(lead.expected_budget || 0),
+          actor,
+          createdAt
+        );
+      }
+      insertNotification({
+        level: effectiveDecision === 'BLOCK' ? 'RED' : 'WARNING',
+        messageKo: `${lead.customer_name_ko} PCE ${effectiveDecision}: 프로젝트 생성 차단`,
+        relatedProjectId: lead.lead_id,
+        actionKo: 'PCE',
+        createdAt
+      });
+      return { allowed: false, pce, override, effectiveDecision };
+    }
+
+    logLeadActivity({
+      leadId: lead.lead_id,
+      activityType: `PCE_${effectiveDecision}`,
+      memoKo: `PCE ${effectiveDecision}: 프로젝트 생성 허용 / real_margin=${Math.round(pce.realMargin * 10000) / 100}%`,
+      actor,
+      createdAt
+    });
+    return { allowed: true, pce, override, effectiveDecision };
+  }
+
+  function areaRangeFor(areaM2) {
+    const area = normalizeAreaM2(areaM2);
+    if (area <= 10) return '0-10';
+    if (area <= 30) return '10-30';
+    if (area <= 60) return '30-60';
+    return '60+';
+  }
+
+  function createProfitTemplateFromCompletion({
+    projectId,
+    projectType = 'unknown',
+    areaM2 = 0,
+    actualCosts = {},
+    actualDurationDays = 0,
+    finalMarginRate = 0,
+    defects = [],
+    claims = [],
+    reworkRequired = false,
+    estimatedDurationDays = 0,
+    createdAt = nowIso()
+  }) {
+    const normalizedMargin = Number(finalMarginRate || 0) / 100;
+    const completedOnTime = Number(estimatedDurationDays || 0) > 0 && Number(actualDurationDays || 0) <= Number(estimatedDurationDays || 0);
+    const cleanQuality = defects.length === 0 && claims.length === 0 && !reworkRequired;
+    if (normalizedMargin < PROFIT_POLICY.goMarginRate || !completedOnTime || !cleanQuality) {
+      return null;
+    }
+    const id = `PROFIT-TPL-${projectId}-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO profit_templates (
+        id, project_type, area_range, cost_structure_json,
+        crew_structure_json, duration, margin, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      projectType,
+      areaRangeFor(areaM2),
+      toJson(actualCosts),
+      toJson({ sourceProjectId: projectId, laborCost: actualCosts.laborCost || 0 }),
+      Number(actualDurationDays || 0),
+      normalizedMargin,
+      createdAt
+    );
+    return { id, projectType, areaRange: areaRangeFor(areaM2), margin: normalizedMargin };
+  }
+
+  function matchProfitTemplateForEstimate({ estimateId, projectType = 'unknown', areaM2 = 0, apply = true, createdAt = nowIso() }) {
+    if (!estimateId) return null;
+    const areaRange = areaRangeFor(areaM2);
+    const templates = db.project.prepare(`
+      SELECT * FROM profit_templates
+      WHERE project_type = ?
+      ORDER BY margin DESC, created_at DESC
+    `).all(projectType);
+    if (templates.length === 0) return null;
+    let best = null;
+    templates.forEach((template) => {
+      let score = 0.55;
+      if (template.area_range === areaRange) score += 0.35;
+      score += Math.min(Number(template.margin || 0), 0.5) * 0.2;
+      if (!best || score > best.score) best = { template, score };
+    });
+    if (!best) return null;
+    const id = `TPL-MATCH-${estimateId}-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO template_matches (
+        id, estimate_id, template_id, match_score, applied, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, estimateId, best.template.id, Number(best.score.toFixed(4)), apply ? 1 : 0, createdAt);
+    return { id, estimateId, templateId: best.template.id, matchScore: Number(best.score.toFixed(4)), applied: Boolean(apply) };
+  }
+
+  function createLead(payload = {}) {
+    const createdAt = nowIso();
+    const leadId = payload.leadId || `LEAD-${Date.now()}`;
+    const customerNameKo = payload.customerNameKo || payload.customerName || '??? ??';
+    const contactPhone = payload.contactPhone || payload.contact || 'UNKNOWN';
+    const sourceChannel = payload.sourceChannel || 'NAVER';
+    const interestedScope = payload.interestedScope || 'bathroom';
+    const expectedBudget = Number(payload.expectedBudget || 0);
+    const areaM2 = normalizeAreaM2(payload.areaM2 || payload.area_m2);
+    const locationKo = payload.locationKo || payload.location || 'UNKNOWN';
+    const clientType = payload.clientType || 'RESIDENTIAL';
+    const consultationMemoKo = payload.consultationMemoKo || payload.memoKo || '?? ?? ???';
+    const actor = payload.actor || 'CEO';
+    const qualification = runQualificationEngine({
+      leadId,
+      estimatedBudget: expectedBudget,
+      areaM2,
+      location: locationKo,
+      clientType,
+      createdAt
+    });
+    const initialStatus = qualification.decision === 'FAIL' ? 'LOST' : 'NEW';
+    db.project.prepare(`
+      INSERT INTO leads (
+        lead_id, customer_name_ko, contact_phone, source_channel, consultation_status,
+        interested_scope, expected_budget, consultation_memo_ko, assigned_owner,
+        next_action_ko, lost_reason_required, created_at, updated_at,
+        area_m2, location_ko, client_type, qualification_decision
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      leadId,
+      customerNameKo,
+      contactPhone,
+      sourceChannel,
+      initialStatus,
+      interestedScope,
+      expectedBudget,
+      consultationMemoKo,
+      payload.assignedOwner || 'Estimator',
+      qualification.decision === 'FAIL' ? 'Qualification FAIL: ??/?? ?? ??' : '24?? ? 1? ??',
+      qualification.decision === 'FAIL' ? 1 : 0,
+      createdAt,
+      createdAt,
+      areaM2,
+      locationKo,
+      clientType,
+      qualification.decision
+    );
+    logLeadActivity({ leadId, activityType: 'LEAD_CREATED', memoKo: '?? ?? ??', actor, createdAt });
+    logLeadActivity({ leadId, activityType: `QUALIFICATION_${qualification.decision}`, memoKo: `Qualification ${qualification.decision}: score=${qualification.score}, ${qualification.reason}`, actor: 'BOC', createdAt });
+    if (qualification.decision === 'FAIL') {
+      db.project.prepare(`
+        INSERT INTO lost_reason_logs (
+          lost_reason_id, lead_id, reason_category, reason_ko, competitor_ko,
+          lost_amount, created_by, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        `LOST-QUAL-${leadId}-${Date.now()}`,
+        leadId,
+        'QUALIFICATION_FAIL',
+        `Qualification FAIL: ${qualification.reason}`,
+        null,
+        expectedBudget,
+        'BOC',
+        createdAt
+      );
+    }
+    insertNotification({
+      level: qualification.decision === 'FAIL' ? 'RED' : qualification.decision === 'CONDITIONAL' ? 'WARNING' : 'INFO',
+      messageKo: `Qualification ${qualification.decision}: ${customerNameKo} / score ${qualification.score}`,
+      relatedProjectId: leadId,
+      actionKo: 'Qualification',
+      createdAt
+    });
     syncSalesPipelineMetrics();
-    return { lead: mapLead(db.project.prepare('SELECT * FROM leads WHERE lead_id = ?').get(leadId)), salesData: getSalesPipelineData() };
+    return { lead: mapLead(db.project.prepare('SELECT * FROM leads WHERE lead_id = ?').get(leadId)), qualification, salesData: getSalesPipelineData() };
   }
 
   function createProjectFromWonLead(lead, actor = 'CEO') {
@@ -2576,21 +2989,56 @@ function createSqliteService({ app }) {
     const lead = db.project.prepare('SELECT * FROM leads WHERE lead_id = ?').get(leadId);
     if (!lead) throw new Error(`Lead not found: ${leadId}`);
     if (nextStatus === 'LOST' && !payload.lostReasonKo) {
-      throw new Error('LOST 상태 전환에는 lostReasonKo가 필요합니다.');
+      throw new Error('LOST requires lostReasonKo');
     }
     const updatedAt = nowIso();
+
+    if (nextStatus === 'WON') {
+      const gate = profitGateForWonLead({ lead, payload, actor, createdAt: updatedAt });
+      let project = null;
+      if (gate.allowed) {
+        db.project.prepare(`
+          UPDATE leads
+          SET consultation_status = ?, next_action_ko = ?, lost_reason_required = ?, qualification_decision = CASE WHEN qualification_decision = 'FAIL' THEN 'CONDITIONAL' ELSE qualification_decision END, updated_at = ?
+          WHERE lead_id = ?
+        `).run(
+          'WON',
+          `PCE ${gate.effectiveDecision}: ???? ?? ??`,
+          0,
+          updatedAt,
+          leadId
+        );
+        project = createProjectFromWonLead({ ...lead, consultation_status: 'WON' }, actor);
+        insertNotification({
+          level: gate.effectiveDecision === 'SCALE' ? 'INFO' : 'INFO',
+          messageKo: `PCE ${gate.effectiveDecision}: ${lead.customer_name_ko} ???? ??`,
+          relatedProjectId: project.projectId,
+          actionKo: 'Project Created',
+          createdAt: updatedAt
+        });
+      }
+      syncSalesPipelineMetrics();
+      return {
+        lead: mapLead(db.project.prepare('SELECT * FROM leads WHERE lead_id = ?').get(leadId)),
+        project,
+        profitDecision: gate.pce,
+        effectiveDecision: gate.effectiveDecision,
+        salesData: getSalesPipelineData()
+      };
+    }
+
     db.project.prepare(`
       UPDATE leads
       SET consultation_status = ?, next_action_ko = ?, lost_reason_required = ?, updated_at = ?
       WHERE lead_id = ?
     `).run(
       nextStatus,
-      payload.nextActionKo || `${leadStatusLabelKo(nextStatus)} 후속 조치`,
+      payload.nextActionKo || `${leadStatusLabelKo(nextStatus)} next action`,
       nextStatus === 'LOST' ? 1 : 0,
       updatedAt,
       leadId
     );
-    logLeadActivity({ leadId, activityType: `STATUS_${nextStatus}`, memoKo: payload.reasonKo || `${leadStatusLabelKo(nextStatus)} 상태 변경`, actor, createdAt: updatedAt });
+    logLeadActivity({ leadId, activityType: `STATUS_${nextStatus}`, memoKo: payload.reasonKo || `Status changed to ${nextStatus}`, actor, createdAt: updatedAt });
     if (nextStatus === 'LOST') {
       db.project.prepare(`
         INSERT INTO lost_reason_logs (
@@ -2608,12 +3056,8 @@ function createSqliteService({ app }) {
         updatedAt
       );
     }
-    let project = null;
-    if (nextStatus === 'WON') {
-      project = createProjectFromWonLead(lead, actor);
-    }
     syncSalesPipelineMetrics();
-    return { lead: mapLead(db.project.prepare('SELECT * FROM leads WHERE lead_id = ?').get(leadId)), project, salesData: getSalesPipelineData() };
+    return { lead: mapLead(db.project.prepare('SELECT * FROM leads WHERE lead_id = ?').get(leadId)), project: null, salesData: getSalesPipelineData() };
   }
 
   function linkLeadToEstimate({ leadId, estimateDraftId, estimateId = null, projectId = null, estimateStatus = 'PRELIMINARY' }) {
@@ -2653,6 +3097,10 @@ function createSqliteService({ app }) {
       interestedScope: row.interested_scope,
       interestedScopeKo: scopeLabelKo(row.interested_scope),
       expectedBudget: row.expected_budget,
+      areaM2: row.area_m2,
+      locationKo: row.location_ko,
+      clientType: row.client_type,
+      qualificationDecision: row.qualification_decision,
       consultationMemoKo: row.consultation_memo_ko,
       assignedOwner: row.assigned_owner,
       nextActionKo: row.next_action_ko,
@@ -2664,7 +3112,27 @@ function createSqliteService({ app }) {
 
   function getSalesPipelineData() {
     const metric = syncSalesPipelineMetrics();
-    const leads = db.project.prepare('SELECT * FROM leads ORDER BY updated_at DESC, created_at DESC').all().map(mapLead);
+    const latestQualificationByLead = new Map(db.project.prepare(`
+      SELECT q.*
+      FROM qualification_results q
+      JOIN (
+        SELECT lead_id, MAX(created_at) AS created_at
+        FROM qualification_results
+        GROUP BY lead_id
+      ) latest ON latest.lead_id = q.lead_id AND latest.created_at = q.created_at
+    `).all().map((row) => [row.lead_id, row]));
+    const leads = db.project.prepare('SELECT * FROM leads ORDER BY updated_at DESC, created_at DESC').all()
+      .map((row) => {
+        const lead = mapLead(row);
+        const qualification = latestQualificationByLead.get(row.lead_id);
+        const pricePerM2 = normalizeAreaM2(row.area_m2) > 0 ? Number(row.expected_budget || 0) / normalizeAreaM2(row.area_m2) : 0;
+        const moneyScore = Number(qualification?.score || 0)
+          + (pricePerM2 >= PROFIT_POLICY.minimumPricePerM2 ? 20 : 0)
+          + (Number(row.expected_budget || 0) >= PROFIT_POLICY.minimumBudget * 2 ? 20 : 0)
+          - (row.consultation_status === 'LOST' ? 100 : 0);
+        return { ...lead, qualificationScore: Number(qualification?.score || 0), estimatedPricePerM2: pricePerM2, moneyPriorityScore: moneyScore };
+      })
+      .sort((a, b) => Number(b.moneyPriorityScore || 0) - Number(a.moneyPriorityScore || 0));
     const funnel = ['NEW', 'CONTACTED', 'VISIT_SCHEDULED', 'VISITED', 'ESTIMATE_SENT', 'NEGOTIATING', 'WON', 'LOST'].map((status) => ({
       status,
       labelKo: leadStatusLabelKo(status),
@@ -2700,6 +3168,32 @@ function createSqliteService({ app }) {
       createdBy: row.created_by,
       createdAt: row.created_at
     }));
+    const qualificationResults = db.project.prepare('SELECT * FROM qualification_results ORDER BY created_at DESC LIMIT 50').all().map((row) => ({
+      id: row.id,
+      leadId: row.lead_id,
+      score: row.score,
+      decision: row.decision,
+      reason: row.reason,
+      createdAt: row.created_at
+    }));
+    const profitDecisions = db.project.prepare('SELECT * FROM profit_decisions ORDER BY created_at DESC LIMIT 50').all().map((row) => ({
+      id: row.id,
+      estimateId: row.estimate_id,
+      revenue: row.revenue,
+      totalCost: row.total_cost,
+      riskBuffer: row.risk_buffer,
+      realMargin: row.real_margin,
+      decision: row.decision,
+      createdAt: row.created_at
+    }));
+    const templateMatches = db.project.prepare('SELECT * FROM template_matches ORDER BY created_at DESC LIMIT 50').all().map((row) => ({
+      id: row.id,
+      estimateId: row.estimate_id,
+      templateId: row.template_id,
+      matchScore: row.match_score,
+      applied: Boolean(row.applied),
+      createdAt: row.created_at
+    }));
     const channelRows = db.project.prepare(`
       SELECT
         source_channel,
@@ -2731,6 +3225,9 @@ function createSqliteService({ app }) {
       activities,
       estimateLinks: links,
       lostReasons,
+      qualificationResults,
+      profitDecisions,
+      templateMatches,
       channelPerformance: channelRows.map((row) => ({
         sourceChannel: row.source_channel,
         totalCount: row.total_count,
@@ -2739,6 +3236,54 @@ function createSqliteService({ app }) {
         expectedBudget: row.expected_budget,
         winRate: Number(row.total_count || 0) > 0 ? Number(row.won_count || 0) / Number(row.total_count || 0) : 0
       }))
+    };
+  }
+
+  function getProfitGenerationData() {
+    const summary = getProfitGenerationSummary();
+    return {
+      policy: PROFIT_POLICY,
+      summary,
+      qualificationResults: db.project.prepare('SELECT * FROM qualification_results ORDER BY created_at DESC LIMIT 100').all(),
+      profitDecisions: db.project.prepare('SELECT * FROM profit_decisions ORDER BY created_at DESC LIMIT 100').all(),
+      profitTemplates: db.project.prepare('SELECT * FROM profit_templates ORDER BY margin DESC, created_at DESC LIMIT 100').all().map((row) => ({
+        ...row,
+        cost_structure: fromJson(row.cost_structure_json, {}),
+        crew_structure: fromJson(row.crew_structure_json, {})
+      })),
+      templateMatches: db.project.prepare('SELECT * FROM template_matches ORDER BY created_at DESC LIMIT 100').all(),
+      decisionOverrides: db.project.prepare('SELECT * FROM decision_overrides ORDER BY created_at DESC LIMIT 100').all()
+    };
+  }
+
+  function getProfitGenerationSummary() {
+    const monthStart = `${currentMonthKey()}-01T00:00:00.000Z`;
+    const decisions = db.project.prepare('SELECT * FROM profit_decisions WHERE created_at >= ? ORDER BY created_at DESC').all(monthStart);
+    const allTemplates = db.project.prepare('SELECT * FROM profit_templates ORDER BY margin DESC, created_at DESC').all();
+    const monthlyExpectedNetProfit = decisions
+      .filter((row) => row.decision === 'GO' || row.decision === 'SCALE')
+      .reduce((sum, row) => sum + (Number(row.revenue || 0) - Number(row.total_cost || 0) - Number(row.risk_buffer || 0)), 0);
+    const lossDefenseAmount = decisions
+      .filter((row) => row.decision === 'BLOCK')
+      .reduce((sum, row) => {
+        const minimumProfit = Number(row.revenue || 0) * PROFIT_POLICY.blockMarginRate;
+        const actualProfit = Number(row.revenue || 0) - Number(row.total_cost || 0) - Number(row.risk_buffer || 0);
+        return sum + Math.max(0, minimumProfit - actualProfit);
+      }, 0);
+    const lowMarginProjectCount = decisions.filter((row) => row.decision === 'BLOCK' || row.decision === 'MODIFY').length;
+    const blockedEstimateCount = decisions.filter((row) => row.decision === 'BLOCK').length;
+    const averageRealMargin = decisions.length
+      ? decisions.reduce((sum, row) => sum + Number(row.real_margin || 0), 0) / decisions.length
+      : 0;
+    return {
+      monthKey: currentMonthKey(),
+      monthlyExpectedNetProfit,
+      lossDefenseAmount,
+      lowMarginProjectCount,
+      blockedEstimateCount,
+      averageRealMargin,
+      scalableTemplateCount: allTemplates.filter((row) => Number(row.margin || 0) >= PROFIT_POLICY.goMarginRate).length,
+      totalTemplateCount: allTemplates.length
     };
   }
 
@@ -4219,6 +4764,34 @@ function createSqliteService({ app }) {
       actionKo: row.action_ko
     }));
 
+    const profitSummary = getProfitGenerationSummary();
+    const profitTemplates = db.project.prepare('SELECT * FROM profit_templates ORDER BY margin DESC, created_at DESC LIMIT 20').all().map((row) => ({
+      id: row.id,
+      projectType: row.project_type,
+      areaRange: row.area_range,
+      costStructure: fromJson(row.cost_structure_json, {}),
+      crewStructure: fromJson(row.crew_structure_json, {}),
+      duration: row.duration,
+      margin: row.margin,
+      createdAt: row.created_at
+    }));
+    const profitAlerts = db.project.prepare(`
+      SELECT *
+      FROM profit_decisions
+      WHERE decision IN ('BLOCK', 'MODIFY')
+      ORDER BY created_at DESC
+      LIMIT 10
+    `).all().map((row) => ({
+      id: row.id,
+      estimateId: row.estimate_id,
+      decision: row.decision,
+      realMargin: row.real_margin,
+      revenue: row.revenue,
+      totalCost: row.total_cost,
+      riskBuffer: row.risk_buffer,
+      createdAt: row.created_at
+    }));
+
     return {
       snapshotDate: new Date().toISOString().slice(0, 10),
       topBar: buildTopBar(projects),
@@ -4226,6 +4799,9 @@ function createSqliteService({ app }) {
       redAlerts: buildRedAlerts(),
       approvals,
       immediateActions: buildImmediateActions(),
+      profitSummary,
+      profitAlerts,
+      profitTemplates,
       estimateVsActualTop,
       repeatedDefectsTop,
       repeatedLossProcessTop,
@@ -4545,6 +5121,26 @@ function createSqliteService({ app }) {
       linkLeadToEstimate({ leadId, estimateDraftId, estimateId: estimateDraftId, projectId, estimateStatus: 'PRELIMINARY' });
     }
 
+    const profitDecision = marginSafety.customerOfferPrice && marginSafety.estimatedCost
+      ? runProfitControlEngine({
+        estimateId: estimateDraftId,
+        revenue: marginSafety.customerOfferPrice,
+        totalCost: marginSafety.estimatedCost,
+        vendorRisk: 0,
+        laborVariance: 0,
+        scheduleRisk: 0,
+        defectRisk: 0,
+        createdAt
+      })
+      : null;
+    const templateMatch = matchProfitTemplateForEstimate({
+      estimateId: estimateDraftId,
+      projectType: minimumInput?.projectType || minimumInput?.constructionScope || 'unknown',
+      areaM2: minimumInput?.areaM2 || minimumInput?.area_m2 || 0,
+      apply: true,
+      createdAt
+    });
+
     db.project.prepare(`
       INSERT INTO estimate_draft_inputs (
         estimate_draft_id, project_id, minimum_input_json, created_at, updated_at
@@ -4744,7 +5340,9 @@ function createSqliteService({ app }) {
         projectNameKo,
         status: 'PRELIMINARY',
         needsConfirmationCount: needsConfirmationItems.length,
-        missingPriceWarningCount: missingPriceWarnings.length
+        missingPriceWarningCount: missingPriceWarnings.length,
+        profitDecision,
+        templateMatch
       }
     };
   }
@@ -8118,6 +8716,19 @@ function createSqliteService({ app }) {
       createdAt,
       projectId
     );
+      createProfitTemplateFromCompletion({
+        projectId,
+        projectType: actualCosts.projectType || 'unknown',
+        areaM2: actualCosts.areaM2 || 0,
+        actualCosts,
+        actualDurationDays: normalizedActualDuration,
+        finalMarginRate,
+        defects,
+        claims,
+        reworkRequired,
+        estimatedDurationDays: normalizedEstimatedDuration,
+        createdAt
+      });
       db.project.exec('COMMIT');
     } catch (error) {
       db.project.exec('ROLLBACK');
@@ -8832,6 +9443,7 @@ function createSqliteService({ app }) {
       FROM sales_pipeline_metrics
       WHERE month_key = ?
     `).get(currentMonthKey()) || syncSalesPipelineMetrics();
+    const profitSummary = getProfitGenerationSummary();
     const automationStats = db.logs.prepare(`
       SELECT
         SUM(CASE WHEN severity IN ('RED', 'BLOCKING') THEN 1 ELSE 0 END) AS red_count,
@@ -8917,6 +9529,14 @@ function createSqliteService({ app }) {
       severity: Number(salesStats?.total_leads || 0) === 0 ? 'YELLOW' : Number(salesStats?.contract_conversion_rate || 0) < 0.2 ? 'YELLOW' : 'GREEN',
       action: 'openSales'
     };
+    const profitEngineKpi = {
+      id: 'profitEngine',
+      labelKo: 'Profit Engine',
+      value: `${Number(profitSummary.monthlyExpectedNetProfit || 0).toLocaleString('ko-KR')}원`,
+      helperKo: `손실방어 ${Number(profitSummary.lossDefenseAmount || 0).toLocaleString('ko-KR')}원 / BLOCK ${profitSummary.blockedEstimateCount}건`,
+      severity: profitSummary.blockedEstimateCount > 0 ? 'RED' : profitSummary.lowMarginProjectCount > 0 ? 'YELLOW' : 'GREEN',
+      action: 'openProfitTemplates'
+    };
     const topBarLiveMarginSource = costStatus
       ? getLatestLiveMarginSnapshot(costStatus.project_id) || buildLiveMarginSnapshot(costStatus.project_id, costStatus.revenue, costStatus.captured_cost, costStatus.updated_at)
       : null;
@@ -8941,6 +9561,7 @@ function createSqliteService({ app }) {
       captureKpi,
       liveMarginKpi,
       marginKpi,
+      profitEngineKpi,
       vendorKpi,
       automationKpi,
       portfolioKpi,
@@ -9036,6 +9657,24 @@ function createSqliteService({ app }) {
         drillDownTarget: 'marginSafety'
       });
     }
+    const pceBlocked = db.project.prepare(`
+      SELECT *
+      FROM profit_decisions
+      WHERE decision = 'BLOCK'
+      ORDER BY created_at DESC
+      LIMIT 3
+    `).all();
+    pceBlocked.forEach((decision) => {
+      alerts.unshift({
+        alertId: `RED-PCE-${decision.id}`,
+        projectId: decision.estimate_id,
+        titleKo: 'PCE 저마진 프로젝트 자동 차단',
+        reasonKo: `실질 마진율 ${(Number(decision.real_margin || 0) * 100).toFixed(2)}%로 25% 기준 미달입니다. 프로젝트 생성이 차단되었습니다.`,
+        severity: 'BLOCKING',
+        firstAction: 'openSales',
+        drillDownTarget: 'sales'
+      });
+    });
     getActiveAutomationEvents(10)
       .filter((event) => event.severity === 'RED' || event.severity === 'BLOCKING' || event.blocking_required)
       .forEach((event) => {
@@ -9265,6 +9904,11 @@ function createSqliteService({ app }) {
       leadEstimateLinkCount: countRows(db.project, 'lead_estimate_links'),
       salesPipelineMetricCount: countRows(db.project, 'sales_pipeline_metrics'),
       lostReasonLogCount: countRows(db.project, 'lost_reason_logs'),
+      qualificationResultCount: countRows(db.project, 'qualification_results'),
+      profitDecisionCount: countRows(db.project, 'profit_decisions'),
+      profitTemplateCount: countRows(db.project, 'profit_templates'),
+      templateMatchCount: countRows(db.project, 'template_matches'),
+      decisionOverrideCount: countRows(db.project, 'decision_overrides'),
       clientCount: countRows(db.project, 'clients'),
       contractCount: countRows(db.project, 'contracts'),
       contractDocumentCount: countRows(db.project, 'contract_documents'),
@@ -9364,6 +10008,9 @@ function createSqliteService({ app }) {
     createLead,
     updateLeadStatus,
     linkLeadToEstimate,
+    getProfitGenerationData,
+    runProfitControlEngine,
+    overrideProfitDecision,
     getClientContractData,
     approveContract,
     getBathroomPricingStandardDashboard,

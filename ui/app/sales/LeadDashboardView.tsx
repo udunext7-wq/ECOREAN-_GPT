@@ -26,6 +26,9 @@ export function LeadDashboardView() {
     sourceChannel: 'NAVER',
     interestedScope: 'bathroom',
     expectedBudget: '8000000',
+    areaM2: '5',
+    locationKo: '서울/경기',
+    clientType: 'RESIDENTIAL',
     consultationMemoKo: ''
   });
 
@@ -39,6 +42,7 @@ export function LeadDashboardView() {
     const result = await createSalesLead({
       ...form,
       expectedBudget: Number(form.expectedBudget || 0),
+      areaM2: Number(form.areaM2 || 0),
       actor: 'CEO'
     });
     setMessageKo(result ? '신규 리드가 생성되었습니다.' : '리드 생성 실패');
@@ -97,6 +101,22 @@ export function LeadDashboardView() {
           <div className="case-row">
             <strong>예상 예산</strong>
             <input value={form.expectedBudget} onChange={(event) => setForm({ ...form, expectedBudget: event.target.value })} />
+          </div>
+          <div className="case-row">
+            <strong>??(m2)</strong>
+            <input value={form.areaM2} onChange={(event) => setForm({ ...form, areaM2: event.target.value })} />
+          </div>
+          <div className="case-row">
+            <strong>??</strong>
+            <input value={form.locationKo} onChange={(event) => setForm({ ...form, locationKo: event.target.value })} />
+          </div>
+          <div className="case-row">
+            <strong>?? ??</strong>
+            <select value={form.clientType} onChange={(event) => setForm({ ...form, clientType: event.target.value })}>
+              <option value="RESIDENTIAL">??</option>
+              <option value="COMMERCIAL">??</option>
+              <option value="DEVELOPER">??/??</option>
+            </select>
           </div>
           <div className="case-row">
             <strong>상담 메모</strong>

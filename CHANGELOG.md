@@ -1709,3 +1709,22 @@
 - Contract approval updates contract status and approval log.
 - Electron UI production build passed via `npm run build:ui`.
 - Electron production smoke test passed via `npm run smoke:prod`.
+
+## 2026-05-03
+
+### Profit Generation Engine
+
+- Added Qualification Engine with lead scoring, minimum budget, and price-per-m2 filtering.
+- Added Profit Control Engine (PCE) with risk-buffered real margin decisions: BLOCK, MODIFY, GO, SCALE.
+- Enforced mandatory PCE approval before WON leads can create projects.
+- Added high-margin template replication tables and template matching hooks for new estimates.
+- Added admin override logging for profit decisions with traceable reason records.
+- Connected profit decisions, qualification results, and template matches to Sales Pipeline data and Dashboard IPC.
+
+### Profit Dashboard Enforcement
+
+- Added CEO Dashboard Profit Alert block with monthly expected net profit, loss-defense amount, and scalable template count.
+- Added PCE BLOCK/MODIFY alerts into RED ALERT flow for low-margin project defense.
+- Added Profit Template Library UI for high-margin project structures and template matches.
+- Updated Sales Pipeline lead ordering to prioritize profitable leads by qualification score, budget density, and budget size.
+- Added monthly profit generation summary with expected net profit, loss-defense amount, blocked estimate count, and average real margin.

@@ -10,6 +10,13 @@ export type SalesLead = {
   interestedScope: string;
   interestedScopeKo: string;
   expectedBudget: number;
+  areaM2: number;
+  locationKo: string;
+  clientType: string;
+  qualificationDecision: string;
+  qualificationScore?: number;
+  estimatedPricePerM2?: number;
+  moneyPriorityScore?: number;
   consultationMemoKo: string;
   assignedOwner: string;
   nextActionKo: string;
@@ -38,6 +45,9 @@ export type SalesPipelineData = {
   activities: Array<Record<string, unknown>>;
   estimateLinks: Array<Record<string, unknown>>;
   lostReasons: Array<Record<string, unknown>>;
+  qualificationResults: Array<Record<string, unknown>>;
+  profitDecisions: Array<Record<string, unknown>>;
+  templateMatches: Array<Record<string, unknown>>;
   channelPerformance: Array<Record<string, unknown>>;
 };
 
@@ -62,4 +72,9 @@ export async function createSalesLead(payload: Record<string, unknown>) {
 export async function updateSalesLeadStatus(payload: Record<string, unknown>) {
   if (!window.ecorean?.bocDb?.updateLeadStatus) return null;
   return window.ecorean.bocDb.updateLeadStatus(payload);
+}
+
+export async function loadProfitGenerationData(): Promise<Record<string, unknown> | null> {
+  if (!window.ecorean?.bocDb?.getProfitGenerationData) return null;
+  return window.ecorean.bocDb.getProfitGenerationData();
 }

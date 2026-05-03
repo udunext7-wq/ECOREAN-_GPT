@@ -40,6 +40,8 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:sales:get', () => sqliteService.getSalesPipelineData());
   ipcMain.handle('boc:sales:lead:create', (_event, payload) => sqliteService.createLead(payload));
   ipcMain.handle('boc:sales:lead:update-status', (_event, payload) => sqliteService.updateLeadStatus(payload));
+  ipcMain.handle('boc:profit:get', () => sqliteService.getProfitGenerationData());
+  ipcMain.handle('boc:profit:override', (_event, payload) => sqliteService.overrideProfitDecision(payload));
   ipcMain.handle('boc:client-contract:get', () => sqliteService.getClientContractData());
   ipcMain.handle('boc:client-contract:approve', (_event, payload) => sqliteService.approveContract(payload));
   ipcMain.handle('boc:bathroom-pricing:get', () => sqliteService.getBathroomPricingStandardDashboard());

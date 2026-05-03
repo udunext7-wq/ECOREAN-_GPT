@@ -7,11 +7,13 @@ type Props = {
 export function SalesPipelineView({ data }: Props) {
   const channelRows = data?.channelPerformance || [];
   const lostReasons = data?.lostReasons || [];
+  const profitDecisions = data?.profitDecisions || [];
 
   return (
     <div className="case-library-grid">
       <div className="estimate-preview-card">
         <h5>Sales Funnel</h5>
+        <p className="small-note">리드 목록은 Qualification 점수, m2당 예산, 예산 규모 기준으로 “돈 되는 고객”부터 자동 정렬됩니다.</p>
         {(data?.funnel || []).map((stage) => (
           <div className={stage.status === 'LOST' ? 'case-row warning-row' : 'case-row'} key={stage.status}>
             <strong>{stage.labelKo}</strong>
@@ -40,6 +42,19 @@ export function SalesPipelineView({ data }: Props) {
             <strong>{String(row.reasonCategory)}</strong>
             <span>{formatWon(row.lostAmount)}</span>
             <p>{String(row.reasonKo)}</p>
+          </div>
+        ))}
+      </div>
+
+
+      <div className="estimate-preview-card">
+        <h5>Profit Control Engine</h5>
+        {profitDecisions.length === 0 ? <p className="small-note">PCE ?? ??? ?? ????.</p> : null}
+        {profitDecisions.slice(0, 6).map((row) => (
+          <div className={String(row.decision) === 'BLOCK' ? 'case-row warning-row' : 'case-row'} key={String(row.id)}>
+            <strong>{String(row.decision)}</strong>
+            <span>{formatPercent(row.realMargin)}</span>
+            <p>{String(row.estimateId)} / risk buffer {formatWon(row.riskBuffer)}</p>
           </div>
         ))}
       </div>

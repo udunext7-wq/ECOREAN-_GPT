@@ -34,6 +34,12 @@ export function LeadDetailView({ leads, onRefresh, onMessage }: Props) {
           <p>
             {lead.interestedScopeKo} / {lead.sourceChannel} / {formatWon(lead.expectedBudget)}
           </p>
+          <p>
+            Qualification: {lead.qualificationDecision || 'CONDITIONAL'} / {lead.areaM2 || 0}m2 / {lead.locationKo || 'UNKNOWN'}
+          </p>
+          <p>
+            돈 되는 고객 점수: {Number(lead.moneyPriorityScore || 0).toFixed(0)} / m2당 {formatWon(lead.estimatedPricePerM2 || 0)}
+          </p>
           <p>{lead.consultationMemoKo}</p>
           <div className="tag-list">
             <button onClick={() => moveStatus(lead.leadId, 'CONTACTED')}>상담 완료</button>
