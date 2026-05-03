@@ -50,6 +50,36 @@ function pceDescription(decision?: string) {
   return '30~35%: 진행 가능';
 }
 
+function displayLabel(value: string, map: Record<string, string>) {
+  return map[value] || value;
+}
+
+const constructionMethodKo: Record<string, string> = {
+  bond: '본드시공',
+  floating: '떠붙임',
+  overlay: '덧방',
+  full_demolition: '전체철거'
+};
+
+const waterproofMethodKo: Record<string, string> = {
+  liquid: '액체방수',
+  membrane: '도막방수',
+  elastic: '탄성방수'
+};
+
+const tileTypeKo: Record<string, string> = {
+  ceramic_300x600: '300x600 벽타일',
+  porcelain_600: '600각 포세린/폴리싱',
+  large_tile: '대형타일',
+  basic_floor: '기본 바닥타일'
+};
+
+const fixtureGradeKo: Record<string, string> = {
+  basic: '기본형',
+  mid: '중급형',
+  high: '고급형'
+};
+
 export function BathroomEstimateWizardView() {
   const [step, setStep] = useState(0);
   const [input, setInput] = useState<BathroomEstimateInput>(initialInput);
@@ -57,11 +87,36 @@ export function BathroomEstimateWizardView() {
   const [activeOutput, setActiveOutput] = useState<'customer' | 'internal'>('customer');
   const [messageKo, setMessageKo] = useState('입력값을 넣고 자동 산출을 실행하세요.');
   const [isBusy, setIsBusy] = useState(false);
+  const [estimateNumber] = useState(() => `BATH-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${Math.floor(Math.random() * 900 + 100)}`);
 
   const groupedCustomerRows = useMemo(() => {
     const groups = (preview?.customerView?.groups as Array<{ category: string; customerTotal: number }> | undefined) || [];
     return groups;
   }, [preview]);
+
+  const groupedInternalRows = useMemo(() => {
+    const rows = new Map<string, { category: string; customerTotal: number; internalTotal: number; margin: number }>();
+    for (const item of preview?.estimate.line_items || []) {
+      const current = rows.get(item.category) || { category: item.category, customerTotal: 0, internalTotal: 0, margin: 0 };
+      current.customerTotal += item.customerTotal;
+      current.internalTotal += item.internalTotal;
+      current.margin += item.margin;
+      rows.set(item.category, current);
+    }
+    return Array.from(rows.values());
+  }, [preview]);
+
+  const selectedOptionsKo = useMemo(() => {
+    const result = [];
+    if (input.options.showerBooth) result.push('샤워부스');
+    if (input.options.zenda) result.push('젠다이');
+    if (input.options.bathtub) result.push('욕조');
+    if (input.options.slidingCabinet) result.push('슬라이딩장');
+    if (input.options.ventilationFanReplace) result.push('환풍기 교체');
+    if (input.options.lightingReplace) result.push('조명 교체');
+    if (input.options.faucetReplace) result.push('수전 교체');
+    return result.length ? result : ['선택 옵션 없음'];
+  }, [input.options]);
 
   function updateField<Key extends keyof BathroomEstimateInput>(key: Key, value: BathroomEstimateInput[Key]) {
     setInput((current) => ({ ...current, [key]: value }));
@@ -206,8 +261,14 @@ export function BathroomEstimateWizardView() {
       ) : null}
 
       {step === 4 ? (
-        <section className="wizard-panel">
-          <h3>출력</h3>
+        <section className="wizard-panel professional-output-panel">
+          <div className="professional-output-heading">
+            <div>
+              <span className="eyebrow">PROFESSIONAL OUTPUT</span>
+              <h3>견적 출력</h3>
+            </div>
+            <div className="document-badge">{activeOutput === 'customer' ? '고객 제출용' : '내부 검토용'}</div>
+          </div>
           {!preview ? <p className="empty-state">출력 전 자동 산출이 필요합니다.</p> : (
             <>
               <div className="estimate-document-toggle">
@@ -215,29 +276,141 @@ export function BathroomEstimateWizardView() {
                 <button className={activeOutput === 'internal' ? 'active' : ''} onClick={() => setActiveOutput('internal')}>내부 원가표 보기</button>
               </div>
               {activeOutput === 'customer' ? (
-                <table className="estimate-line-table">
-                  <thead><tr><th>구분</th><th>고객 표시 금액</th></tr></thead>
-                  <tbody>
-                    {groupedCustomerRows.map((row) => <tr key={row.category}><td>{row.category}</td><td>{formatWon(row.customerTotal)}</td></tr>)}
-                    <tr className="total-row"><td>합계</td><td>{formatWon(preview.estimate.revenue)}</td></tr>
-                  </tbody>
-                </table>
+                <article className="estimate-document customer-document">
+                  <header className="document-header">
+                    <div>
+                      <span>ECOREAN</span>
+                      <h2>욕실 리모델링 견적서</h2>
+                      <p>견적번호 {estimateNumber}</p>
+                    </div>
+                    <div className="document-total-box">
+                      <span>총 견적 금액</span>
+                      <strong>{formatWon(preview.estimate.revenue)}</strong>
+                      <em>VAT 별도 · 현장 확인 후 조정 가능</em>
+                    </div>
+                  </header>
+
+                  <section className="document-info-grid">
+                    <div><span>고객명</span><strong>{input.customerName || '미입력'}</strong></div>
+                    <div><span>현장명</span><strong>{input.siteName || '미입력'}</strong></div>
+                    <div><span>견적일</span><strong>{new Date().toLocaleDateString('ko-KR')}</strong></div>
+                    <div><span>유효기간</span><strong>견적일로부터 7일</strong></div>
+                  </section>
+
+                  <section className="document-spec-strip">
+                    <div><span>공사 유형</span><strong>욕실 단독 리모델링</strong></div>
+                    <div><span>욕실 수 / 면적</span><strong>{input.bathroomCount}개 · {input.bathroomAreaM2}㎡</strong></div>
+                    <div><span>시공 방식</span><strong>{displayLabel(input.constructionMethod, constructionMethodKo)}</strong></div>
+                    <div><span>방수 방식</span><strong>{displayLabel(input.waterproofMethod, waterproofMethodKo)}</strong></div>
+                    <div><span>벽 타일</span><strong>{displayLabel(input.tileWallType, tileTypeKo)}</strong></div>
+                    <div><span>바닥 타일</span><strong>{displayLabel(input.tileFloorType, tileTypeKo)}</strong></div>
+                    <div><span>도기 등급</span><strong>{displayLabel(input.fixtureGrade, fixtureGradeKo)}</strong></div>
+                    <div><span>선택 옵션</span><strong>{selectedOptionsKo.join(', ')}</strong></div>
+                  </section>
+
+                  <table className="estimate-line-table professional-table">
+                    <thead><tr><th>공사 구분</th><th>포함 내용</th><th>금액</th></tr></thead>
+                    <tbody>
+                      {groupedCustomerRows.map((row) => (
+                        <tr key={row.category}>
+                          <td>{row.category}</td>
+                          <td>{row.category} 관련 표준 시공 및 필요 자재 포함</td>
+                          <td>{formatWon(row.customerTotal)}</td>
+                        </tr>
+                      ))}
+                      <tr className="total-row"><td colSpan={2}>총 견적 금액</td><td>{formatWon(preview.estimate.revenue)}</td></tr>
+                    </tbody>
+                  </table>
+
+                  <section className="document-terms-grid">
+                    <div>
+                      <h4>결제 조건</h4>
+                      <p>계약금 30% · 중도금 40% · 잔금 30%</p>
+                    </div>
+                    <div>
+                      <h4>포함 기준</h4>
+                      <p>철거, 방수, 타일, 도기, 천장/전기, 선택 옵션, 마감, 청소, 검수 기준</p>
+                    </div>
+                    <div>
+                      <h4>별도 협의</h4>
+                      <p>배관 대수선, 누수 보수, 구조 보강, 고객 추가 요청, 현장 변수 발생분</p>
+                    </div>
+                    <div>
+                      <h4>고객 안내</h4>
+                      <p>본 견적은 입력 조건 기준의 예비 견적이며, 실측 및 현장 확인 후 확정됩니다.</p>
+                    </div>
+                  </section>
+
+                  <footer className="document-signature">
+                    <span>고객 확인</span>
+                    <span>ECOREAN 확인</span>
+                  </footer>
+                </article>
               ) : (
-                <table className="estimate-line-table">
-                  <thead><tr><th>항목</th><th>고객가</th><th>자재</th><th>노무</th><th>외주</th><th>마진</th></tr></thead>
-                  <tbody>
-                    {preview.estimate.line_items.map((item) => (
-                      <tr key={`${item.category}-${item.itemName}`}>
-                        <td>{item.itemName}</td>
-                        <td>{formatWon(item.customerTotal)}</td>
-                        <td>{formatWon(item.materialCost)}</td>
-                        <td>{formatWon(item.laborCost)}</td>
-                        <td>{formatWon(item.subcontractCost)}</td>
-                        <td>{formatWon(item.margin)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <article className="estimate-document internal-document">
+                  <header className="document-header">
+                    <div>
+                      <span>INTERNAL COST SHEET</span>
+                      <h2>욕실 리모델링 내부 원가표</h2>
+                      <p>견적번호 {estimateNumber} · 대표 검토용</p>
+                    </div>
+                    <div className={`document-total-box margin-status ${marginStatusClass(preview.estimate.pce_decision)}`}>
+                      <span>PCE 결과</span>
+                      <strong>{preview.estimate.pce_label_ko}</strong>
+                      <em>{(preview.estimate.expected_margin_rate * 100).toFixed(1)}% / {formatWon(preview.estimate.expected_margin)}</em>
+                    </div>
+                  </header>
+
+                  <section className="internal-kpi-grid">
+                    <div><span>고객가</span><strong>{formatWon(preview.estimate.revenue)}</strong></div>
+                    <div><span>총원가</span><strong>{formatWon(preview.estimate.total_cost)}</strong></div>
+                    <div><span>자재비</span><strong>{formatWon(preview.estimate.material_cost)}</strong></div>
+                    <div><span>노무비</span><strong>{formatWon(preview.estimate.labor_cost)}</strong></div>
+                    <div><span>외주비</span><strong>{formatWon(preview.estimate.subcontract_cost)}</strong></div>
+                    <div><span>마진율</span><strong>{(preview.estimate.expected_margin_rate * 100).toFixed(1)}%</strong></div>
+                  </section>
+
+                  <h4>공정별 원가 요약</h4>
+                  <table className="estimate-line-table professional-table">
+                    <thead><tr><th>공정</th><th>고객가</th><th>내부원가</th><th>예상마진</th><th>마진율</th></tr></thead>
+                    <tbody>
+                      {groupedInternalRows.map((row) => (
+                        <tr key={row.category}>
+                          <td>{row.category}</td>
+                          <td>{formatWon(row.customerTotal)}</td>
+                          <td>{formatWon(row.internalTotal)}</td>
+                          <td>{formatWon(row.margin)}</td>
+                          <td>{row.customerTotal > 0 ? `${((row.margin / row.customerTotal) * 100).toFixed(1)}%` : '0.0%'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <h4>상세 원가</h4>
+                  <table className="estimate-line-table professional-table compact">
+                    <thead><tr><th>항목</th><th>수량</th><th>단위</th><th>고객가</th><th>자재</th><th>노무</th><th>외주</th><th>마진</th></tr></thead>
+                    <tbody>
+                      {preview.estimate.line_items.map((item) => (
+                        <tr key={`${item.category}-${item.itemName}`}>
+                          <td>{item.itemName}</td>
+                          <td>{item.quantity}</td>
+                          <td>{item.unit}</td>
+                          <td>{formatWon(item.customerTotal)}</td>
+                          <td>{formatWon(item.materialCost)}</td>
+                          <td>{formatWon(item.laborCost)}</td>
+                          <td>{formatWon(item.subcontractCost)}</td>
+                          <td>{formatWon(item.margin)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <section className="internal-risk-note">
+                    <h4>대표 판단 기준</h4>
+                    <p>{pceDescription(preview.estimate.pce_decision)}</p>
+                    <p>25% 미만 견적은 승인 견적으로 전환하지 않습니다. 실제 단가 확보 후 원가표를 다시 갱신해야 합니다.</p>
+                  </section>
+                </article>
               )}
               <div className="wizard-output-actions">
                 <button onClick={handleSave} disabled={isBusy}>저장</button>

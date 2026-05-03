@@ -2200,11 +2200,242 @@ button:hover {
   font-weight: 800;
 }
 
+.professional-output-panel {
+  background: rgba(247, 250, 255, 0.97);
+  color: #101722;
+}
+
+.professional-output-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.professional-output-panel .eyebrow {
+  color: #596579;
+}
+
+.professional-output-panel h3,
+.professional-output-panel h4 {
+  color: #101722;
+}
+
+.document-badge {
+  border: 1px solid rgba(12, 20, 32, 0.14);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #162132;
+  background: #eef3fb;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.estimate-document {
+  margin-top: 14px;
+  border: 1px solid rgba(18, 27, 42, 0.14);
+  border-radius: 8px;
+  padding: 22px;
+  background: #ffffff;
+  box-shadow: 0 16px 36px rgba(6, 12, 22, 0.12);
+}
+
+.document-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
+  align-items: start;
+  padding-bottom: 18px;
+  border-bottom: 2px solid #151d2b;
+}
+
+.document-header span {
+  display: block;
+  color: #5b6678;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.document-header h2 {
+  margin: 5px 0 8px;
+  color: #101722;
+  font-size: 28px;
+}
+
+.document-header p {
+  margin: 0;
+  color: #4d5a6c;
+  font-weight: 800;
+}
+
+.document-total-box {
+  border: 1px solid rgba(18, 27, 42, 0.12);
+  border-radius: 8px;
+  padding: 14px;
+  text-align: right;
+  background: #f3f6fb;
+}
+
+.document-total-box strong {
+  display: block;
+  margin: 8px 0;
+  color: #101722;
+  font-size: 28px;
+}
+
+.document-total-box em {
+  color: #5c6879;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.document-info-grid,
+.document-spec-strip,
+.internal-kpi-grid,
+.document-terms-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.document-info-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.document-spec-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.internal-kpi-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.document-terms-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.document-info-grid > div,
+.document-spec-strip > div,
+.internal-kpi-grid > div,
+.document-terms-grid > div,
+.internal-risk-note {
+  border: 1px solid rgba(18, 27, 42, 0.11);
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafd;
+}
+
+.document-info-grid span,
+.document-spec-strip span,
+.internal-kpi-grid span {
+  display: block;
+  color: #667386;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.document-info-grid strong,
+.document-spec-strip strong,
+.internal-kpi-grid strong {
+  display: block;
+  margin-top: 6px;
+  color: #101722;
+  font-size: 15px;
+}
+
+.internal-kpi-grid strong {
+  font-size: 19px;
+}
+
+.document-terms-grid h4,
+.internal-risk-note h4,
+.internal-document h4 {
+  margin: 0 0 8px;
+  color: #101722;
+}
+
+.document-terms-grid p,
+.internal-risk-note p {
+  margin: 0;
+  color: #4d5a6c;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.professional-table {
+  margin-top: 16px;
+  border: 1px solid rgba(18, 27, 42, 0.1);
+  background: #fff;
+}
+
+.professional-table th,
+.professional-table td {
+  border-bottom: 1px solid rgba(18, 27, 42, 0.09);
+  color: #1c2636;
+}
+
+.professional-table th {
+  background: #eef2f8;
+  color: #4d5a6c;
+  font-weight: 900;
+}
+
+.professional-table td:last-child,
+.professional-table th:last-child {
+  text-align: right;
+}
+
+.professional-table .total-row td {
+  color: #101722;
+  background: #f0f4fa;
+}
+
+.professional-table.compact th,
+.professional-table.compact td {
+  padding: 8px 7px;
+  font-size: 12px;
+}
+
+.document-signature {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 26px;
+}
+
+.document-signature span {
+  display: block;
+  border-top: 1px solid rgba(18, 27, 42, 0.32);
+  padding-top: 10px;
+  color: #4d5a6c;
+  font-weight: 900;
+}
+
+.internal-document .document-total-box.margin-status {
+  text-align: right;
+}
+
+.internal-document .document-total-box.margin-status strong {
+  color: #101722;
+}
+
+.internal-risk-note {
+  margin-top: 14px;
+}
+
 @media (max-width: 1100px) {
   .estimate-entry-grid,
   .wizard-form-grid,
   .wizard-option-grid,
-  .wizard-summary-grid {
+  .wizard-summary-grid,
+  .document-info-grid,
+  .document-spec-strip,
+  .internal-kpi-grid,
+  .document-terms-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .document-header {
+    grid-template-columns: 1fr;
   }
 }
