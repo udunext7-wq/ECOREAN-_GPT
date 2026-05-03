@@ -1,0 +1,17 @@
+{
+  "backupId": "BACKUP-CLOSING-PRJ-PROD-BATH-0001-2026-04-26T06-09-31-439Z",
+  "projectId": "PRJ-PROD-BATH-0001",
+  "createdAt": "2026-04-26T06:09:31.439Z",
+  "dbFiles": [
+    "project.db",
+    "approval.db",
+    "master.db",
+    "logs.db"
+  ],
+  "checksums": {
+    "project.db": "9bee6817d2894f3d1ab188f32d18e357a05606825d9013ff6bec04d1083e84da",
+    "approval.db": "05e41d5dc53c5701a351fb874d793c43b936d75ec215d5a871d2fe56bcf72f62",
+    "master.db": "2f45190fbe62e8bcdf57346475e2646c95ddca1f76f96b8fdee25b1dd48db07b",
+    "logs.db": "5259196d31c929043a46d1c24e4bbe7a15fcd5316cdd7059384f7590a3fab1a5"
+  }
+}

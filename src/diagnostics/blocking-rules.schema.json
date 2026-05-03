@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "0.1-blocking-rules",
+  "title": "ECOREAN Blocking Rules Schema",
+  "type": "object",
+  "required": ["blockingId", "blockingName", "condition", "blockingReason", "blockedAction", "severity"],
+  "properties": {
+    "blockingId": {"type": "string"},
+    "blockingName": {"type": "string"},
+    "condition": {"type": "object", "additionalProperties": true},
+    "blockingReason": {"type": "string"},
+    "blockedAction": {"type": "string"},
+    "severity": {"type": "string", "enum": ["HIGH", "BLOCKER"]}
+  }
+}
+

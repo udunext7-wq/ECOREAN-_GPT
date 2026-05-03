@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "0.1-approval-log",
+  "title": "ECOREAN Approval Log",
+  "type": "object",
+  "required": [
+    "approvalId",
+    "requestId",
+    "actionType",
+    "beforeValue",
+    "afterValue",
+    "reason",
+    "approvedBy",
+    "approvedAt",
+    "rollbackAvailable",
+    "rollbackData",
+    "notes"
+  ],
+  "properties": {
+    "approvalId": {"type": "string"},
+    "requestId": {"type": "string"},
+    "actionType": {"type": "string", "enum": ["CREATE", "UPDATE", "DELETE", "APPROVE", "REJECT", "APPLY", "ROLLBACK"]},
+    "beforeValue": {"type": ["object", "string", "number", "boolean", "null"]},
+    "afterValue": {"type": ["object", "string", "number", "boolean", "null"]},
+    "reason": {"type": "string"},
+    "approvedBy": {"type": "string"},
+    "approvedAt": {"type": "string"},
+    "rollbackAvailable": {"type": "boolean"},
+    "rollbackData": {"type": "object", "additionalProperties": true},
+    "notes": {"type": "string"}
+  }
+}

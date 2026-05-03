@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecorean.local/schema/vendor-crm.schema.json",
+  "title": "ECOREAN Vendor CRM Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "vendorMaster"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "vendorMaster": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/vendor" }
+    }
+  },
+  "$defs": {
+    "unknownText": {
+      "type": "string"
+    },
+    "vendor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vendorId",
+        "vendorName",
+        "category",
+        "contactPerson",
+        "contactInfo",
+        "region",
+        "supplyItems",
+        "mainBrands",
+        "minimumOrderUnit",
+        "averageLeadTimeDays",
+        "paymentCondition",
+        "monthEndSettlementAvailable",
+        "urgentOrderAvailable",
+        "defectResponseLevel",
+        "asResponseLevel",
+        "reliabilityScore",
+        "priceCompetitivenessScore",
+        "defectRiskScore",
+        "recommended",
+        "blacklist",
+        "approvalStatus",
+        "createdAt",
+        "updatedAt",
+        "notes"
+      ],
+      "properties": {
+        "vendorId": { "type": "string" },
+        "vendorName": { "type": "string" },
+        "category": {
+          "enum": [
+            "Tile",
+            "TileAccessory",
+            "Waterproof",
+            "BathroomFixture",
+            "BathroomFurnitureShower",
+            "Window",
+            "Glass",
+            "SealantCaulking",
+            "ElectricalMaterial",
+            "WasteDisposal",
+            "Other"
+          ]
+        },
+        "contactPerson": { "type": "string" },
+        "contactInfo": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["phone", "kakaoTalk", "email", "address"],
+          "properties": {
+            "phone": { "type": "string" },
+            "kakaoTalk": { "type": "string" },
+            "email": { "type": "string" },
+            "address": { "type": "string" }
+          }
+        },
+        "region": { "type": "string" },
+        "supplyItems": { "type": "array", "items": { "type": "string" } },
+        "mainBrands": { "type": "array", "items": { "type": "string" } },
+        "minimumOrderUnit": { "type": "string" },
+        "averageLeadTimeDays": { "type": "string" },
+        "paymentCondition": { "type": "string" },
+        "monthEndSettlementAvailable": { "enum": ["UNKNOWN", "YES", "NO", "CONDITIONAL"] },
+        "urgentOrderAvailable": { "enum": ["UNKNOWN", "YES", "NO", "CONDITIONAL"] },
+        "defectResponseLevel": { "enum": ["UNKNOWN", "LOW", "MEDIUM", "HIGH", "EXCELLENT"] },
+        "asResponseLevel": { "enum": ["UNKNOWN", "LOW", "MEDIUM", "HIGH", "EXCELLENT"] },
+        "reliabilityScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "priceCompetitivenessScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "defectRiskScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "recommended": { "enum": ["UNKNOWN", "YES", "NO", "CONDITIONAL"] },
+        "blacklist": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["isBlacklisted", "reason", "approvedBy", "approvedAt"],
+          "properties": {
+            "isBlacklisted": { "type": "boolean" },
+            "reason": { "type": "string" },
+            "approvedBy": { "type": "string" },
+            "approvedAt": { "type": "string" }
+          }
+        },
+        "approvalStatus": {
+          "enum": ["DRAFT", "PENDING_CEO_APPROVAL", "APPROVED", "REJECTED", "BLACKLIST_PENDING", "BLACKLISTED"]
+        },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

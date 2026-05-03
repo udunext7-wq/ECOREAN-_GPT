@@ -1,0 +1,21 @@
+{
+  "presetId": "PRESET-KITCHEN-REMODELING",
+  "presetName": "주방 리모델링",
+  "projectType": "kitchenRemodeling",
+  "presetStatus": "STRUCTURE_READY",
+  "candidateProcesses": [
+    {"processGroup": "주방 철거", "decisionBasis": "demolitionScope.kitchen", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "폐기물", "decisionBasis": "demolitionScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "설비", "decisionBasis": "plumbingModificationScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "전기", "decisionBasis": "electricalUpgradeScope, builtInAppliance", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "주방가구", "decisionBasis": "kitchenType", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "상판", "decisionBasis": "kitchenType, finishGrade", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "주방 벽타일", "decisionBasis": "finishSelection", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "후드/가전", "decisionBasis": "kitchenType, clientSelection", "defaultDecision": "CONDITIONAL"}
+  ],
+  "defaultSpecProfile": {"finishGrade": "standard", "budgetLevel": "mid", "source": "defaultSpecEngine"},
+  "documentsToGenerate": ["고객용 견적서", "내부 원가표", "발주서", "공정표", "자재입고 확인서", "검수 체크리스트", "수금표", "현금흐름표"],
+  "paymentMilestones": ["계약금", "가구 발주 전 중도금", "잔금"],
+  "diagnosticFocus": ["주방가구 납기", "상판 실측", "전기 용량", "설비 위치 변경", "빌트인 가전 납기"]
+}
+

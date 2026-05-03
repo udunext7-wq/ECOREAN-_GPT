@@ -1,0 +1,41 @@
+{
+  "name": "ecorean-boc-electron",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "dev": "cross-env ECOREAN_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
+    "start": "electron .",
+    "build:ui": "npm --prefix ../ui run build && node scripts/copy-ui-dist.js",
+    "db:init": "node --experimental-sqlite scripts/init-sqlite.js",
+    "db:register-first-project": "node --experimental-sqlite scripts/register-first-operating-project.js",
+    "smoke:prod": "cross-env ECOREAN_SMOKE_TEST=1 electron .",
+    "dist": "npm run build:ui && electron-builder --win --x64 --dir",
+    "dist:installer": "npm run build:ui && electron-builder --win --x64"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "cross-env": "^10.0.0",
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.ecorean.boc",
+    "productName": "ECOREAN BOC CEO Dashboard",
+    "files": [
+      "main.js",
+      "preload.js",
+      "services/**/*",
+      "build/icon.ico",
+      "dist/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "target": "nsis"
+    }
+  }
+}

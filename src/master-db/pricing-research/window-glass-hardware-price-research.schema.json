@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecorean.local/schema/window-glass-hardware-price-research.schema.json",
+  "title": "ECOREAN Window Glass Hardware Price Research Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "projectId", "researchId", "researchName", "status", "approvalPolicy", "items"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "projectId": { "const": "PRJ-REAL-APT-0001" },
+    "researchId": { "type": "string" },
+    "researchName": { "type": "string" },
+    "status": { "enum": ["DRAFT", "NEEDS_RESEARCH", "PARTIAL", "READY_FOR_APPROVAL", "APPROVED", "REJECTED"] },
+    "approvalPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["masterDbDirectUpdateAllowed", "approvalRequiredBeforeMasterDbUpdate", "approvalRequestType", "rollbackRequired", "approvedBy"],
+      "properties": {
+        "masterDbDirectUpdateAllowed": { "const": false },
+        "approvalRequiredBeforeMasterDbUpdate": { "const": true },
+        "approvalRequestType": { "const": "MasterDbUpdateRequest" },
+        "rollbackRequired": { "const": true },
+        "approvedBy": { "const": "CEO" }
+      }
+    },
+    "items": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/researchItem" } }
+  },
+  "$defs": {
+    "unknownStatus": { "enum": ["UNKNOWN", "NEEDS_RESEARCH"] },
+    "researchItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projectId", "itemId", "itemName", "category", "subcategory", "brandName", "brandCandidates", "modelName",
+        "standardSpec", "replacementScope", "thickness", "frameType", "glassSpec", "unit", "quantityBasis",
+        "officialPrice", "marketPrice", "dealerPrice", "supplierPrice", "internalPrice", "laborCost", "accessoryCost",
+        "installationDifficulty", "warrantyPeriod", "asPolicy", "commonDefectRisk", "condensationRisk",
+        "minimumOrderUnit", "leadTimeDays", "paymentCondition", "preferredSupplier", "alternativeItems",
+        "sourceCandidates", "sourceType", "sourceName", "sourceDate", "confidenceLevel", "updateCycle",
+        "approvalStatus", "approvalFlow", "notes"
+      ],
+      "properties": {
+        "projectId": { "const": "PRJ-REAL-APT-0001" },
+        "itemId": { "type": "string" },
+        "itemName": { "type": "string" },
+        "category": { "enum": ["Window", "Glass", "Hardware", "SealingInsulation"] },
+        "subcategory": { "type": "string" },
+        "brandName": { "$ref": "#/$defs/unknownStatus" },
+        "brandCandidates": { "type": "array", "items": { "type": "string" } },
+        "modelName": { "$ref": "#/$defs/unknownStatus" },
+        "standardSpec": { "type": "string" },
+        "replacementScope": { "enum": ["partial", "full", "conditional", "NEEDS_CONFIRMATION"] },
+        "thickness": { "$ref": "#/$defs/unknownStatus" },
+        "frameType": { "$ref": "#/$defs/unknownStatus" },
+        "glassSpec": { "$ref": "#/$defs/unknownStatus" },
+        "unit": { "type": "string" },
+        "quantityBasis": { "type": "string" },
+        "officialPrice": { "$ref": "#/$defs/unknownStatus" },
+        "marketPrice": { "$ref": "#/$defs/unknownStatus" },
+        "dealerPrice": { "$ref": "#/$defs/unknownStatus" },
+        "supplierPrice": { "$ref": "#/$defs/unknownStatus" },
+        "internalPrice": { "$ref": "#/$defs/unknownStatus" },
+        "laborCost": { "$ref": "#/$defs/unknownStatus" },
+        "accessoryCost": { "$ref": "#/$defs/unknownStatus" },
+        "installationDifficulty": { "enum": ["UNKNOWN", "LOW", "MEDIUM", "HIGH", "SPECIALIST_REQUIRED"] },
+        "warrantyPeriod": { "$ref": "#/$defs/unknownStatus" },
+        "asPolicy": { "$ref": "#/$defs/unknownStatus" },
+        "commonDefectRisk": { "type": "array", "items": { "type": "string" } },
+        "condensationRisk": { "enum": ["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+        "minimumOrderUnit": { "$ref": "#/$defs/unknownStatus" },
+        "leadTimeDays": { "$ref": "#/$defs/unknownStatus" },
+        "paymentCondition": { "$ref": "#/$defs/unknownStatus" },
+        "preferredSupplier": { "$ref": "#/$defs/unknownStatus" },
+        "alternativeItems": { "type": "array", "items": { "type": "string" } },
+        "sourceCandidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sourceType", "sourceName", "dataToCollect"],
+            "properties": {
+              "sourceType": { "enum": ["official", "dealer", "supplier", "market", "installer", "internal"] },
+              "sourceName": { "type": "string" },
+              "dataToCollect": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "sourceType": { "enum": ["official", "dealer", "supplier", "market", "installer", "internal", "NEEDS_RESEARCH"] },
+        "sourceName": { "$ref": "#/$defs/unknownStatus" },
+        "sourceDate": { "$ref": "#/$defs/unknownStatus" },
+        "confidenceLevel": { "enum": ["UNKNOWN", "LOW", "MEDIUM", "HIGH", "VERIFIED"] },
+        "updateCycle": { "type": "string" },
+        "approvalStatus": { "enum": ["NEEDS_RESEARCH", "READY_FOR_APPROVAL", "PENDING_CEO_APPROVAL", "APPROVED", "REJECTED"] },
+        "approvalFlow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nextStep", "approvalRequestType", "masterDbUpdateAllowedBeforeApproval", "rollbackRequired"],
+          "properties": {
+            "nextStep": { "const": "CREATE_MASTER_DB_UPDATE_REQUEST" },
+            "approvalRequestType": { "const": "MasterDbUpdateRequest" },
+            "masterDbUpdateAllowedBeforeApproval": { "const": false },
+            "rollbackRequired": { "const": true }
+          }
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "presetId": "PRESET-PARTIAL-REPAIR",
+  "presetName": "부분 보수",
+  "projectType": "partialRepair",
+  "presetStatus": "STRUCTURE_READY",
+  "candidateProcesses": [
+    {"processGroup": "현장 진단", "decisionBasis": "knownDefects", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "부분 철거", "decisionBasis": "repairScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "누수 보수", "decisionBasis": "knownDefects includes leak", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "결로 보수", "decisionBasis": "knownDefects includes condensation", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "하자 보수", "decisionBasis": "knownDefects", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "재방수", "decisionBasis": "leakHistory, waterproofFailure", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "부분 마감 복구", "decisionBasis": "repairAfterDemolition", "defaultDecision": "CONDITIONAL"}
+  ],
+  "defaultSpecProfile": {"finishGrade": "standard", "budgetLevel": "mid", "source": "defaultSpecEngine"},
+  "documentsToGenerate": ["고객용 견적서", "내부 원가표", "하자관리표", "공정표", "검수 체크리스트", "수금표", "현금흐름표"],
+  "paymentMilestones": ["계약금", "완료 후 잔금"],
+  "diagnosticFocus": ["원인 미확정", "부분 보수 보증 범위", "재발 리스크", "고객 승인 누락"]
+}

@@ -1,0 +1,445 @@
+{
+  "mockVersion": "0.1-ceo-dashboard-mock",
+  "snapshotDate": "2026-04-25",
+  "dashboardName": "ECOREAN BOC CEO Dashboard",
+  "topBar": {
+    "todayRevenueExpected": {
+      "label": "오늘 총 매출 예정",
+      "amount": "NEEDS_RESEARCH",
+      "currency": "KRW",
+      "sourceData": ["PaymentMilestone", "Cashflow"],
+      "warningLevel": "MEDIUM",
+      "actionButton": "openCashflow",
+      "nextActionRecommendation": "중도금과 잔금 청구 가능 현장을 먼저 확인한다."
+    },
+    "todayExpenseExpected": {
+      "label": "오늘 총 지출 예정",
+      "amount": "NEEDS_RESEARCH",
+      "currency": "KRW",
+      "sourceData": ["PurchaseOrder", "SubcontractSettlement", "Cashflow"],
+      "warningLevel": "MEDIUM",
+      "actionButton": "openExpenseSchedule",
+      "nextActionRecommendation": "오늘 발주와 외주 정산 승인 필요 여부를 확인한다."
+    },
+    "todayNetCashflow": {
+      "label": "오늘 순현금흐름",
+      "amount": "NEEDS_RESEARCH",
+      "currency": "KRW",
+      "sourceData": ["Cashflow"],
+      "warningLevel": "HIGH",
+      "actionButton": "openCashflow",
+      "nextActionRecommendation": "미수금과 오늘 지출 예정 항목을 먼저 대조한다."
+    },
+    "urgentAlertCount": {
+      "label": "긴급 경고 수",
+      "count": 5,
+      "warningLevel": "HIGH",
+      "blockingLevel": "BLOCKING",
+      "actionButton": "openBlockingAlerts",
+      "nextActionRecommendation": "방수 검수 실패와 발주 지연 차단 항목을 먼저 처리한다."
+    },
+    "pendingApprovalCount": {
+      "label": "승인 대기 수",
+      "count": 7,
+      "warningLevel": "HIGH",
+      "blockingLevel": "BLOCKING",
+      "actionButton": "openApprovalCenter",
+      "nextActionRecommendation": "공정과 수금을 막고 있는 승인 요청부터 처리한다."
+    },
+    "riskProjectCount": {
+      "label": "위험 현장 수",
+      "count": 4,
+      "warningLevel": "HIGH",
+      "blockingLevel": "BLOCKING",
+      "actionButton": "openRiskProjects",
+      "nextActionRecommendation": "누수/결로/미수금 위험 현장을 위험도 순으로 확인한다."
+    }
+  },
+  "leftPanel": {
+    "defaultSort": "riskScoreDesc",
+    "sortOptions": [
+      "riskScoreDesc",
+      "deadlineAsc",
+      "receivableDesc",
+      "defectRiskDesc"
+    ],
+    "projects": [
+      {
+        "projectId": "PRJ-APT-2401",
+        "projectName": "24평 구축 아파트 전체 리모델링",
+        "currentProcess": "욕실 방수 검수",
+        "deadline": "2026-07-24",
+        "riskScore": 92,
+        "riskLevel": "BLOCKING",
+        "receivableStatus": "중도금 청구 가능",
+        "defectRisk": "누수 리스크",
+        "nextAction": "방수 검수 실패로 타일 공정 차단",
+        "actionButton": "openProjectDrillDown"
+      },
+      {
+        "projectId": "PRJ-OFFICE-1201",
+        "projectName": "상가 사무실 인테리어",
+        "currentProcess": "전기 증설",
+        "deadline": "2026-06-30",
+        "riskScore": 78,
+        "riskLevel": "HIGH",
+        "receivableStatus": "계약금 입금 확인 완료",
+        "defectRisk": "전기 부하 확인 필요",
+        "nextAction": "전기 증설 조건 확인",
+        "actionButton": "openProjectDrillDown"
+      },
+      {
+        "projectId": "PRJ-BATH-0501",
+        "projectName": "욕실 단독 리모델링",
+        "currentProcess": "타일 발주 대기",
+        "deadline": "2026-05-14",
+        "riskScore": 74,
+        "riskLevel": "HIGH",
+        "receivableStatus": "계약금 입금 예정",
+        "defectRisk": "발주 지연 리스크",
+        "nextAction": "대체 타일 또는 긴급 발주 승인",
+        "actionButton": "openProjectDrillDown"
+      },
+      {
+        "projectId": "PRJ-KITCHEN-0301",
+        "projectName": "주방 리모델링",
+        "currentProcess": "상판 실측",
+        "deadline": "2026-05-28",
+        "riskScore": 61,
+        "riskLevel": "MEDIUM",
+        "receivableStatus": "미수금 발생",
+        "defectRisk": "낮음",
+        "nextAction": "미수금 확인 및 청구 follow-up",
+        "actionButton": "openProjectDrillDown"
+      }
+    ]
+  },
+  "centerMain": {
+    "todayOverview": {
+      "title": "Today Overview",
+      "mainKpi": "오늘 처리해야 할 수금, 발주, 검수, 승인",
+      "warningLevel": "HIGH",
+      "blockingLevel": "BLOCKING",
+      "approvalRequired": true,
+      "sourceData": ["PaymentMilestone", "PurchaseOrder", "Inspection", "ApprovalLog"],
+      "relatedProject": "multiple",
+      "actionButton": ["openBlockingAlerts", "openApprovalCenter", "openCashflow"],
+      "nextActionRecommendation": "긴급 경고 5건을 먼저 열고 공정 차단 항목을 처리한다.",
+      "items": [
+        {
+          "itemId": "TODAY-001",
+          "label": "오늘 중도금 청구 가능 현장",
+          "projectId": "PRJ-APT-2401",
+          "status": "READY_BUT_INSPECTION_BLOCKED",
+          "warningLevel": "HIGH",
+          "blockingLevel": "BLOCKING",
+          "reason": "방수 검수 실패로 중도금 청구 전 검수 재확인이 필요하다.",
+          "actionButton": "requestReinspection"
+        },
+        {
+          "itemId": "TODAY-002",
+          "label": "오늘 발주 필요 항목",
+          "projectId": "PRJ-BATH-0501",
+          "status": "ORDER_DELAY_RISK",
+          "warningLevel": "HIGH",
+          "blockingLevel": "WARNING",
+          "reason": "타일 입고 예정일이 공정 시작일보다 늦을 가능성이 있다.",
+          "actionButton": "approveRushOrder"
+        },
+        {
+          "itemId": "TODAY-003",
+          "label": "오늘 승인 필요 항목",
+          "projectId": "PRJ-APT-2401",
+          "status": "APPROVAL_REQUIRED",
+          "warningLevel": "HIGH",
+          "blockingLevel": "BLOCKING",
+          "reason": "타일 단가 보정 후보가 rollbackData 포함 승인 대기 중이다.",
+          "actionButton": "openApprovalCenter"
+        }
+      ]
+    },
+    "riskDashboard": {
+      "title": "Risk Dashboard",
+      "mainKpi": "방수 검수 실패 1건, 발주 지연 2건, 미수금 위험 1건",
+      "warningLevel": "HIGH",
+      "blockingLevel": "BLOCKING",
+      "approvalRequired": true,
+      "sourceData": ["Inspection", "PurchaseOrder", "Cashflow", "Risk"],
+      "relatedProject": "multiple",
+      "actionButton": ["blockProcess", "open3DGraph", "requestInspection"],
+      "nextActionRecommendation": "PRJ-APT-2401의 타일 후속 공정을 즉시 차단한다.",
+      "risks": [
+        {
+          "riskId": "RISK-LEAK-001",
+          "projectId": "PRJ-APT-2401",
+          "riskName": "방수 검수 실패",
+          "riskType": "leakRisk",
+          "severity": "BLOCKING",
+          "blockingReason": "방수 검수 실패 상태에서 벽 타일 공정이 시작 예정이다.",
+          "actionButton": "blockTileProcess",
+          "drillDown": "3D_ONTOLOGY_PROCESS_RISK"
+        },
+        {
+          "riskId": "RISK-ORDER-001",
+          "projectId": "PRJ-BATH-0501",
+          "riskName": "발주 지연",
+          "riskType": "orderDelayRisk",
+          "severity": "HIGH",
+          "blockingReason": "타일 납기 리드타임이 공정 시작일을 초과할 수 있다.",
+          "actionButton": "requestAlternativeMaterial",
+          "drillDown": "3D_ONTOLOGY_PURCHASE_RISK"
+        },
+        {
+          "riskId": "RISK-RECV-001",
+          "projectId": "PRJ-KITCHEN-0301",
+          "riskName": "미수금 발생",
+          "riskType": "receivableRisk",
+          "severity": "HIGH",
+          "blockingReason": "자재비 지출 예정일 전에 입금 확인이 필요하다.",
+          "actionButton": "openCashflow",
+          "drillDown": "3D_ONTOLOGY_CASHFLOW_RISK"
+        }
+      ]
+    },
+    "profitDashboard": {
+      "title": "Profit Dashboard",
+      "mainKpi": "예상 마진 대비 실제 마진 이탈 후보 3건",
+      "warningLevel": "MEDIUM",
+      "blockingLevel": "WARNING",
+      "approvalRequired": true,
+      "sourceData": ["GeneratedEstimate", "InternalCost", "CompletionReport", "EstimateVsActualReport"],
+      "relatedProject": "multiple",
+      "actionButton": ["openVarianceReport", "createMasterDbUpdateRequest"],
+      "nextActionRecommendation": "외주비 초과와 반복 손실 공정을 Master DB 업데이트 후보로 분리한다.",
+      "profitItems": [
+        {
+          "itemId": "PROFIT-001",
+          "projectId": "PRJ-APT-2401",
+          "projectName": "24평 구축 아파트 전체 리모델링",
+          "estimatedMargin": "NEEDS_RESEARCH",
+          "actualMargin": "NEEDS_RESEARCH",
+          "marginVariance": "NEEDS_RESEARCH",
+          "issue": "타일공 최소 품수와 부자재 통합 산출 재확인 필요",
+          "actionButton": "openVarianceReport"
+        },
+        {
+          "itemId": "PROFIT-002",
+          "projectId": "PRJ-BATH-0501",
+          "projectName": "욕실 단독 리모델링",
+          "estimatedMargin": "NEEDS_RESEARCH",
+          "actualMargin": "NEEDS_RESEARCH",
+          "marginVariance": "NEEDS_RESEARCH",
+          "issue": "대형타일/졸리컷 할증 반영 여부 확인 필요",
+          "actionButton": "createMasterDbUpdateRequest"
+        }
+      ]
+    }
+  },
+  "rightPanel": {
+    "approvalCenter": {
+      "title": "Approval Center",
+      "mainKpi": "대표 승인 대기 7건",
+      "warningLevel": "HIGH",
+      "blockingLevel": "BLOCKING",
+      "approvalRequired": true,
+      "sourceData": ["ApprovalLog", "MasterDbUpdateRequest", "ChangeOrder", "Defect"],
+      "relatedProject": "multiple",
+      "actionButton": ["approve", "reject", "requestRevision", "viewRollbackData"],
+      "nextActionRecommendation": "공정 또는 수금을 막고 있는 승인 요청부터 처리한다.",
+      "approvalItems": [
+        {
+          "approvalId": "APP-001",
+          "projectId": "PRJ-APT-2401",
+          "approvalType": "MasterDbUpdateRequest",
+          "title": "타일공 최소 품수 기준 보정 후보",
+          "status": "PENDING_CEO_APPROVAL",
+          "rollbackRequired": true,
+          "rollbackData": "READY",
+          "blockingImpact": "내부 원가 확정 보류",
+          "actionButton": ["approve", "reject", "requestEvidence"]
+        },
+        {
+          "approvalId": "APP-002",
+          "projectId": "PRJ-BATH-0501",
+          "approvalType": "BrandChange",
+          "title": "타일 대체 브랜드 승인",
+          "status": "PENDING_CEO_APPROVAL",
+          "rollbackRequired": false,
+          "rollbackData": "NOT_REQUIRED",
+          "blockingImpact": "발주 보류",
+          "actionButton": ["approveBrandChange", "requestAlternativeBrand"]
+        },
+        {
+          "approvalId": "APP-003",
+          "projectId": "PRJ-APT-2401",
+          "approvalType": "DefectRework",
+          "title": "방수 재검수 및 재시공 승인",
+          "status": "PENDING_CEO_APPROVAL",
+          "rollbackRequired": false,
+          "rollbackData": "NOT_REQUIRED",
+          "blockingImpact": "타일 후속 공정 차단",
+          "actionButton": ["approveRework", "requestRootCause"]
+        }
+      ]
+    },
+    "immediateActionList": [
+      {
+        "actionId": "ACT-001",
+        "priority": 1,
+        "title": "PRJ-APT-2401 타일 후속 공정 차단",
+        "reason": "방수 검수 실패",
+        "button": "blockTileProcess",
+        "expectedDecisionClicks": 2
+      },
+      {
+        "actionId": "ACT-002",
+        "priority": 2,
+        "title": "PRJ-BATH-0501 긴급 발주 또는 대체 자재 승인",
+        "reason": "발주 리드타임 부족",
+        "button": "approveRushOrder",
+        "expectedDecisionClicks": 3
+      },
+      {
+        "actionId": "ACT-003",
+        "priority": 3,
+        "title": "PRJ-KITCHEN-0301 미수금 확인",
+        "reason": "자재비 지출 전 입금 확인 필요",
+        "button": "openReceivable",
+        "expectedDecisionClicks": 2
+      }
+    ],
+    "ceoApprovalRequired": {
+      "count": 7,
+      "blockedOperations": ["내부 원가 확정", "발주 확정", "타일 후속 공정"],
+      "firstButtonToPress": "openApprovalCenter"
+    }
+  },
+  "bottomSection": {
+    "learningDashboard": {
+      "title": "Learning Dashboard",
+      "mainKpi": "반복 오차와 반복 하자 후보",
+      "warningLevel": "MEDIUM",
+      "blockingLevel": "WARNING",
+      "approvalRequired": true,
+      "sourceData": ["CaseLibrary", "EstimateVsActualReport", "Defect", "ApprovalLog"],
+      "relatedProject": "multiple",
+      "actionButton": ["createCorrectionCandidate", "createMasterDbUpdateRequest", "open3DGraph"],
+      "nextActionRecommendation": "반복 손실 공정 TOP부터 Master DB 업데이트 후보로 분리한다."
+    },
+    "estimateVsActualTop": [
+      {
+        "rank": 1,
+        "itemName": "타일공 최소 품수",
+        "varianceType": "laborCostVariance",
+        "varianceValue": "NEEDS_RESEARCH",
+        "candidateAction": "createMasterDbUpdateRequest",
+        "drillDown": "3D_ONTOLOGY_PROCESS_COST"
+      },
+      {
+        "rank": 2,
+        "itemName": "방수 양생 대기시간",
+        "varianceType": "durationVariance",
+        "varianceValue": "NEEDS_RESEARCH",
+        "candidateAction": "requestRuleReview",
+        "drillDown": "3D_ONTOLOGY_SCHEDULE"
+      }
+    ],
+    "repeatedDefectTop": [
+      {
+        "rank": 1,
+        "defectName": "실리콘 곰팡이",
+        "count": "NEEDS_RESEARCH",
+        "relatedProcess": "실리콘",
+        "candidateAction": "requestStandardRevision",
+        "drillDown": "3D_ONTOLOGY_DEFECT"
+      },
+      {
+        "rank": 2,
+        "defectName": "줄눈 오염",
+        "count": "NEEDS_RESEARCH",
+        "relatedProcess": "줄눈",
+        "candidateAction": "requestMaterialReview",
+        "drillDown": "3D_ONTOLOGY_DEFECT"
+      }
+    ],
+    "repeatedLossProcessTop": [
+      {
+        "rank": 1,
+        "processName": "졸리컷",
+        "lossReason": "난이도 할증과 소모품 반영 부족",
+        "candidateAction": "createMasterDbUpdateRequest",
+        "drillDown": "3D_ONTOLOGY_PROCESS_COST"
+      },
+      {
+        "rank": 2,
+        "processName": "폐기물 반출",
+        "lossReason": "양중/운반 통합비 누락",
+        "candidateAction": "requestPriceResearch",
+        "drillDown": "3D_ONTOLOGY_PURCHASE_COST"
+      }
+    ]
+  },
+  "floatingAction": {
+    "buttons": [
+      {
+        "buttonId": "open3DOntologyView",
+        "label": "3D Ontology View",
+        "target": "ontologyGraph",
+        "defaultFilter": ["Risk", "Process", "PurchaseOrder", "Cashflow"],
+        "useCase": "공정, 발주, 하자, 리스크 원인 관계 추적"
+      },
+      {
+        "buttonId": "projectDrillDown",
+        "label": "Project Drill Down",
+        "target": "projectDetail",
+        "defaultProject": "PRJ-APT-2401",
+        "useCase": "선택 현장의 견적, 공정, 발주, 수금, 하자 상세 확인"
+      },
+      {
+        "buttonId": "masterDbUpdateReview",
+        "label": "Master DB Update Review",
+        "target": "masterDbApproval",
+        "defaultFilter": ["PENDING_CEO_APPROVAL", "ROLLBACK_READY"],
+        "useCase": "단가, 품수, 공기, 하자율 보정 후보 검토"
+      }
+    ]
+  },
+  "redAlerts": [
+    {
+      "alertId": "RED-001",
+      "projectId": "PRJ-APT-2401",
+      "title": "방수 검수 실패 후 타일 공정 예정",
+      "severity": "BLOCKING",
+      "firstAction": "blockTileProcess",
+      "drillDown": "3D_ONTOLOGY_PROCESS_RISK"
+    },
+    {
+      "alertId": "RED-002",
+      "projectId": "PRJ-BATH-0501",
+      "title": "타일 발주 리드타임 부족",
+      "severity": "HIGH",
+      "firstAction": "approveRushOrder",
+      "drillDown": "3D_ONTOLOGY_PURCHASE_RISK"
+    },
+    {
+      "alertId": "RED-003",
+      "projectId": "GLOBAL",
+      "title": "Master DB 업데이트 승인 대기",
+      "severity": "BLOCKING",
+      "firstAction": "openApprovalCenter",
+      "drillDown": "MASTER_DB_UPDATE_REVIEW"
+    }
+  ],
+  "firstScreenDecision": {
+    "firstVisibleInformation": [
+      "긴급 경고 수 5건",
+      "승인 대기 수 7건",
+      "위험 현장 수 4건",
+      "PRJ-APT-2401 방수 검수 실패",
+      "PRJ-BATH-0501 발주 지연",
+      "PRJ-KITCHEN-0301 미수금 발생"
+    ],
+    "firstButtonToPress": "openBlockingAlerts",
+    "reason": "빨간 경고가 존재하므로 대표의 첫 판단은 수익 확인이 아니라 공정 차단이다."
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecorean.local/schema/estimate-preview.schema.json",
+  "title": "ECOREAN Estimate Preview",
+  "type": "object",
+  "required": ["estimateId", "displayMode", "customerPreview", "internalPreview", "scheduleDraftPreview", "documentPreview"],
+  "properties": {
+    "estimateId": { "type": "string" },
+    "displayMode": { "enum": ["PRELIMINARY", "FINAL"] },
+    "customerPreview": {
+      "type": "object",
+      "required": ["visibleProcesses", "estimateLabelKo", "customerWarningsKo"],
+      "properties": {
+        "visibleProcesses": { "type": "array", "items": { "type": "string" } },
+        "estimateLabelKo": { "type": "string" },
+        "customerWarningsKo": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "internalPreview": {
+      "type": "object",
+      "required": ["costWarningsKo", "missingPriceItems", "needsConfirmationItems"],
+      "properties": {
+        "costWarningsKo": { "type": "array", "items": { "type": "string" } },
+        "missingPriceItems": { "type": "array", "items": { "type": "string" } },
+        "needsConfirmationItems": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "scheduleDraftPreview": { "type": "array", "items": { "type": "object" } },
+    "documentPreview": { "type": "array", "items": { "type": "object" } }
+  }
+}
+

@@ -1,0 +1,90 @@
+export type Severity = 'GREEN' | 'YELLOW' | 'RED';
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'BLOCKING';
+export type ViewKey = 'dashboard' | 'project' | 'approvals' | 'risks' | 'ontology' | 'masterDb' | 'estimate' | 'caseLibrary' | 'costCapture' | 'marginSafety' | 'vendorPrice' | 'portfolio' | 'crew' | 'finance' | 'sales' | 'client' | 'settings';
+
+export type TopBarKpi = {
+  id: string;
+  labelKo: string;
+  value: string;
+  helperKo: string;
+  severity: Severity;
+  action: string;
+};
+
+export type ProjectSummary = {
+  projectId: string;
+  projectNameKo: string;
+  currentProcessKo: string;
+  todayTasksKo: string[];
+  deadline: string;
+  riskScore: number;
+  riskLevel: RiskLevel;
+  profitRate: string;
+  receivableAmount: string;
+  progressRate: string;
+  remainingDays: number;
+  receivableStatusKo: string;
+  defectRiskKo: string;
+  nextActionKo: string;
+};
+
+export type RedAlert = {
+  alertId: string;
+  projectId: string;
+  titleKo: string;
+  reasonKo: string;
+  severity: RiskLevel;
+  firstAction: string;
+  drillDownTarget: ViewKey;
+};
+
+export type ApprovalItem = {
+  approvalId: string;
+  projectId: string;
+  approvalType: 'MasterDbUpdateRequest' | 'BrandChange' | 'DefectRework' | 'ChangeOrder' | 'Exception' | 'EstimateApproval' | 'LearningSuggestion';
+  titleKo: string;
+  reasonKo: string;
+  status: 'PENDING_CEO_APPROVAL' | 'APPROVED' | 'REJECTED' | 'REVISION_REQUESTED';
+  rollbackRequired: boolean;
+  rollbackStatus: 'READY' | 'NOT_REQUIRED' | 'MISSING';
+  blockingImpactKo: string;
+};
+
+export type ImmediateAction = {
+  actionId: string;
+  priority: number;
+  titleKo: string;
+  reasonKo: string;
+  buttonLabelKo: string;
+  targetView: ViewKey;
+};
+
+export type VarianceItem = {
+  rank: number;
+  itemNameKo: string;
+  varianceType: string;
+  reasonKo: string;
+  actionKo: string;
+};
+
+export type NotificationLogItem = {
+  logId: string;
+  time: string;
+  level: 'INFO' | 'WARNING' | 'RED';
+  messageKo: string;
+  relatedProjectId: string;
+  actionKo: string;
+};
+
+export type DashboardData = {
+  snapshotDate: string;
+  topBar: TopBarKpi[];
+  projects: ProjectSummary[];
+  redAlerts: RedAlert[];
+  approvals: ApprovalItem[];
+  immediateActions: ImmediateAction[];
+  estimateVsActualTop: VarianceItem[];
+  repeatedDefectsTop: VarianceItem[];
+  repeatedLossProcessTop: VarianceItem[];
+  notificationLog: NotificationLogItem[];
+};

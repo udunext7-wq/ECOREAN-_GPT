@@ -1,0 +1,39 @@
+{
+  "backupId": "BACKUP-2026-04-25T23-19-57-301Z",
+  "version": "0.1.0",
+  "createdAt": "2026-04-25T23:19:57.301Z",
+  "backupType": "FULL",
+  "dbList": [
+    {
+      "dbName": "project",
+      "fileName": "project.db",
+      "hasPersonalData": true
+    },
+    {
+      "dbName": "approval",
+      "fileName": "approval.db",
+      "hasPersonalData": true
+    },
+    {
+      "dbName": "master",
+      "fileName": "master.db",
+      "hasPersonalData": false
+    },
+    {
+      "dbName": "logs",
+      "fileName": "logs.db",
+      "hasPersonalData": true
+    }
+  ],
+  "checksums": {
+    "project.db": "2b9490c799251a26a488e5d68e667a0318ddca31673598898a9e1cc01a714a0b",
+    "approval.db": "b960ac26630188004accf8abf5dcd88b8f9339b2e8d70083240be2ba5f801a37",
+    "master.db": "6997eb5698c4453fcfcbe702f28f86676d299a6b0feadb6e8f031547172e7abd",
+    "logs.db": "62dd914fd9463a0530b6b2101aef44b97efecab3973dc4cb34eabd057b0dfe12"
+  },
+  "checksumAlgorithm": "sha256",
+  "systemLayer": "English",
+  "displayLayer": "Korean",
+  "restoreRequiresCeoApproval": true,
+  "personalDataNoticeKo": "project/approval/logs DB에는 고객 또는 운영 개인정보가 포함될 수 있습니다."
+}

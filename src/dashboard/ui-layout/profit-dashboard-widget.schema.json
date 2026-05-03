@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "0.1-widget",
+  "widgetId": "profitDashboard",
+  "title": "Profit Dashboard",
+  "mainKpi": "예상 마진과 실제 마진의 차이",
+  "warningLevel": "MEDIUM",
+  "blockingLevel": "WARNING",
+  "approvalRequired": true,
+  "sourceData": ["GeneratedEstimate", "InternalCost", "CompletionReport", "EstimateVsActualReport", "SubcontractSettlement", "BrandDB"],
+  "relatedProject": "multiple",
+  "actionButton": ["openVarianceReport", "holdSettlement", "createMasterDbUpdateRequest"],
+  "nextActionRecommendation": "마진 이탈과 외주비 초과 현장을 먼저 열고 반복 손실 공정은 Master DB 업데이트 후보로 넘긴다.",
+  "childWidgets": [
+    "예상 마진 vs 실제 마진",
+    "현장별 수익률",
+    "공정별 수익률",
+    "브랜드별 마진",
+    "외주비 과다 발생 현장",
+    "반복 손실 공정"
+  ]
+}

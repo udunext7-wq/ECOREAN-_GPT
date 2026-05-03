@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0.0",
+  "collectionRegion": ["서울", "경기 남부", "경기 북부", "인천"],
+  "privacyPolicy": {
+    "personalDataCollectionAllowed": false,
+    "publicBusinessInfoOnly": true,
+    "priceCrawlingAllowed": false
+  },
+  "dedupePolicy": {
+    "keys": ["vendorName", "phone", "address", "website"],
+    "manualReviewRequired": true
+  },
+  "contactTargetTop30Rule": {
+    "sortBy": ["categoryPriority", "dataConfidence", "regionFit", "hasWholesale", "hasInstallation", "leadTimeRelevance"],
+    "requiredManualVerificationBeforeVendorMaster": true
+  },
+  "candidates": [
+    {
+      "vendorId": "CANDIDATE-WINDOW-001",
+      "vendorName": "성은창호그룹",
+      "category": "창호 업체",
+      "subcategory": "KCC 창호/유리/실리콘",
+      "region": "경기/서울",
+      "city": "파주/서울/용인/인천",
+      "district": "UNKNOWN",
+      "address": "경기도 파주시 와석순환로507 외",
+      "phone": "1522-9786 / 1544-2458",
+      "website": "https://www.seindgroup.com/",
+      "sourceUrl": "https://www.seindgroup.com/",
+      "sourceType": "officialWebsite",
+      "collectedAt": "2026-04-25",
+      "handledItems": ["창호", "유리", "실리콘"],
+      "handledBrands": ["KCC"],
+      "serviceArea": ["서울", "경기", "인천"],
+      "businessHours": "NEEDS_VERIFICATION",
+      "hasDelivery": "UNKNOWN",
+      "hasInstallation": "YES",
+      "hasWholesale": "UNKNOWN",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "estimatedReliability": "MEDIUM",
+      "dataConfidence": "HIGH",
+      "needsManualVerification": true,
+      "contactStatus": "NOT_CONTACTED",
+      "dataStatus": "CANDIDATE",
+      "nextAction": "창호 부분 교체와 결로 보증 조건 확인",
+      "notes": "공식 홈페이지 기반 후보"
+    }
+  ]
+}

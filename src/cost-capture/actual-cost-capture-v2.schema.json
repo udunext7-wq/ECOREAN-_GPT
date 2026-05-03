@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecorean.local/schemas/actual-cost-capture-v2.schema.json",
+  "title": "Actual Cost Capture System V2",
+  "type": "object",
+  "required": [
+    "projectId",
+    "revenue",
+    "criticalCostRequirements",
+    "captureEntries",
+    "readiness"
+  ],
+  "properties": {
+    "projectId": { "type": "string" },
+    "projectNameKo": { "type": "string" },
+    "revenue": { "type": "number" },
+    "criticalCostRequirements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/costRequirement" }
+    },
+    "captureEntries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/costEntry" }
+    },
+    "readiness": {
+      "type": "object",
+      "required": [
+        "completionBlocked",
+        "missingCriticalCount",
+        "capturedCost",
+        "forecastMargin",
+        "forecastMarginRate"
+      ],
+      "properties": {
+        "completionBlocked": { "type": "boolean" },
+        "missingCriticalCount": { "type": "integer" },
+        "capturedCost": { "type": "number" },
+        "forecastMargin": { "type": "number" },
+        "forecastMarginRate": { "type": "number" },
+        "blockingReasonsKo": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "costRequirement": {
+      "type": "object",
+      "required": [
+        "requirementId",
+        "projectId",
+        "processId",
+        "costCategory",
+        "itemNameKo",
+        "requiredStage",
+        "blockingLevel",
+        "status"
+      ],
+      "properties": {
+        "requirementId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "processId": { "type": "string" },
+        "costCategory": { "type": "string" },
+        "itemNameKo": { "type": "string" },
+        "requiredStage": { "type": "string" },
+        "blockingLevel": { "enum": ["RED", "YELLOW", "GREEN"] },
+        "sourceType": { "type": "string" },
+        "vendorRequired": { "type": "boolean" },
+        "amountRequired": { "type": "boolean" },
+        "status": {
+          "enum": ["MISSING_CRITICAL", "NEEDS_RESEARCH", "CAPTURED", "WAIVED_BY_APPROVAL"]
+        }
+      }
+    },
+    "costEntry": {
+      "type": "object",
+      "required": [
+        "entryId",
+        "requirementId",
+        "projectId",
+        "amount",
+        "capturedAt"
+      ],
+      "properties": {
+        "entryId": { "type": "string" },
+        "requirementId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "amount": { "type": "number" },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "vendorId": { "type": "string" },
+        "vendorNameKo": { "type": "string" },
+        "sourceDocumentKo": { "type": "string" },
+        "capturedBy": { "type": "string" },
+        "capturedAt": { "type": "string" },
+        "notesKo": { "type": "string" }
+      }
+    }
+  }
+}

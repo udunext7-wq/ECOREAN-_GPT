@@ -1,0 +1,22 @@
+{
+  "projectId": "PRJ-PROD-BATH-0001",
+  "completionReportId": "COMP-PRJ-PROD-BATH-0001",
+  "revenue": 5490000,
+  "knownActualCost": 2850000,
+  "provisionalMargin": 2640000,
+  "provisionalMarginRate": 48.09,
+  "unresolvedCostItems": [
+    "철거",
+    "폐기물",
+    "타일",
+    "타일 부자재",
+    "실리콘",
+    "인건비",
+    "운반비",
+    "기타 잡비"
+  ],
+  "defects": [],
+  "claims": [],
+  "caseId": "CASE-PRJ-PROD-BATH-0001",
+  "learningSuggestionId": "LS-PRJ-PROD-BATH-0001-COST-CAPTURE"
+}

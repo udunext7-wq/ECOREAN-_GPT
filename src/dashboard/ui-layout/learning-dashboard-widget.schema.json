@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "0.1-widget",
+  "widgetId": "learningDashboard",
+  "title": "Learning Dashboard",
+  "mainKpi": "예상과 실제의 반복 오차",
+  "warningLevel": "MEDIUM",
+  "blockingLevel": "WARNING",
+  "approvalRequired": true,
+  "sourceData": ["CaseLibrary", "EstimateVsActualReport", "CompletionReport", "Defect", "ApprovalLog"],
+  "relatedProject": "multiple",
+  "actionButton": ["createCorrectionCandidate", "createMasterDbUpdateRequest", "requestRuleReview", "open3DGraph"],
+  "nextActionRecommendation": "반복 손실 공정과 반복 하자를 먼저 Master DB 업데이트 후보로 분리한다.",
+  "childWidgets": [
+    "예상 vs 실제 오차 TOP 10",
+    "반복 하자 TOP 10",
+    "반복 클레임 TOP 10",
+    "가장 자주 수정되는 단가",
+    "가장 자주 승인되는 예외",
+    "ML 보정 후보"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "0.1-rule-checker",
+  "title": "ECOREAN Rule Checker Schema",
+  "type": "object",
+  "required": ["ruleId", "ruleName", "ruleType", "inputCondition", "expectedResult", "severity", "relatedProcess", "relatedDocument"],
+  "properties": {
+    "ruleId": {"type": "string"},
+    "ruleName": {"type": "string"},
+    "ruleType": {"type": "string", "enum": ["WARNING", "BLOCKING", "APPROVAL_REQUIRED", "NEEDS_CONFIRMATION"]},
+    "inputCondition": {"type": "object", "additionalProperties": true},
+    "expectedResult": {"type": "string", "enum": ["PASS", "FAIL", "WARN", "BLOCKED", "APPROVAL_REQUIRED", "NEEDS_CONFIRMATION"]},
+    "severity": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "BLOCKER"]},
+    "relatedProcess": {"type": "string"},
+    "relatedDocument": {"type": "string"}
+  }
+}
+

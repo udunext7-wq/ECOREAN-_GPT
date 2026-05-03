@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+*.log
+*.db
+storage/sqlite/
+backups/
+.env
+
+# packaged release artifacts kept locally
+electron/release/
+release/RC-0.1.0/win-unpacked/
+release/RC-0.1.0/installer/
+*.exe
+*.7z

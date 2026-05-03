@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "0.1-approval-required-rules",
+  "title": "ECOREAN Approval Required Rules Schema",
+  "type": "object",
+  "required": ["approvalRuleId", "approvalRuleName", "condition", "approvalReason", "requiredApprover", "rollbackRequired"],
+  "properties": {
+    "approvalRuleId": {"type": "string"},
+    "approvalRuleName": {"type": "string"},
+    "condition": {"type": "object", "additionalProperties": true},
+    "approvalReason": {"type": "string"},
+    "requiredApprover": {"type": "string"},
+    "rollbackRequired": {"type": "boolean"}
+  }
+}

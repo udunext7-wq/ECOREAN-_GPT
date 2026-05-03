@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecorean.local/schema/tile-waterproof-price-research.schema.json",
+  "title": "ECOREAN Tile Waterproof Price Research Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "researchId",
+    "researchName",
+    "status",
+    "approvalPolicy",
+    "items"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string"
+    },
+    "projectId": {
+      "const": "PRJ-REAL-APT-0001"
+    },
+    "researchId": {
+      "type": "string"
+    },
+    "researchName": {
+      "type": "string"
+    },
+    "status": {
+      "enum": ["DRAFT", "NEEDS_RESEARCH", "PARTIAL", "READY_FOR_APPROVAL", "APPROVED", "REJECTED"]
+    },
+    "approvalPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "masterDbDirectUpdateAllowed",
+        "approvalRequiredBeforeMasterDbUpdate",
+        "approvalRequestType",
+        "rollbackRequired",
+        "approvedBy"
+      ],
+      "properties": {
+        "masterDbDirectUpdateAllowed": {
+          "const": false
+        },
+        "approvalRequiredBeforeMasterDbUpdate": {
+          "const": true
+        },
+        "approvalRequestType": {
+          "const": "MasterDbUpdateRequest"
+        },
+        "rollbackRequired": {
+          "const": true
+        },
+        "approvedBy": {
+          "const": "CEO"
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/researchItem"
+      }
+    }
+  },
+  "$defs": {
+    "priceStatus": {
+      "enum": ["UNKNOWN", "NEEDS_RESEARCH"]
+    },
+    "researchItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projectId",
+        "itemId",
+        "itemName",
+        "category",
+        "subcategory",
+        "standardSpec",
+        "unit",
+        "quantityBasis",
+        "officialPrice",
+        "marketPrice",
+        "supplierPrice",
+        "internalPrice",
+        "laborCost",
+        "accessoryCost",
+        "wasteRate",
+        "minimumOrderUnit",
+        "leadTimeDays",
+        "paymentCondition",
+        "preferredSupplier",
+        "alternativeItems",
+        "commonDefectRisk",
+        "sourceType",
+        "sourceName",
+        "sourceDate",
+        "confidenceLevel",
+        "updateCycle",
+        "approvalStatus",
+        "sourceCandidates",
+        "estimateVsActualLink",
+        "approvalFlow",
+        "notes"
+      ],
+      "properties": {
+        "projectId": {
+          "const": "PRJ-REAL-APT-0001"
+        },
+        "itemId": {
+          "type": "string"
+        },
+        "itemName": {
+          "type": "string"
+        },
+        "category": {
+          "enum": ["Tile", "AccessoryMaterial", "WaterproofMaterial"]
+        },
+        "subcategory": {
+          "type": "string"
+        },
+        "standardSpec": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "quantityBasis": {
+          "type": "string"
+        },
+        "officialPrice": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "marketPrice": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "supplierPrice": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "internalPrice": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "laborCost": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "accessoryCost": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "wasteRate": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "minimumOrderUnit": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "leadTimeDays": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "paymentCondition": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "preferredSupplier": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "alternativeItems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "commonDefectRisk": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourceType": {
+          "enum": ["official", "supplier", "market", "internal", "NEEDS_RESEARCH"]
+        },
+        "sourceName": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "sourceDate": {
+          "$ref": "#/$defs/priceStatus"
+        },
+        "confidenceLevel": {
+          "enum": ["UNKNOWN", "LOW", "MEDIUM", "HIGH", "VERIFIED"]
+        },
+        "updateCycle": {
+          "type": "string"
+        },
+        "approvalStatus": {
+          "enum": ["NEEDS_RESEARCH", "READY_FOR_APPROVAL", "PENDING_CEO_APPROVAL", "APPROVED", "REJECTED"]
+        },
+        "sourceCandidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sourceType", "sourceName", "dataToCollect"],
+            "properties": {
+              "sourceType": {
+                "enum": ["official", "supplier", "market", "internal"]
+              },
+              "sourceName": {
+                "type": "string"
+              },
+              "dataToCollect": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "estimateVsActualLink": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "estimatedFields", "actualFields", "varianceFields"],
+          "properties": {
+            "enabled": {
+              "const": true
+            },
+            "estimatedFields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "actualFields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "varianceFields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "approvalFlow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nextStep", "approvalRequestType", "masterDbUpdateAllowedBeforeApproval", "rollbackRequired"],
+          "properties": {
+            "nextStep": {
+              "const": "CREATE_MASTER_DB_UPDATE_REQUEST"
+            },
+            "approvalRequestType": {
+              "const": "MasterDbUpdateRequest"
+            },
+            "masterDbUpdateAllowedBeforeApproval": {
+              "const": false
+            },
+            "rollbackRequired": {
+              "const": true
+            }
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

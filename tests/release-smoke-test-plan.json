@@ -1,0 +1,87 @@
+{
+  "testPlanId": "RELEASE-SMOKE-TEST-PLAN",
+  "version": "0.1.0",
+  "createdAt": "2026-04-26",
+  "requiredCommands": [
+    {
+      "command": "npm run build",
+      "workingDirectory": "ui",
+      "purpose": "Validate TypeScript and Vite production build.",
+      "expectedResult": "Build passes."
+    },
+    {
+      "command": "npm run build:ui",
+      "workingDirectory": "electron",
+      "purpose": "Copy production UI into Electron dist.",
+      "expectedResult": "Build passes and electron/dist is updated."
+    },
+    {
+      "command": "npm run smoke:prod",
+      "workingDirectory": "electron",
+      "purpose": "Validate Electron production load path and SQLite service startup.",
+      "expectedResult": "BOC dashboard loaded."
+    },
+    {
+      "command": "npm run dist",
+      "workingDirectory": "electron",
+      "purpose": "Create win-unpacked executable package.",
+      "expectedResult": "win-unpacked EXE is generated."
+    },
+    {
+      "command": "Start-Process release/win-unpacked/ECOREAN BOC CEO Dashboard.exe",
+      "workingDirectory": "electron",
+      "purpose": "Validate packaged executable can open the dashboard window.",
+      "expectedResult": "Window title is ECOREAN BOC CEO Dashboard."
+    }
+  ],
+  "manualChecks": [
+    {
+      "id": "MANUAL-001",
+      "name": "Dashboard opens",
+      "expectedResult": "Top KPIs, Red Alerts, Approval Center, Project List, Notification Log are visible."
+    },
+    {
+      "id": "MANUAL-002",
+      "name": "New Estimate Wizard",
+      "expectedResult": "Minimum input produces preliminary estimate and NEEDS_CONFIRMATION items."
+    },
+    {
+      "id": "MANUAL-003",
+      "name": "Approval Center",
+      "expectedResult": "Estimate, Change Order, and Learning Suggestion approval screens are visible."
+    },
+    {
+      "id": "MANUAL-004",
+      "name": "Project Detail",
+      "expectedResult": "Execution, Site Operation, and Completion panels are visible."
+    },
+    {
+      "id": "MANUAL-005",
+      "name": "Case Library",
+      "expectedResult": "Cases, patterns, learning suggestions, and candidates are visible."
+    },
+    {
+      "id": "MANUAL-006",
+      "name": "Backup/Restore/Export",
+      "expectedResult": "Full backup, DB backup, restore preview, JSON export, and Excel export controls are visible."
+    },
+    {
+      "id": "MANUAL-007",
+      "name": "3D Ontology Viewer",
+      "expectedResult": "Project, Process, Material, Approval, Risk, Payment, and Case nodes are visible."
+    }
+  ],
+  "blockingFailures": [
+    "Electron blank screen",
+    "SQLite migration failure",
+    "Approval without rollback for Master DB change",
+    "Restore allowed without CEO approval",
+    "Build failure",
+    "Dashboard cannot load project data"
+  ],
+  "knownNonBlockingIssues": [
+    "Some legacy Korean display strings show mojibake.",
+    "3D Ontology Viewer is CSS 3D MVP, not Three.js yet.",
+    "Real price data remains UNKNOWN / NEEDS_RESEARCH."
+  ]
+}

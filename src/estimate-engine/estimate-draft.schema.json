@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecorean.local/schema/estimate-draft.schema.json",
+  "title": "ECOREAN Estimate Draft",
+  "type": "object",
+  "required": ["estimateId", "projectInput", "draftStatus", "generatedProcesses", "needsConfirmation", "priceCompleteness"],
+  "properties": {
+    "estimateId": { "type": "string" },
+    "projectInput": {
+      "type": "object",
+      "required": ["projectType", "buildingType", "areaPyeong", "constructionScope", "finishGrade", "budgetLevel"],
+      "properties": {
+        "projectType": { "type": "string" },
+        "buildingType": { "type": "string" },
+        "areaPyeong": { "type": "string" },
+        "spaceComposition": { "type": "string" },
+        "constructionScope": { "type": "string" },
+        "finishGrade": { "type": "string" },
+        "budgetLevel": { "type": "string" },
+        "siteConstraints": { "type": "string" },
+        "clientPriority": { "type": "string" }
+      }
+    },
+    "draftStatus": { "enum": ["PRELIMINARY", "READY_FOR_REVIEW", "BLOCKED"] },
+    "generatedProcesses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["processId", "triggerType", "displayNameKo", "generatedReasonKo"],
+        "properties": {
+          "processId": { "type": "string" },
+          "triggerType": { "enum": ["AUTO", "SELECT", "QTY", "CONDITIONAL", "NEEDS_CONFIRMATION"] },
+          "displayNameKo": { "type": "string" },
+          "generatedReasonKo": { "type": "string" }
+        }
+      }
+    },
+    "needsConfirmation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["itemId", "questionKo", "impactKo"],
+        "properties": {
+          "itemId": { "type": "string" },
+          "questionKo": { "type": "string" },
+          "impactKo": { "type": "string" }
+        }
+      }
+    },
+    "priceCompleteness": {
+      "type": "object",
+      "required": ["hasUnknownPrice", "hasNeedsResearch", "estimateLabelKo"],
+      "properties": {
+        "hasUnknownPrice": { "type": "boolean" },
+        "hasNeedsResearch": { "type": "boolean" },
+        "estimateLabelKo": { "enum": ["예비 견적", "확정 견적"] }
+      }
+    }
+  }
+}
+

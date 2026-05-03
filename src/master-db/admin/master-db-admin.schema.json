@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecorean.local/schema/master-db-admin.schema.json",
+  "title": "ECOREAN Master DB Admin",
+  "type": "object",
+  "required": ["schemaVersion", "adminScreens", "dataStates", "changePolicy", "importExport"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "adminScreens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["screenId", "displayNameKo", "targetDb", "allowedActions", "directEditAllowed"],
+        "properties": {
+          "screenId": { "type": "string" },
+          "displayNameKo": { "type": "string" },
+          "targetDb": { "type": "string" },
+          "allowedActions": {
+            "type": "array",
+            "items": { "enum": ["VIEW", "CREATE_CHANGE_REQUEST", "IMPORT_PREVIEW", "EXPORT", "ARCHIVE_REQUEST"] }
+          },
+          "directEditAllowed": { "type": "boolean" },
+          "approvalRequired": { "type": "boolean" },
+          "rollbackRequired": { "type": "boolean" }
+        }
+      }
+    },
+    "dataStates": {
+      "type": "array",
+      "items": { "enum": ["EMPTY", "UNKNOWN", "NEEDS_RESEARCH", "PARTIAL", "VERIFIED", "INTERNAL_VALIDATED"] }
+    },
+    "changePolicy": {
+      "type": "object",
+      "required": ["directEditAllowed", "approvalRequired", "rollbackRequired"],
+      "properties": {
+        "directEditAllowed": { "const": false },
+        "approvalRequired": { "const": true },
+        "rollbackRequired": { "const": true }
+      }
+    },
+    "importExport": {
+      "type": "object",
+      "required": ["importFormats", "exportFormats", "importCreatesChangeRequest"],
+      "properties": {
+        "importFormats": { "type": "array", "items": { "enum": ["JSON", "EXCEL", "CSV"] } },
+        "exportFormats": { "type": "array", "items": { "enum": ["JSON", "EXCEL", "CSV"] } },
+        "importCreatesChangeRequest": { "const": true }
+      }
+    }
+  }
+}
+

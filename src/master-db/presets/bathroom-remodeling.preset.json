@@ -1,0 +1,23 @@
+{
+  "presetId": "PRESET-BATHROOM-REMODELING",
+  "presetName": "욕실 단독 리모델링",
+  "projectType": "bathroomRemodeling",
+  "presetStatus": "STRUCTURE_READY",
+  "candidateProcesses": [
+    {"processGroup": "욕실 철거", "decisionBasis": "demolitionScope.floorOrWall", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "폐기물", "decisionBasis": "demolitionScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "설비 배관 점검", "decisionBasis": "bathroomCount", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "배수/급수 수정", "decisionBasis": "plumbingModificationScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "방수", "decisionBasis": "floorDemolition, wallDemolition, plumbingModificationScope, leakHistory", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "타일", "decisionBasis": "selectedBathroomFinish, demolitionScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "도기 설치", "decisionBasis": "bathroomFixtureSelection", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "샤워부스", "decisionBasis": "clientSelection", "defaultDecision": "SELECT"},
+    {"processGroup": "천장/조명/환풍기", "decisionBasis": "constructionScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "검수/고객 인도", "decisionBasis": "selectedProcesses", "defaultDecision": "CONDITIONAL"}
+  ],
+  "defaultSpecProfile": {"finishGrade": "standard", "budgetLevel": "mid", "source": "defaultSpecEngine"},
+  "documentsToGenerate": ["고객용 견적서", "내부 원가표", "발주서", "공정표", "공사일보", "자재입고 확인서", "검수 체크리스트", "수금표", "현금흐름표", "하자관리표", "고객 인도 체크리스트"],
+  "paymentMilestones": ["계약금", "방수/타일 전후 중도금", "잔금"],
+  "diagnosticFocus": ["방수 조건 미확인", "배관 변경 누락", "타일 양생/검수 누락", "샤워부스 납기", "하자 리스크"]
+}
+

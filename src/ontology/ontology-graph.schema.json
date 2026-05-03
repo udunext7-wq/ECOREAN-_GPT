@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ECOREAN BOC Ontology Graph",
+  "type": "object",
+  "required": ["nodes", "edges", "metadata"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["version", "generatedAt", "source"],
+      "properties": {
+        "version": { "type": "string" },
+        "generatedAt": { "type": "string" },
+        "source": { "type": "string" }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "labelKo", "status", "x", "y", "z"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "labelKo": { "type": "string" },
+          "status": { "type": "string" },
+          "projectId": { "type": "string" },
+          "riskLevel": { "type": "string" },
+          "isRisk": { "type": "boolean" },
+          "isApprovalPending": { "type": "boolean" },
+          "detail": { "type": "object" },
+          "x": { "type": "number" },
+          "y": { "type": "number" },
+          "z": { "type": "number" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "source", "target", "type", "labelKo"],
+        "properties": {
+          "id": { "type": "string" },
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "type": { "type": "string" },
+          "labelKo": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    }
+  }
+}

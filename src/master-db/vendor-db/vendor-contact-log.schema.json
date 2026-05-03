@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecorean.local/schema/vendor-contact-log.schema.json",
+  "title": "ECOREAN Vendor Contact Log Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contactLogs"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "contactLogs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/contactLog" }
+    }
+  },
+  "$defs": {
+    "contactLog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contactId",
+        "vendorId",
+        "projectId",
+        "contactDate",
+        "contactMethod",
+        "contactPersonName",
+        "inquiryDetails",
+        "vendorResponse",
+        "supplierPrice",
+        "leadTimeDays",
+        "paymentCondition",
+        "specialNotes",
+        "nextFollowupDate",
+        "nextAction",
+        "owner",
+        "approvalNeeded",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "contactId": { "type": "string" },
+        "vendorId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "contactDate": { "type": "string" },
+        "contactMethod": { "enum": ["PHONE", "KAKAOTALK", "MEETING", "EMAIL", "QUOTE_REQUEST", "OTHER"] },
+        "contactPersonName": { "type": "string" },
+        "inquiryDetails": { "type": "string" },
+        "vendorResponse": { "type": "string" },
+        "supplierPrice": { "type": "string" },
+        "leadTimeDays": { "type": "string" },
+        "paymentCondition": { "type": "string" },
+        "specialNotes": { "type": "string" },
+        "nextFollowupDate": { "type": "string" },
+        "nextAction": { "type": "string" },
+        "owner": { "type": "string" },
+        "approvalNeeded": { "type": "boolean" },
+        "approvalReason": { "type": "string" },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "name", "pathOrReference"],
+            "properties": {
+              "type": { "enum": ["QUOTE", "PHOTO", "CHAT_CAPTURE", "PRICE_LIST", "CONTRACT", "OTHER"] },
+              "name": { "type": "string" },
+              "pathOrReference": { "type": "string" }
+            }
+          }
+        },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    }
+  }
+}

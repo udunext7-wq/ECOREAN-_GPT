@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "0.1-minimum-project-input",
+  "title": "ECOREAN Minimum Project Input",
+  "type": "object",
+  "required": [
+    "projectType",
+    "buildingType",
+    "areaM2",
+    "areaPyeong",
+    "constructionScope",
+    "spaceComposition",
+    "demolitionScope",
+    "finishGrade",
+    "budgetLevel",
+    "occupancyDeadline",
+    "bathroomCount",
+    "kitchenType",
+    "roomCount",
+    "balconyCount",
+    "windowReplacementScope",
+    "plumbingModificationScope",
+    "electricalUpgradeScope",
+    "knownDefects",
+    "siteConstraints",
+    "clientPriority"
+  ],
+  "properties": {
+    "projectType": {"type": "string", "enum": ["apartmentFullRemodeling", "bathroomRemodeling", "kitchenRemodeling", "partialRepair", "commercialInterior", "officeInterior", "NEEDS_CONFIRMATION"]},
+    "buildingType": {"type": "string", "enum": ["apartment", "villa", "officetel", "commercial", "office", "house", "mixedUse", "NEEDS_CONFIRMATION"]},
+    "areaM2": {"type": ["number", "string"], "description": "Use NEEDS_CONFIRMATION when unknown."},
+    "areaPyeong": {"type": ["number", "string"], "description": "Use NEEDS_CONFIRMATION when unknown."},
+    "constructionScope": {"type": "array", "items": {"type": "string"}},
+    "spaceComposition": {"type": "object", "additionalProperties": true},
+    "demolitionScope": {"type": "object", "additionalProperties": true},
+    "finishGrade": {"type": "string", "enum": ["economy", "standard", "premium", "luxury", "NEEDS_CONFIRMATION"]},
+    "budgetLevel": {"type": "string", "enum": ["low", "mid", "high", "premium", "NEEDS_CONFIRMATION"]},
+    "occupancyDeadline": {"type": "string"},
+    "bathroomCount": {"type": ["integer", "string"]},
+    "kitchenType": {"type": "string", "enum": ["none", "basic", "standard", "premium", "custom", "NEEDS_CONFIRMATION"]},
+    "roomCount": {"type": ["integer", "string"]},
+    "balconyCount": {"type": ["integer", "string"]},
+    "windowReplacementScope": {"type": "string", "enum": ["none", "partial", "full", "repairOnly", "NEEDS_CONFIRMATION"]},
+    "plumbingModificationScope": {"type": "string", "enum": ["none", "fixtureOnly", "partial", "full", "drainMove", "supplyDrainMove", "NEEDS_CONFIRMATION"]},
+    "electricalUpgradeScope": {"type": "string", "enum": ["none", "lightingOnly", "outletSwitch", "capacityIncrease", "fullRewire", "NEEDS_CONFIRMATION"]},
+    "knownDefects": {"type": "array", "items": {"type": "string"}},
+    "siteConstraints": {"type": "array", "items": {"type": "string"}},
+    "clientPriority": {"type": "array", "items": {"type": "string"}}
+  },
+  "x-ecorean": {
+    "inputNormalizerOutput": ["normalizedProjectType", "normalizedScopes", "spaceFlags", "riskFlags", "needsConfirmation"],
+    "engineFlow": ["Input Normalizer", "Preset Engine", "Rule Engine", "Default Spec Engine", "Estimate Engine", "Schedule Engine", "Document Generator", "Diagnostics", "Case Library"]
+  }
+}
+

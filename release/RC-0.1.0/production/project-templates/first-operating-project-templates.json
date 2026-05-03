@@ -1,0 +1,98 @@
+{
+  "version": "ECOREAN_BOC_MVP_RC_0_1_0",
+  "templateStatus": "BASELINE_READY",
+  "systemLanguage": "English",
+  "displayLanguage": "Korean",
+  "pricingPolicy": {
+    "allowEstimatedRealPrice": false,
+    "defaultPriceStatus": "NEEDS_RESEARCH",
+    "masterDbDirectUpdateAllowed": false,
+    "approvalRequired": true
+  },
+  "templates": [
+    {
+      "templateId": "tpl_apartment_full_remodeling",
+      "templateName": "apartment_full_remodeling",
+      "displayNameKo": "아파트 전체 리모델링",
+      "projectType": "APARTMENT_FULL_REMODELING",
+      "defaultInputValues": {
+        "buildingType": "APARTMENT",
+        "constructionScope": "FULL_REMODELING",
+        "finishGrade": "MID_TO_UPPER_MID",
+        "budgetLevel": "NEEDS_INPUT",
+        "spaceComposition": ["bathroom", "kitchen", "rooms", "balcony"],
+        "knownDefects": "NEEDS_CONFIRMATION"
+      },
+      "defaultProcesses": ["demolition", "waste", "plumbing", "electrical", "waterproofing_conditional", "tile", "carpentry", "wallpaper", "film", "flooring", "lighting", "bathroom", "kitchen", "final_cleaning"],
+      "needsConfirmationRules": ["demolitionScope", "waterproofingNeed", "windowReplacementScope", "plumbingModificationScope", "electricalUpgradeScope", "condensationRepairNeed"],
+      "defaultDocuments": ["customerEstimateDraft", "internalCostDraft", "scheduleDraft", "purchaseOrderDraft", "paymentPlanDraft", "inspectionChecklistDraft"],
+      "dataStatus": "STRUCTURE_READY"
+    },
+    {
+      "templateId": "tpl_bathroom_single_remodeling",
+      "templateName": "bathroom_single_remodeling",
+      "displayNameKo": "욕실 단독 리모델링",
+      "projectType": "BATHROOM_REMODELING",
+      "defaultInputValues": {
+        "buildingType": "NEEDS_INPUT",
+        "constructionScope": "BATHROOM_ONLY",
+        "bathroomCount": 1,
+        "finishGrade": "NEEDS_INPUT",
+        "knownDefects": "NEEDS_CONFIRMATION"
+      },
+      "defaultProcesses": ["bathroom_demolition_conditional", "waste_conditional", "plumbing_inspection", "waterproofing_conditional", "tile", "fixture_installation", "ceiling", "lighting", "ventilation", "silicone", "final_cleaning"],
+      "needsConfirmationRules": ["floorDemolition", "wallDemolition", "existingWaterproofLayer", "plumbingChange", "leakHistory", "showerZoneChange"],
+      "defaultDocuments": ["customerEstimateDraft", "internalCostDraft", "purchaseOrderDraft", "inspectionChecklistDraft", "handoverChecklistDraft"],
+      "dataStatus": "STRUCTURE_READY"
+    },
+    {
+      "templateId": "tpl_kitchen_single_remodeling",
+      "templateName": "kitchen_single_remodeling",
+      "displayNameKo": "주방 단독 리모델링",
+      "projectType": "KITCHEN_REMODELING",
+      "defaultInputValues": {
+        "buildingType": "NEEDS_INPUT",
+        "constructionScope": "KITCHEN_ONLY",
+        "kitchenType": "NEEDS_INPUT",
+        "finishGrade": "NEEDS_INPUT"
+      },
+      "defaultProcesses": ["kitchen_demolition_conditional", "plumbing_conditional", "electrical_conditional", "wall_tile_conditional", "kitchen_furniture", "countertop", "fixture_installation", "final_cleaning"],
+      "needsConfirmationRules": ["kitchenFurnitureFullReplacement", "plumbingRelocation", "electricalRelocation", "wallTileRemovalOrOverlay", "builtInApplianceNeed"],
+      "defaultDocuments": ["customerEstimateDraft", "internalCostDraft", "purchaseOrderDraft", "scheduleDraft", "paymentPlanDraft"],
+      "dataStatus": "STRUCTURE_READY"
+    },
+    {
+      "templateId": "tpl_commercial_interior",
+      "templateName": "commercial_interior",
+      "displayNameKo": "상가 인테리어",
+      "projectType": "COMMERCIAL_INTERIOR",
+      "defaultInputValues": {
+        "buildingType": "COMMERCIAL",
+        "constructionScope": "NEEDS_INPUT",
+        "businessType": "NEEDS_INPUT",
+        "finishGrade": "NEEDS_INPUT",
+        "siteConstraints": "NEEDS_CONFIRMATION"
+      },
+      "defaultProcesses": ["demolition_conditional", "waste_conditional", "electrical", "plumbing_conditional", "hvac_conditional", "fire_safety_conditional", "carpentry", "paint_or_finish", "lighting", "signage_conditional", "final_cleaning"],
+      "needsConfirmationRules": ["businessLicenseCondition", "fireSafetyRequirement", "ventilationRequirement", "nightWorkAllowed", "buildingManagementRule"],
+      "defaultDocuments": ["customerEstimateDraft", "internalCostDraft", "scheduleDraft", "purchaseOrderDraft", "inspectionChecklistDraft", "paymentPlanDraft"],
+      "dataStatus": "STRUCTURE_READY"
+    },
+    {
+      "templateId": "tpl_restoration_work",
+      "templateName": "restoration_work",
+      "displayNameKo": "원상복구 공사",
+      "projectType": "RESTORATION_WORK",
+      "defaultInputValues": {
+        "buildingType": "NEEDS_INPUT",
+        "constructionScope": "RESTORATION",
+        "finishGrade": "BASIC",
+        "siteConstraints": "NEEDS_CONFIRMATION"
+      },
+      "defaultProcesses": ["demolition", "waste", "floor_restoration_conditional", "wall_restoration_conditional", "ceiling_restoration_conditional", "electrical_restoration_conditional", "paint_or_wallpaper", "final_cleaning"],
+      "needsConfirmationRules": ["leaseRestorationStandard", "demolitionScope", "wasteCarryOutCondition", "buildingManagementRule", "handoverDeadline"],
+      "defaultDocuments": ["customerEstimateDraft", "internalCostDraft", "scheduleDraft", "wastePlanDraft", "handoverChecklistDraft"],
+      "dataStatus": "STRUCTURE_READY"
+    }
+  ]
+}

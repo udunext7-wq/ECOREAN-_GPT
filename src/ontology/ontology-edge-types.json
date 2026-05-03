@@ -1,0 +1,13 @@
+{
+  "version": "0.1.0",
+  "edgeTypes": [
+    { "type": "HAS_PROCESS", "displayNameKo": "Has Process", "color": "#7ee0b5", "style": "solid" },
+    { "type": "USES_MATERIAL", "displayNameKo": "Uses Material", "color": "#d7b46a", "style": "solid" },
+    { "type": "USES_VENDOR", "displayNameKo": "Uses Vendor", "color": "#b58cff", "style": "dashed" },
+    { "type": "NEEDS_APPROVAL", "displayNameKo": "Needs Approval", "color": "#ffcc66", "style": "solid" },
+    { "type": "HAS_RISK", "displayNameKo": "Has Risk", "color": "#ff5f63", "style": "solid" },
+    { "type": "TRIGGERS_PAYMENT", "displayNameKo": "Triggers Payment", "color": "#54d18a", "style": "solid" },
+    { "type": "RECORDED_AS_CASE", "displayNameKo": "Recorded As Case", "color": "#8fd3ff", "style": "dashed" },
+    { "type": "GENERATES_LEARNING", "displayNameKo": "Generates Learning", "color": "#ffffff", "style": "dotted" }
+  ]
+}

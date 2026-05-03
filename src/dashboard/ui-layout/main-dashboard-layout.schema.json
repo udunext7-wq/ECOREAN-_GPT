@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "0.1-main-dashboard-layout",
+  "layoutId": "BOC_CEO_MAIN_LAYOUT",
+  "screenName": "BOC CEO Dashboard Main",
+  "layoutPrinciples": [
+    "대표는 클릭 3번 안에 판단 가능해야 한다",
+    "숫자보다 위험을 먼저 본다",
+    "누수와 손실을 먼저 보여준다",
+    "승인 없이는 변경 불가",
+    "모든 KPI는 바로 Action 가능해야 한다"
+  ],
+  "regions": [
+    {
+      "regionId": "topBar",
+      "regionName": "TOP BAR",
+      "position": "top",
+      "priority": 1,
+      "widgets": [
+        "todayRevenueExpected",
+        "todayExpenseExpected",
+        "todayNetCashflow",
+        "urgentAlertCount",
+        "pendingApprovalCount",
+        "riskProjectCount"
+      ]
+    },
+    {
+      "regionId": "leftPanel",
+      "regionName": "LEFT PANEL",
+      "position": "left",
+      "priority": 2,
+      "widgets": [
+        "projectList",
+        "sortByRisk",
+        "sortByDeadline",
+        "sortByReceivable",
+        "sortByDefectRisk"
+      ]
+    },
+    {
+      "regionId": "centerMain",
+      "regionName": "CENTER MAIN",
+      "position": "center",
+      "priority": 3,
+      "widgets": [
+        "todayOverview",
+        "riskDashboard",
+        "profitDashboard"
+      ]
+    },
+    {
+      "regionId": "rightPanel",
+      "regionName": "RIGHT PANEL",
+      "position": "right",
+      "priority": 4,
+      "widgets": [
+        "approvalCenter",
+        "immediateActionList",
+        "ceoApprovalRequired"
+      ]
+    },
+    {
+      "regionId": "bottomSection",
+      "regionName": "BOTTOM SECTION",
+      "position": "bottom",
+      "priority": 5,
+      "widgets": [
+        "learningDashboard",
+        "estimateVsActualTop",
+        "repeatedDefectTop",
+        "repeatedLossProcessTop"
+      ]
+    },
+    {
+      "regionId": "floatingAction",
+      "regionName": "FLOATING ACTION",
+      "position": "floating",
+      "priority": 0,
+      "widgets": [
+        "open3DOntologyView",
+        "projectDrillDown",
+        "masterDbUpdateReview"
+      ]
+    }
+  ],
+  "clickDepthRule": {
+    "maxClicksToDecision": 3,
+    "decisionTypes": ["approve", "block", "requestRevision", "prioritize", "open3DGraph"]
+  },
+  "defaultFocus": {
+    "first": "urgentAlertCount",
+    "second": "pendingApprovalCount",
+    "third": "todayNetCashflow"
+  }
+}

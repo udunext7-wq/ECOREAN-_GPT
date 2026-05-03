@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "1.0.0",
+  "adminScreens": [
+    {
+      "screenId": "master_db_admin",
+      "displayNameKo": "Master DB Admin",
+      "targetDb": "all_master_db",
+      "allowedActions": ["VIEW", "CREATE_CHANGE_REQUEST", "IMPORT_PREVIEW", "EXPORT"],
+      "directEditAllowed": false,
+      "approvalRequired": true,
+      "rollbackRequired": true
+    },
+    {
+      "screenId": "pricing_research_admin",
+      "displayNameKo": "Pricing Research Admin",
+      "targetDb": "pricing_research",
+      "allowedActions": ["VIEW", "CREATE_CHANGE_REQUEST", "IMPORT_PREVIEW", "EXPORT"],
+      "directEditAllowed": false,
+      "approvalRequired": true,
+      "rollbackRequired": true
+    },
+    {
+      "screenId": "vendor_crm_admin",
+      "displayNameKo": "Vendor CRM Admin",
+      "targetDb": "vendor_db",
+      "allowedActions": ["VIEW", "CREATE_CHANGE_REQUEST", "IMPORT_PREVIEW", "EXPORT", "ARCHIVE_REQUEST"],
+      "directEditAllowed": false,
+      "approvalRequired": true,
+      "rollbackRequired": true
+    },
+    {
+      "screenId": "brand_db_admin",
+      "displayNameKo": "Brand DB Admin",
+      "targetDb": "brand_db",
+      "allowedActions": ["VIEW", "CREATE_CHANGE_REQUEST", "IMPORT_PREVIEW", "EXPORT"],
+      "directEditAllowed": false,
+      "approvalRequired": true,
+      "rollbackRequired": true
+    },
+    {
+      "screenId": "process_db_admin",
+      "displayNameKo": "Process DB Admin",
+      "targetDb": "process_db",
+      "allowedActions": ["VIEW", "CREATE_CHANGE_REQUEST", "IMPORT_PREVIEW", "EXPORT"],
+      "directEditAllowed": false,
+      "approvalRequired": true,
+      "rollbackRequired": true
+    },
+    {
+      "screenId": "approval_required_queue",
+      "displayNameKo": "Approval Required Queue",
+      "targetDb": "approval_log",
+      "allowedActions": ["VIEW", "EXPORT"],
+      "directEditAllowed": false,
+      "approvalRequired": true,
+      "rollbackRequired": true
+    }
+  ],
+  "dataStates": ["EMPTY", "UNKNOWN", "NEEDS_RESEARCH", "PARTIAL", "VERIFIED", "INTERNAL_VALIDATED"],
+  "changePolicy": {
+    "directEditAllowed": false,
+    "approvalRequired": true,
+    "rollbackRequired": true
+  },
+  "importExport": {
+    "importFormats": ["JSON", "EXCEL", "CSV"],
+    "exportFormats": ["JSON", "EXCEL", "CSV"],
+    "importCreatesChangeRequest": true
+  }
+}
+

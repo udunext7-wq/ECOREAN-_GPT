@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "0.1-widget",
+  "widgetId": "todayOverview",
+  "title": "Today Overview",
+  "mainKpi": "오늘 실행해야 할 수금, 발주, 검수, 승인 항목",
+  "warningLevel": "HIGH",
+  "blockingLevel": "BLOCKING",
+  "approvalRequired": true,
+  "sourceData": ["PaymentMilestone", "Cashflow", "PurchaseOrder", "Inspection", "ApprovalLog", "Schedule"],
+  "relatedProject": "multiple",
+  "actionButton": ["approveClaim", "approvePurchaseOrder", "requestInspection", "openApprovalCenter"],
+  "nextActionRecommendation": "긴급 경고가 있으면 먼저 차단 항목을 열고, 없으면 오늘 청구 가능 현장부터 승인한다.",
+  "childWidgets": [
+    "오늘 계약금 입금",
+    "오늘 중도금 청구 가능 현장",
+    "오늘 잔금 청구 가능 현장",
+    "오늘 발주 필요 항목",
+    "오늘 공정 지연 현장",
+    "오늘 검수 필요 현장",
+    "오늘 승인 필요 항목"
+  ]
+}

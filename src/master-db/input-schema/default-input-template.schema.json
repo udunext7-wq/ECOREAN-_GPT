@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "0.1-default-input-template",
+  "title": "ECOREAN Default Input Template",
+  "type": "object",
+  "required": [
+    "templateId",
+    "templateName",
+    "buildingType",
+    "areaRange",
+    "spaceComposition",
+    "defaultFinishGrade",
+    "defaultBudgetLevel",
+    "defaultConstructionScope",
+    "defaultDemolitionScope",
+    "defaultSiteConstraints",
+    "defaultClientPriority",
+    "requiredFields",
+    "optionalFields",
+    "confirmationFields"
+  ],
+  "properties": {
+    "templateId": {"type": "string"},
+    "templateName": {"type": "string"},
+    "buildingType": {"type": "string"},
+    "areaRange": {"type": "object", "additionalProperties": true},
+    "spaceComposition": {"type": "object", "additionalProperties": true},
+    "defaultFinishGrade": {"type": "string"},
+    "defaultBudgetLevel": {"type": "string"},
+    "defaultConstructionScope": {"type": "array", "items": {"type": "string"}},
+    "defaultDemolitionScope": {"type": "object", "additionalProperties": true},
+    "defaultSiteConstraints": {"type": "array", "items": {"type": "string"}},
+    "defaultClientPriority": {"type": "array", "items": {"type": "string"}},
+    "requiredFields": {"type": "array", "items": {"type": "string"}},
+    "optionalFields": {"type": "array", "items": {"type": "string"}},
+    "confirmationFields": {"type": "array", "items": {"type": "string"}}
+  }
+}
+

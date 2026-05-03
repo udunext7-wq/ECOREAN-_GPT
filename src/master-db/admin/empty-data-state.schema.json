@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecorean.local/schema/empty-data-state.schema.json",
+  "title": "ECOREAN Empty Data State",
+  "type": "object",
+  "required": ["itemId", "targetDb", "dataStatus", "displayNameKo", "estimateBehavior", "dashboardBehavior"],
+  "properties": {
+    "itemId": { "type": "string" },
+    "targetDb": { "type": "string" },
+    "dataStatus": { "enum": ["EMPTY", "UNKNOWN", "NEEDS_RESEARCH", "PARTIAL", "VERIFIED", "INTERNAL_VALIDATED"] },
+    "displayNameKo": { "type": "string" },
+    "missingFields": { "type": "array", "items": { "type": "string" } },
+    "estimateBehavior": { "enum": ["ALLOW_PRELIMINARY_ESTIMATE", "ALLOW_WITH_WARNING", "BLOCK_FINAL_ESTIMATE"] },
+    "dashboardBehavior": { "enum": ["SHOW_WARNING", "SHOW_BLOCKING_ALERT", "SHOW_EMPTY_STATE"] },
+    "approvalRequiredBeforeUse": { "type": "boolean" },
+    "notes": { "type": "string" }
+  }
+}

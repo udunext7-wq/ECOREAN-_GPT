@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "0.1-widget",
+  "widgetId": "approvalCenter",
+  "title": "Approval Center",
+  "mainKpi": "대표 승인 대기 항목",
+  "warningLevel": "HIGH",
+  "blockingLevel": "BLOCKING",
+  "approvalRequired": true,
+  "sourceData": ["ApprovalLog", "MasterDbUpdateRequest", "ChangeOrder", "Defect", "PriceRecord", "BrandDB"],
+  "relatedProject": "multiple",
+  "actionButton": ["approve", "reject", "requestRevision", "viewRollbackData"],
+  "nextActionRecommendation": "공정이나 수금이 막힌 승인 요청부터 처리하고 rollbackData 없는 DB 변경은 반려한다.",
+  "childWidgets": [
+    "Master DB 업데이트 요청",
+    "단가 변경 승인",
+    "브랜드 변경 승인",
+    "추가공사 승인",
+    "하자 재시공 승인",
+    "예외 승인 요청"
+  ]
+}

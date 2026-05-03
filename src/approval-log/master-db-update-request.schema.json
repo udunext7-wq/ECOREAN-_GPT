@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "0.1-master-db-update-request",
+  "title": "ECOREAN Master DB Update Request",
+  "type": "object",
+  "required": [
+    "requestId",
+    "sourceProjectId",
+    "sourceCaseId",
+    "targetDb",
+    "targetItemId",
+    "currentValue",
+    "proposedValue",
+    "changeReason",
+    "evidence",
+    "impactAnalysis",
+    "riskLevel",
+    "requestedBy",
+    "approvalStatus",
+    "approvedBy",
+    "approvedAt",
+    "rollbackData",
+    "appliedAt"
+  ],
+  "properties": {
+    "requestId": {"type": "string"},
+    "sourceProjectId": {"type": "string"},
+    "sourceCaseId": {"type": "string"},
+    "targetDb": {"type": "string"},
+    "targetItemId": {"type": "string"},
+    "currentValue": {"type": ["object", "string", "number", "boolean", "null"]},
+    "proposedValue": {"type": ["object", "string", "number", "boolean", "null"]},
+    "changeReason": {"type": "string"},
+    "evidence": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "impactAnalysis": {"type": "object", "additionalProperties": true},
+    "riskLevel": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]},
+    "requestedBy": {"type": "string"},
+    "approvalStatus": {"type": "string", "enum": ["DRAFT", "REQUESTED", "APPROVED", "REJECTED", "APPLIED", "ROLLED_BACK"]},
+    "approvedBy": {"type": ["string", "null"]},
+    "approvedAt": {"type": ["string", "null"]},
+    "rollbackData": {"type": "object", "additionalProperties": true},
+    "appliedAt": {"type": ["string", "null"]}
+  }
+}
+

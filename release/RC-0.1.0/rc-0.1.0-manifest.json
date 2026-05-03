@@ -1,0 +1,37 @@
+{
+  "releaseName": "ECOREAN BOC MVP RC-0.1.0",
+  "releaseStatus": "LOCKED_BASELINE",
+  "lockedAt": "2026-04-26",
+  "ownerKo": "대표님",
+  "systemLayer": "English",
+  "displayLayer": "Korean",
+  "baselinePaths": {
+    "root": "release/RC-0.1.0",
+    "production": "release/RC-0.1.0/production",
+    "development": "release/RC-0.1.0/development",
+    "backup": "release/RC-0.1.0/backup/BACKUP-2026-04-25T23-19-57-301Z",
+    "export": "release/RC-0.1.0/export",
+    "installer": "release/RC-0.1.0/installer/ECOREAN BOC CEO Dashboard Setup 0.1.0.exe",
+    "winUnpacked": "release/RC-0.1.0/win-unpacked/ECOREAN BOC CEO Dashboard.exe",
+    "firstProjectTemplates": "release/RC-0.1.0/production/project-templates/first-operating-project-templates.json"
+  },
+  "databaseSeparation": {
+    "developmentDbSnapshot": "release/RC-0.1.0/development",
+    "productionDbArea": "release/RC-0.1.0/production/sqlite",
+    "rule": "Real operation must start from the production DB area, not from the development snapshot."
+  },
+  "backupBaseline": {
+    "backupId": "BACKUP-2026-04-25T23-19-57-301Z",
+    "sourceBackupPath": "storage/sqlite/backups/BACKUP-2026-04-25T23-19-57-301Z",
+    "releaseBackupPath": "release/RC-0.1.0/backup/BACKUP-2026-04-25T23-19-57-301Z",
+    "checksumAlgorithm": "sha256",
+    "restoreRequiresCeoApproval": true
+  },
+  "operationRules": [
+    "Do not overwrite RC-0.1.0 baseline.",
+    "Do not enter real data into development DB snapshot.",
+    "Start first operating project from approved templates only.",
+    "Keep UNKNOWN and NEEDS_RESEARCH as valid states until verified.",
+    "Master DB updates require approval log and rollback snapshot."
+  ]
+}

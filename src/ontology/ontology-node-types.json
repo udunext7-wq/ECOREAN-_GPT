@@ -1,0 +1,13 @@
+{
+  "version": "0.1.0",
+  "nodeTypes": [
+    { "type": "Project", "displayNameKo": "Project", "color": "#6ea8ff", "priority": 1 },
+    { "type": "Process", "displayNameKo": "Process", "color": "#7ee0b5", "priority": 2 },
+    { "type": "Material", "displayNameKo": "Material", "color": "#d7b46a", "priority": 3 },
+    { "type": "Vendor", "displayNameKo": "Vendor", "color": "#b58cff", "priority": 4 },
+    { "type": "Approval", "displayNameKo": "Approval", "color": "#ffcc66", "priority": 1 },
+    { "type": "Risk", "displayNameKo": "Risk", "color": "#ff5f63", "priority": 1 },
+    { "type": "Payment", "displayNameKo": "Payment", "color": "#54d18a", "priority": 2 },
+    { "type": "Case", "displayNameKo": "Case Library", "color": "#8fd3ff", "priority": 3 }
+  ]
+}

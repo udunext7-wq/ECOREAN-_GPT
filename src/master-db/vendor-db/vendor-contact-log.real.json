@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "PRJ-REAL-APT-0001",
+  "contactStatus": "CONTACT_PLANNED",
+  "contactLogs": [
+    {
+      "contactId": "CONTACT-REAL-001",
+      "vendorId": "VENDOR-REAL-TILE-001",
+      "contactDate": "UNKNOWN",
+      "contactMethod": "PHONE_THEN_KAKAOTALK",
+      "contactPersonName": "UNKNOWN",
+      "inquiryDetails": "타일/도기/대림바스 공급가, 최소 발주, 월말 정산 가능 여부 문의 예정",
+      "vendorResponse": "UNKNOWN",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "specialNotes": "대표 또는 담당자 직접 확인 후 VERIFIED 가능",
+      "nextFollowupDate": "NEEDS_SCHEDULE",
+      "nextAction": "전화로 담당자 확인 후 카톡 품목표 발송",
+      "owner": "CEO",
+      "approvalNeeded": true
+    },
+    {
+      "contactId": "CONTACT-REAL-002",
+      "vendorId": "VENDOR-REAL-WATERPROOF-001",
+      "contactDate": "UNKNOWN",
+      "contactMethod": "PHONE_THEN_QUOTE_REQUEST",
+      "contactPersonName": "UNKNOWN",
+      "inquiryDetails": "방수재 제품별 공급가, 커버리지, 하자 책임, 납기 문의 예정",
+      "vendorResponse": "UNKNOWN",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "specialNotes": "방수 하자 책임 범위 필수 확인",
+      "nextFollowupDate": "NEEDS_SCHEDULE",
+      "nextAction": "방수재 단가표와 제품별 시방서 요청",
+      "owner": "CEO",
+      "approvalNeeded": true
+    },
+    {
+      "contactId": "CONTACT-REAL-003",
+      "vendorId": "VENDOR-REAL-WINDOW-001",
+      "contactDate": "UNKNOWN",
+      "contactMethod": "PHONE_THEN_MEETING",
+      "contactPersonName": "UNKNOWN",
+      "inquiryDetails": "24평 구축 아파트 창호 부분 교체, 결로 보증, 로이유리, 실측 가능 일정 문의 예정",
+      "vendorResponse": "UNKNOWN",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "specialNotes": "결로 일부 있음 프로젝트이므로 하자 책임 범위 확인 필수",
+      "nextFollowupDate": "NEEDS_SCHEDULE",
+      "nextAction": "전화로 실측 가능 일정과 견적 기준 확인",
+      "owner": "CEO",
+      "approvalNeeded": true
+    }
+  ]
+}

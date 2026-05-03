@@ -1,0 +1,57 @@
+{
+  "version": "BATHROOM_PRICING_STANDARD_V2",
+  "sourceProjectId": "PRJ-PROD-BATH-0001",
+  "sourceEvidence": {
+    "customerPrice": 5490000,
+    "actualCost": 5070000,
+    "actualMargin": 420000,
+    "actualMarginRate": 0.0765
+  },
+  "marginTiers": [
+    { "tier": "BLOCK", "minMarginRate": 0, "maxMarginRate": 0.1999, "decisionKo": "수주 차단" },
+    { "tier": "CEO_APPROVAL", "minMarginRate": 0.2, "maxMarginRate": 0.2499, "decisionKo": "대표 승인 필요" },
+    { "tier": "ACCEPTABLE", "minMarginRate": 0.25, "maxMarginRate": 0.2999, "decisionKo": "수주 가능" },
+    { "tier": "PREFERRED", "minMarginRate": 0.3, "maxMarginRate": 1, "decisionKo": "우선 수주 가능" }
+  ],
+  "packages": [
+    {
+      "packageCode": "BASIC",
+      "displayNameKo": "Basic / 기본형",
+      "costFloor": 4420000,
+      "minimumAllowedPrice": 5530000,
+      "recommendedPrice": 5900000,
+      "targetMarginRate": 0.25
+    },
+    {
+      "packageCode": "STANDARD",
+      "displayNameKo": "Standard / 표준형",
+      "costFloor": 5070000,
+      "minimumAllowedPrice": 6760000,
+      "recommendedPrice": 6800000,
+      "targetMarginRate": 0.25
+    },
+    {
+      "packageCode": "PREMIUM",
+      "displayNameKo": "Premium / 프리미엄형",
+      "costFloor": 5070000,
+      "minimumAllowedPrice": 7250000,
+      "recommendedPrice": 7300000,
+      "targetMarginRate": 0.3
+    }
+  ],
+  "upsellOnlyOptions": [
+    "showerBooth",
+    "zendai",
+    "sixHundredPolishingTile",
+    "importFixture",
+    "epoxyGrout",
+    "jollyCut",
+    "floatingMortar"
+  ],
+  "approvalPolicy": {
+    "belowMinimumMargin": "BLOCK",
+    "between20And25": "CEO_APPROVAL_REQUIRED",
+    "masterDbUpdate": "CEO_APPROVAL_REQUIRED",
+    "rollbackRequired": true
+  }
+}

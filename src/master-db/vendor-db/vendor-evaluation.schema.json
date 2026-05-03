@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecorean.local/schema/vendor-evaluation.schema.json",
+  "title": "ECOREAN Vendor Evaluation Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "evaluations"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "evaluations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/vendorEvaluation" }
+    }
+  },
+  "$defs": {
+    "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "vendorEvaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluationId",
+        "vendorId",
+        "projectId",
+        "actualSupplierPriceSatisfaction",
+        "leadTimeSatisfaction",
+        "defectOccurred",
+        "asResponseSpeed",
+        "installerSatisfaction",
+        "clientClaimOccurred",
+        "repeatTradeRecommended",
+        "finalEvaluation",
+        "blacklistCandidate",
+        "masterDbFeedbackCandidate",
+        "evaluatedBy",
+        "evaluatedAt",
+        "notes"
+      ],
+      "properties": {
+        "evaluationId": { "type": "string" },
+        "vendorId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "actualSupplierPriceSatisfaction": { "$ref": "#/$defs/score" },
+        "leadTimeSatisfaction": { "$ref": "#/$defs/score" },
+        "defectOccurred": { "type": "boolean" },
+        "asResponseSpeed": { "$ref": "#/$defs/score" },
+        "installerSatisfaction": { "$ref": "#/$defs/score" },
+        "clientClaimOccurred": { "type": "boolean" },
+        "repeatTradeRecommended": { "enum": ["YES", "NO", "CONDITIONAL"] },
+        "finalEvaluation": { "enum": ["A_LONG_TERM_PARTNER", "B_USE_WITH_CAUTION", "C_ONE_TIME_ONLY", "D_BLACKLIST_CANDIDATE"] },
+        "blacklistCandidate": { "type": "boolean" },
+        "blacklistReason": { "type": "string" },
+        "masterDbFeedbackCandidate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "targetDb", "reason", "approvalRequired"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "targetDb": { "type": "string" },
+            "reason": { "type": "string" },
+            "approvalRequired": { "const": true }
+          }
+        },
+        "evaluatedBy": { "type": "string" },
+        "evaluatedAt": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

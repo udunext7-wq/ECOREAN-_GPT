@@ -1,0 +1,208 @@
+import { SectionCard } from '../../components/cards/SectionCard';
+import { TopBar } from '../../components/widgets/TopBar';
+import { ProjectList } from '../../components/widgets/ProjectList';
+import { AlertList } from '../../components/widgets/AlertList';
+import { ApprovalCenter } from '../../components/widgets/ApprovalCenter';
+import { InsightTable } from '../../components/tables/InsightTable';
+import { DetailDrawer } from '../../components/modals/DetailDrawer';
+import { NotificationLog } from '../../components/widgets/NotificationLog';
+import { useDashboardStore } from '../../state/dashboard-store/useDashboardStore';
+import { useApprovalStore } from '../../state/approval-store/useApprovalStore';
+import { useSoundStore } from '../../state/sound-store/useSoundStore';
+import type { ViewKey } from '../../src/types/dashboard';
+import { useEffect } from 'react';
+
+export function CeoDashboard() {
+  const dashboard = useDashboardStore();
+  const approval = useApprovalStore(dashboard.setData);
+  const sound = useSoundStore();
+
+  useEffect(() => {
+    dashboard.refreshDashboardData();
+  }, []);
+
+  useEffect(() => {
+    function handleDashboardDataUpdated(event: Event) {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail) {
+        dashboard.setData(customEvent.detail);
+      }
+    }
+
+    window.addEventListener('ecorean:dashboard-data-updated', handleDashboardDataUpdated);
+    return () => window.removeEventListener('ecorean:dashboard-data-updated', handleDashboardDataUpdated);
+  }, []);
+
+  useEffect(() => {
+    approval.syncApprovals(dashboard.data);
+  }, [dashboard.data.approvals]);
+
+  function handleAction(action: string) {
+    const map: Record<string, ViewKey> = {
+      openBlockingAlerts: 'risks',
+      openApprovalCenter: 'approvals',
+      openRiskProjects: 'risks',
+      openCashflow: 'project',
+      openExpenseSchedule: 'project',
+      openCostCapture: 'costCapture',
+      openMarginSafety: 'marginSafety',
+      openVendorPriceAdmin: 'vendorPrice',
+      openPortfolio: 'portfolio',
+      openCrew: 'crew',
+      openFinance: 'finance',
+      openSales: 'sales',
+      openClientContract: 'client'
+    };
+
+    sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
+    dashboard.setActiveView(map[action] ?? 'dashboard');
+  }
+
+  function openView(view: ViewKey, tone: 'click' | 'confirm' | 'warning' = 'click') {
+    sound.playTone(tone);
+    dashboard.setActiveView(view);
+  }
+
+  return (
+    <main className="app-shell command-room">
+      <TopBar kpis={dashboard.data.topBar} onAction={handleAction} />
+
+      <section className="red-alert-strip">
+        <div className="red-alert-heading">
+          <div>
+            <span className="eyebrow">STOP FIRST</span>
+            <h2>즉시 멈춰야 하는 항목</h2>
+          </div>
+          <button className="sound-toggle" onClick={() => sound.setSoundEnabled(!sound.soundEnabled)}>
+            사운드 {sound.soundEnabled ? 'ON' : 'OFF'}
+          </button>
+        </div>
+        <AlertList alerts={dashboard.data.redAlerts} onNavigate={(view) => openView(view, 'warning')} />
+      </section>
+
+      <div className="decision-grid">
+        <ProjectList
+          projects={dashboard.projects}
+          activeProjectId={dashboard.activeProject.projectId}
+          sortKey={dashboard.sortKey}
+          onSortChange={dashboard.setSortKey}
+          onProjectSelect={(projectId) => {
+            sound.playTone('click');
+            dashboard.setActiveProjectId(projectId);
+            dashboard.setActiveView('project');
+          }}
+        />
+
+        <section className="decision-main">
+          <SectionCard title="Approval Center" eyebrow="CEO DECISION">
+            <ApprovalCenter
+              approvals={approval.approvals}
+              messageKo={approval.approvalMessageKo}
+              onApprove={approval.approve}
+              onReject={approval.reject}
+              onRevise={approval.revise}
+              onTone={sound.playTone}
+            />
+          </SectionCard>
+
+          <SectionCard title="Today Action" eyebrow="MONEY AND RISK CONTROL">
+            <div className="action-command-grid">
+              <button className="command command-approve" onClick={() => openView('approvals', 'confirm')}>승인</button>
+              <button className="command command-block" onClick={() => openView('risks', 'warning')}>차단</button>
+              <button className="command command-order" onClick={() => openView('approvals', 'click')}>발주</button>
+              <button className="command command-claim" onClick={() => openView('project', 'click')}>청구</button>
+            </div>
+            <div className="today-action-list">
+              {dashboard.data.immediateActions.map((action) => (
+              <button
+                key={action.actionId}
+                className="action-row"
+                  onClick={() => {
+                    const actionType = action.buttonLabelKo === '차단' ? 'BLOCK' : action.buttonLabelKo === '발주' ? 'ORDER' : 'CLAIM';
+                    dashboard.recordAction(actionType, action.reasonKo);
+                    openView(action.targetView, action.buttonLabelKo === '차단' ? 'warning' : 'click');
+                  }}
+                >
+                  <span>{action.priority}</span>
+                  <div>
+                    <strong>{action.titleKo}</strong>
+                    <p>{action.reasonKo}</p>
+                  </div>
+                  <em>{action.buttonLabelKo}</em>
+                </button>
+              ))}
+            </div>
+          </SectionCard>
+        </section>
+
+        <aside className="decision-side">
+          <SectionCard title="Cash Control" eyebrow="TODAY MONEY">
+            <div className="money-stack">
+              <div>
+                <span>입금 예정</span>
+                <strong>38,500,000원</strong>
+              </div>
+              <div>
+                <span>지급 예정</span>
+                <strong>21,800,000원</strong>
+              </div>
+              <div className="money-red">
+                <span>미수금</span>
+                <strong>12,400,000원</strong>
+              </div>
+              <div className="money-red">
+                <span>예상 손실</span>
+                <strong>4,600,000원</strong>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Profit Leak" eyebrow="LOSS FIRST">
+            <div className="profit-tile">
+              <span>반복 손실 공정</span>
+              <strong>졸리컷 / 폐기물 반출</strong>
+              <p>단가, 품수, 운반비 보정 후보입니다.</p>
+              <button onClick={() => openView('costCapture', 'warning')}>실제 원가 확인</button>
+              <button onClick={() => openView('marginSafety', 'warning')}>Margin Safety</button>
+            </div>
+          </SectionCard>
+        </aside>
+      </div>
+
+      <section className="bottom-section">
+        <InsightTable title="Estimate vs Actual TOP" items={dashboard.data.estimateVsActualTop} />
+        <InsightTable title="반복 하자 TOP" items={dashboard.data.repeatedDefectsTop} />
+        <InsightTable title="반복 손실 공정 TOP" items={dashboard.data.repeatedLossProcessTop} />
+      </section>
+
+      <NotificationLog logs={dashboard.data.notificationLog} />
+
+      <div className="floating-actions">
+        <button onClick={() => openView('estimate', 'click')}>New Estimate</button>
+        <button onClick={() => openView('ontology', 'click')}>3D Ontology View</button>
+        <button onClick={() => openView('project', 'click')}>Project Drill Down</button>
+        <button onClick={() => openView('masterDb', 'click')}>Master DB Review</button>
+        <button onClick={() => openView('costCapture', 'warning')}>Cost Capture</button>
+        <button onClick={() => openView('marginSafety', 'warning')}>Margin Safety</button>
+        <button onClick={() => openView('vendorPrice', 'click')}>Vendor Price</button>
+        <button onClick={() => openView('portfolio', 'click')}>Portfolio</button>
+        <button onClick={() => openView('crew', 'click')}>Crew</button>
+        <button onClick={() => openView('finance', 'warning')}>Finance</button>
+        <button onClick={() => openView('sales', 'click')}>Sales</button>
+        <button onClick={() => openView('client', 'click')}>Client Contract</button>
+        <button onClick={() => openView('caseLibrary', 'click')}>Case Library</button>
+        <button onClick={() => openView('settings', 'click')}>Backup</button>
+      </div>
+
+      <DetailDrawer
+        view={dashboard.activeView}
+        project={dashboard.activeProject}
+        approvals={approval.approvals}
+        onNavigate={dashboard.setActiveView}
+        onApproveEstimate={approval.approve}
+        onRejectEstimate={approval.reject}
+        onReviseEstimate={approval.revise}
+      />
+    </main>
+  );
+}

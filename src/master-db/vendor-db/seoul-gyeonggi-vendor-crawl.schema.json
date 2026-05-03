@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ecorean.local/schema/seoul-gyeonggi-vendor-crawl.schema.json",
+  "title": "ECOREAN Seoul Gyeonggi Vendor Candidate Collection Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "collectionRegion", "privacyPolicy", "dedupePolicy", "candidates"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "collectionRegion": { "type": "array", "items": { "enum": ["서울", "경기 남부", "경기 북부", "인천"] } },
+    "privacyPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["personalDataCollectionAllowed", "publicBusinessInfoOnly", "priceCrawlingAllowed"],
+      "properties": {
+        "personalDataCollectionAllowed": { "const": false },
+        "publicBusinessInfoOnly": { "const": true },
+        "priceCrawlingAllowed": { "const": false }
+      }
+    },
+    "dedupePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keys", "manualReviewRequired"],
+      "properties": {
+        "keys": { "type": "array", "items": { "type": "string" } },
+        "manualReviewRequired": { "const": true }
+      }
+    },
+    "candidates": { "type": "array", "items": { "$ref": "#/$defs/vendorCandidate" } }
+  },
+  "$defs": {
+    "vendorCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vendorId",
+        "vendorName",
+        "category",
+        "subcategory",
+        "region",
+        "city",
+        "district",
+        "address",
+        "phone",
+        "website",
+        "sourceUrl",
+        "sourceType",
+        "collectedAt",
+        "handledItems",
+        "handledBrands",
+        "serviceArea",
+        "businessHours",
+        "hasDelivery",
+        "hasInstallation",
+        "hasWholesale",
+        "paymentCondition",
+        "estimatedReliability",
+        "dataConfidence",
+        "needsManualVerification",
+        "contactStatus",
+        "dataStatus",
+        "nextAction",
+        "notes"
+      ],
+      "properties": {
+        "vendorId": { "type": "string" },
+        "vendorName": { "type": "string" },
+        "category": { "type": "string" },
+        "subcategory": { "type": "string" },
+        "region": { "type": "string" },
+        "city": { "type": "string" },
+        "district": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "website": { "type": "string" },
+        "sourceUrl": { "type": "string" },
+        "sourceType": { "enum": ["officialWebsite", "publicDirectory", "mapSearch", "industryAssociation", "supplierWebsite", "manualInput"] },
+        "collectedAt": { "type": "string" },
+        "handledItems": { "type": "array", "items": { "type": "string" } },
+        "handledBrands": { "type": "array", "items": { "type": "string" } },
+        "serviceArea": { "type": "array", "items": { "type": "string" } },
+        "businessHours": { "type": "string" },
+        "hasDelivery": { "enum": ["UNKNOWN", "YES", "NO", "CONDITIONAL"] },
+        "hasInstallation": { "enum": ["UNKNOWN", "YES", "NO", "CONDITIONAL"] },
+        "hasWholesale": { "enum": ["UNKNOWN", "YES", "NO", "CONDITIONAL"] },
+        "paymentCondition": { "type": "string" },
+        "estimatedReliability": { "enum": ["UNKNOWN", "LOW", "MEDIUM", "HIGH"] },
+        "dataConfidence": { "enum": ["LOW", "MEDIUM", "HIGH", "VERIFIED"] },
+        "needsManualVerification": { "type": "boolean" },
+        "contactStatus": { "enum": ["NOT_CONTACTED", "CONTACT_PLANNED", "CONTACTED", "QUOTE_REQUESTED", "QUOTE_RECEIVED"] },
+        "dataStatus": { "enum": ["CANDIDATE", "NEEDS_VERIFICATION", "CONTACTED", "VERIFIED", "REJECTED", "BLACKLIST_CANDIDATE", "PARTNER_CANDIDATE"] },
+        "nextAction": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,1371 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "PRJ-REAL-APT-0001",
+  "researchId": "PRICE-RESEARCH-PRJ-REAL-APT-0001-TILE-WATERPROOF-001",
+  "researchName": "PRJ-REAL-APT-0001 타일/부자재/방수재 단가 조사",
+  "status": "NEEDS_RESEARCH",
+  "approvalPolicy": {
+    "masterDbDirectUpdateAllowed": false,
+    "approvalRequiredBeforeMasterDbUpdate": true,
+    "approvalRequestType": "MasterDbUpdateRequest",
+    "rollbackRequired": true,
+    "approvedBy": "CEO"
+  },
+  "items": [
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "TILE-WALL-001",
+      "itemName": "벽타일",
+      "category": "Tile",
+      "subcategory": "wall_tile",
+      "standardSpec": "욕실/주방 벽 적용 표준 규격 NEEDS_RESEARCH",
+      "unit": "m2",
+      "quantityBasis": "시공 면적 기준, 손실률 별도",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["자기질 벽타일", "도기질 벽타일", "포세린 벽타일"],
+      "commonDefectRisk": ["들뜸", "줄눈 오염", "타일 파손", "색상 로트 차이"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "official",
+          "sourceName": "조달청 가격정보, 표준시장단가",
+          "dataToCollect": ["officialPrice", "unit", "sourceDate"]
+        },
+        {
+          "sourceType": "supplier",
+          "sourceName": "타일 거래처/대리점",
+          "dataToCollect": ["supplierPrice", "minimumOrderUnit", "leadTimeDays", "paymentCondition"]
+        },
+        {
+          "sourceType": "market",
+          "sourceName": "온라인 자재몰/도매몰",
+          "dataToCollect": ["marketPrice", "shippingCondition", "stockStatus"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "ECOREAN 실제 구매/시공 기록",
+          "dataToCollect": ["internalPrice", "actualWasteRate", "actualDefectRate"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "accessoryCost", "wasteRate", "leadTimeDays"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualWasteRate", "actualLeadTimeDays"],
+        "varianceFields": ["priceVariance", "laborVariance", "wasteVariance", "deliveryVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "고객 선택 브랜드/규격에 따라 금액 차이가 커서 표준형과 고급형을 분리 조사한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "TILE-FLOOR-001",
+      "itemName": "바닥타일",
+      "category": "Tile",
+      "subcategory": "floor_tile",
+      "standardSpec": "욕실/현관/발코니 바닥 적용 표준 규격 NEEDS_RESEARCH",
+      "unit": "m2",
+      "quantityBasis": "시공 면적 기준, 물매/배수구 컷팅 영향 별도",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["논슬립 타일", "포세린 바닥타일", "자기질 바닥타일"],
+      "commonDefectRisk": ["구배 불량", "배수 불량", "들뜸", "미끄럼"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "official",
+          "sourceName": "표준시장단가, 조달청 가격정보",
+          "dataToCollect": ["officialPrice", "unit"]
+        },
+        {
+          "sourceType": "supplier",
+          "sourceName": "타일 거래처/대리점",
+          "dataToCollect": ["supplierPrice", "leadTimeDays", "minimumOrderUnit"]
+        },
+        {
+          "sourceType": "market",
+          "sourceName": "온라인 자재몰/타일 도매몰",
+          "dataToCollect": ["marketPrice", "deliveryFee"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "ECOREAN 실제 현장 기록",
+          "dataToCollect": ["internalPrice", "actualWasteRate", "defectHistory"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "wasteRate"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualWasteRate"],
+        "varianceFields": ["priceVariance", "laborVariance", "wasteVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "욕실 바닥은 방수/구배/배수구 조건과 함께 확인한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "TILE-PORCELAIN-600-001",
+      "itemName": "600각 포세린",
+      "category": "Tile",
+      "subcategory": "600_porcelain_tile",
+      "standardSpec": "600x600 포세린 타일",
+      "unit": "m2",
+      "quantityBasis": "시공 면적 기준, 컷팅/로스/양중 별도",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["600각 자기질", "대형 포세린", "수입 포세린"],
+      "commonDefectRisk": ["평활도 불량", "단차", "컷팅 파손", "하중/양중 비용 증가"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "포세린 타일 대리점/도매상",
+          "dataToCollect": ["supplierPrice", "brand", "origin", "leadTimeDays", "stockStatus"]
+        },
+        {
+          "sourceType": "market",
+          "sourceName": "온라인 타일몰",
+          "dataToCollect": ["marketPrice", "deliveryFee", "boxUnit"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "시공팀 실제 품수 기록",
+          "dataToCollect": ["laborCost", "actualProductivity", "actualWasteRate"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "accessoryCost", "wasteRate"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualAccessoryCost", "actualWasteRate"],
+        "varianceFields": ["priceVariance", "laborVariance", "accessoryVariance", "wasteVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "600각은 레벨링 클립/접착재/시공 난이도와 함께 조사한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "TILE-LARGE-001",
+      "itemName": "대형타일",
+      "category": "Tile",
+      "subcategory": "large_format_tile",
+      "standardSpec": "600각 초과 대형타일 NEEDS_RESEARCH",
+      "unit": "m2",
+      "quantityBasis": "면적 + 난이도 + 양중 + 컷팅 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["600각 포세린", "박판타일", "수입 대형타일"],
+      "commonDefectRisk": ["파손", "단차", "들뜸", "양중비 증가", "시공 품수 증가"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "대형타일 전문 대리점",
+          "dataToCollect": ["supplierPrice", "leadTimeDays", "minimumOrderUnit", "breakagePolicy"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "타일 시공팀",
+          "dataToCollect": ["laborCost", "crewProductivity", "difficultyAdjust", "minimumLaborCharge"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "wasteRate", "leadTimeDays"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualWasteRate", "actualLeadTimeDays"],
+        "varianceFields": ["priceVariance", "laborVariance", "scheduleVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "대형타일은 대표 승인 전 고객 견적 확정 금지."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "TILE-SLAB-001",
+      "itemName": "박판타일",
+      "category": "Tile",
+      "subcategory": "thin_slab_tile",
+      "standardSpec": "박판/슬랩 계열 NEEDS_RESEARCH",
+      "unit": "m2",
+      "quantityBasis": "면적 + 운반 + 절단 + 전문 시공 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["대형 포세린", "세라믹 슬랩", "엔지니어드 스톤"],
+      "commonDefectRisk": ["운반 파손", "절단 파손", "전문 장비 필요", "재시공 비용 큼"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "박판타일 전문 공급처",
+          "dataToCollect": ["supplierPrice", "transportCondition", "leadTimeDays", "breakagePolicy"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "전문 시공 외주팀",
+          "dataToCollect": ["laborCost", "equipmentCost", "minimumLaborCharge"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "leadTimeDays", "wasteRate"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualLeadTimeDays", "actualBreakageRate"],
+        "varianceFields": ["priceVariance", "laborVariance", "breakageVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "일반 욕실 표준 사양으로 자동 적용하지 않는다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "TILE-JOLLYCUT-001",
+      "itemName": "졸리컷",
+      "category": "Tile",
+      "subcategory": "jolly_cut",
+      "standardSpec": "타일 모서리 45도 가공 NEEDS_RESEARCH",
+      "unit": "m",
+      "quantityBasis": "모서리 길이 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["코너비드", "알루미늄 마감재", "타일 몰딩"],
+      "commonDefectRisk": ["모서리 깨짐", "가공 불량", "시공 품수 증가"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "internal",
+          "sourceName": "타일 시공팀",
+          "dataToCollect": ["laborCost", "cuttingBladeCost", "difficultyAdjust"]
+        },
+        {
+          "sourceType": "supplier",
+          "sourceName": "타일 가공 업체",
+          "dataToCollect": ["supplierPrice", "minimumOrderUnit", "leadTimeDays"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["laborCost", "wasteRate"],
+        "actualFields": ["actualLaborCost", "actualBreakageRate"],
+        "varianceFields": ["laborVariance", "defectVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "고객용 견적에는 선택 옵션으로 분리 표시한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "GROUT-STANDARD-001",
+      "itemName": "줄눈",
+      "category": "Tile",
+      "subcategory": "standard_grout",
+      "standardSpec": "일반 줄눈재 NEEDS_RESEARCH",
+      "unit": "m2",
+      "quantityBasis": "타일 면적/타일 규격 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["에폭시 줄눈", "방오 줄눈재"],
+      "commonDefectRisk": ["오염", "균열", "곰팡이"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "건자재상/타일 부자재 공급처",
+          "dataToCollect": ["supplierPrice", "minimumOrderUnit"]
+        },
+        {
+          "sourceType": "market",
+          "sourceName": "온라인 자재몰",
+          "dataToCollect": ["marketPrice", "brand"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "accessoryCost"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualAccessoryCost"],
+        "varianceFields": ["priceVariance", "laborVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "일반 줄눈과 에폭시 줄눈은 고객용 옵션으로 분리한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "GROUT-EPOXY-001",
+      "itemName": "에폭시 줄눈",
+      "category": "Tile",
+      "subcategory": "epoxy_grout",
+      "standardSpec": "욕실/주방 선택 옵션 NEEDS_RESEARCH",
+      "unit": "m2",
+      "quantityBasis": "타일 면적/줄눈 폭/타일 규격 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["일반 줄눈", "방오 줄눈"],
+      "commonDefectRisk": ["색상 불만", "시공 불균일", "재시공 난이도 높음"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "에폭시 줄눈 전문 공급처/시공팀",
+          "dataToCollect": ["supplierPrice", "laborCost", "warrantyCondition"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "ECOREAN 하자/클레임 기록",
+          "dataToCollect": ["commonDefectRisk", "actualDefectRate"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "wasteRate"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualDefectRate"],
+        "varianceFields": ["priceVariance", "laborVariance", "defectVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "고객 선호도와 하자율을 함께 수집한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "ADHESIVE-CEMENT-001",
+      "itemName": "압착시멘트",
+      "category": "AccessoryMaterial",
+      "subcategory": "tile_adhesive_cement",
+      "standardSpec": "타일 압착시멘트 NEEDS_RESEARCH",
+      "unit": "bag",
+      "quantityBasis": "타일 면적 + 바탕면 상태 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "UNKNOWN",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["아덱스급 접착재", "타일본드"],
+      "commonDefectRisk": ["접착 불량", "들뜸", "바탕면 부적합"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "건자재상/타일 부자재 거래처",
+          "dataToCollect": ["supplierPrice", "bagCoverage", "minimumOrderUnit"]
+        },
+        {
+          "sourceType": "market",
+          "sourceName": "온라인 건자재몰",
+          "dataToCollect": ["marketPrice", "brand", "deliveryFee"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "wasteRate", "quantityBasis"],
+        "actualFields": ["actualPurchasePrice", "actualConsumption", "actualWasteRate"],
+        "varianceFields": ["priceVariance", "quantityVariance", "wasteVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "타일 면적별 소요량 산식 확보가 중요하다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "ADHESIVE-TILE-BOND-001",
+      "itemName": "타일본드",
+      "category": "AccessoryMaterial",
+      "subcategory": "tile_bond",
+      "standardSpec": "타일본드 NEEDS_RESEARCH",
+      "unit": "pail",
+      "quantityBasis": "타일 면적/적용 바탕면 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "UNKNOWN",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["압착시멘트", "아덱스급 접착재", "에폭시본드"],
+      "commonDefectRisk": ["부적합 부위 사용", "들뜸", "건조시간 미준수"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "건자재상/접착재 대리점",
+          "dataToCollect": ["supplierPrice", "coverage", "leadTimeDays"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "quantityBasis"],
+        "actualFields": ["actualPurchasePrice", "actualConsumption"],
+        "varianceFields": ["priceVariance", "quantityVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "습식구역 적용 가능 여부를 반드시 확인한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "ADHESIVE-HIGH-PERFORMANCE-001",
+      "itemName": "아덱스급 접착재",
+      "category": "AccessoryMaterial",
+      "subcategory": "high_performance_tile_adhesive",
+      "standardSpec": "아덱스급 고성능 접착재 또는 동급 NEEDS_RESEARCH",
+      "unit": "bag",
+      "quantityBasis": "대형타일/포세린/습식구역 면적 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "UNKNOWN",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["ARDEX", "Mapei 동급", "Laticrete 동급"],
+      "commonDefectRisk": ["사양 과소 적용", "비용 과다", "바탕면 프라이머 누락"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "ARDEX/동급 브랜드 대리점",
+          "dataToCollect": ["supplierPrice", "dealerPrice", "technicalSpec", "coverage"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "타일 시공팀",
+          "dataToCollect": ["preferredProduct", "defectReductionImpact", "actualConsumption"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "accessoryCost", "wasteRate"],
+        "actualFields": ["actualPurchasePrice", "actualConsumption", "actualDefectRate"],
+        "varianceFields": ["priceVariance", "quantityVariance", "defectVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "대형타일/습식구역 품질 리스크와 원가 상승을 함께 비교한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "ADHESIVE-EPOXY-BOND-001",
+      "itemName": "에폭시본드",
+      "category": "AccessoryMaterial",
+      "subcategory": "epoxy_bond",
+      "standardSpec": "특수 접착/보수용 NEEDS_RESEARCH",
+      "unit": "set",
+      "quantityBasis": "적용 부위/면적/보수 범위 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "UNKNOWN",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["고성능 접착재", "보수 모르타르"],
+      "commonDefectRisk": ["과다 사양", "경화 불량", "재시공 난이도"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "방수/접착재 전문 대리점",
+          "dataToCollect": ["supplierPrice", "technicalSpec", "minimumOrderUnit"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "quantityBasis"],
+        "actualFields": ["actualPurchasePrice", "actualConsumption"],
+        "varianceFields": ["priceVariance", "quantityVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "표준 욕실 공정에는 자동 포함하지 않고 조건부 적용한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "PRIMER-TILE-WATERPROOF-001",
+      "itemName": "프라이머",
+      "category": "AccessoryMaterial",
+      "subcategory": "primer",
+      "standardSpec": "타일/방수 바탕면 프라이머 NEEDS_RESEARCH",
+      "unit": "can",
+      "quantityBasis": "도포 면적/바탕면 흡수율 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "UNKNOWN",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["접착 증강제", "방수 전용 프라이머"],
+      "commonDefectRisk": ["프라이머 누락", "접착 불량", "방수층 박리"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "방수재/접착재 대리점",
+          "dataToCollect": ["supplierPrice", "coverage", "compatibleMaterials"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "quantityBasis"],
+        "actualFields": ["actualPurchasePrice", "actualConsumption"],
+        "varianceFields": ["priceVariance", "quantityVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "방수재/접착재와 호환성까지 같이 조사한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "LEVELING-CLIP-001",
+      "itemName": "레벨링 클립",
+      "category": "AccessoryMaterial",
+      "subcategory": "leveling_clip",
+      "standardSpec": "대형타일/600각 적용 NEEDS_RESEARCH",
+      "unit": "pack",
+      "quantityBasis": "타일 장수/규격 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "UNKNOWN",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["레벨링 시스템", "스페이서"],
+      "commonDefectRisk": ["단차", "소모량 과소 산정", "규격 부적합"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "market",
+          "sourceName": "타일 부자재 온라인몰",
+          "dataToCollect": ["marketPrice", "packUnit", "tileThicknessCompatibility"]
+        },
+        {
+          "sourceType": "supplier",
+          "sourceName": "타일 부자재 거래처",
+          "dataToCollect": ["supplierPrice", "minimumOrderUnit"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "quantityBasis"],
+        "actualFields": ["actualPurchasePrice", "actualConsumption"],
+        "varianceFields": ["priceVariance", "quantityVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "대형타일 적용 시 자동 추천 후보."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "SPACER-001",
+      "itemName": "스페이서",
+      "category": "AccessoryMaterial",
+      "subcategory": "tile_spacer",
+      "standardSpec": "타일 간격재 NEEDS_RESEARCH",
+      "unit": "pack",
+      "quantityBasis": "타일 장수/규격/줄눈 폭 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "UNKNOWN",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["레벨링 클립", "십자 스페이서"],
+      "commonDefectRisk": ["줄눈 간격 불균일", "소모량 누락"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "타일 부자재 거래처",
+          "dataToCollect": ["supplierPrice", "packUnit"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "quantityBasis"],
+        "actualFields": ["actualPurchasePrice", "actualConsumption"],
+        "varianceFields": ["priceVariance", "quantityVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "타일 규격별 기본 소요량 산식 필요."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "CORNER-BEAD-001",
+      "itemName": "코너비드",
+      "category": "AccessoryMaterial",
+      "subcategory": "corner_bead",
+      "standardSpec": "타일 코너 마감재 NEEDS_RESEARCH",
+      "unit": "m",
+      "quantityBasis": "코너 길이 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["졸리컷", "알루미늄 몰딩", "PVC 코너재"],
+      "commonDefectRisk": ["마감 색상 불일치", "벌어짐", "고객 선호도 낮음"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "타일 부자재 거래처",
+          "dataToCollect": ["supplierPrice", "material", "colorOptions", "minimumOrderUnit"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "wasteRate"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualWasteRate"],
+        "varianceFields": ["priceVariance", "laborVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "졸리컷 대체 옵션으로 고객용 견적에 분리 표시 가능."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "SILICONE-WET-AREA-001",
+      "itemName": "실리콘",
+      "category": "AccessoryMaterial",
+      "subcategory": "wet_area_silicone",
+      "standardSpec": "욕실/주방 방수 실리콘 NEEDS_RESEARCH",
+      "unit": "ea",
+      "quantityBasis": "시공 길이/개소 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["바이오 실리콘", "우레탄 실란트"],
+      "commonDefectRisk": ["곰팡이", "박리", "마감 불량", "재시공"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "건자재상/실란트 대리점",
+          "dataToCollect": ["supplierPrice", "brand", "warrantyCondition"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "하자관리표",
+          "dataToCollect": ["actualDefectRate", "reworkCost"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "wasteRate"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualDefectRate"],
+        "varianceFields": ["priceVariance", "defectVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "하자율과 브랜드 선호도를 함께 수집한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "PROTECTION-MATERIAL-001",
+      "itemName": "보양재",
+      "category": "AccessoryMaterial",
+      "subcategory": "protection_material",
+      "standardSpec": "바닥/벽/엘리베이터 보양 NEEDS_RESEARCH",
+      "unit": "roll_or_sheet",
+      "quantityBasis": "보양 면적/동선/엘리베이터 사용 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["골판지", "보양매트", "비닐", "테이프"],
+      "commonDefectRisk": ["공용부 파손", "민원", "보양 누락"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "건자재상/보양재 공급처",
+          "dataToCollect": ["supplierPrice", "unitCoverage", "minimumOrderUnit"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "현장관리 기록",
+          "dataToCollect": ["actualConsumption", "damagePreventionImpact"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "quantityBasis", "laborCost"],
+        "actualFields": ["actualPurchasePrice", "actualConsumption", "actualLaborCost"],
+        "varianceFields": ["priceVariance", "quantityVariance", "claimVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "입주 전 구축 아파트는 공용부 보양 조건을 현장별로 확인한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "CUTTING-BLADE-001",
+      "itemName": "커팅날",
+      "category": "AccessoryMaterial",
+      "subcategory": "tile_cutting_blade",
+      "standardSpec": "타일 커팅 소모품 NEEDS_RESEARCH",
+      "unit": "ea",
+      "quantityBasis": "타일 종류/컷팅량/졸리컷 여부 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "UNKNOWN",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["대형타일 전용날", "포세린 전용날"],
+      "commonDefectRisk": ["컷팅 품질 저하", "파손 증가", "소모품 누락"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "공구상/타일 공구 거래처",
+          "dataToCollect": ["supplierPrice", "bladeType", "expectedLife"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "시공팀 소모품 사용 기록",
+          "dataToCollect": ["actualConsumption", "tileTypeImpact"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "quantityBasis"],
+        "actualFields": ["actualPurchasePrice", "actualConsumption"],
+        "varianceFields": ["priceVariance", "quantityVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "졸리컷/대형타일 선택 시 소모품 비용 상승을 분리 추적한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "WATERPROOF-LIQUID-001",
+      "itemName": "액체방수",
+      "category": "WaterproofMaterial",
+      "subcategory": "liquid_waterproofing",
+      "standardSpec": "욕실/습식구역 액체방수 NEEDS_RESEARCH",
+      "unit": "m2",
+      "quantityBasis": "바닥+벽체 올림 높이+코너 보강 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["도막방수", "탄성방수", "시멘트계 방수"],
+      "commonDefectRisk": ["누수", "양생 부족", "배수구 주변 취약", "코너부 균열"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "official",
+          "sourceName": "표준품셈/표준시장단가",
+          "dataToCollect": ["officialPrice", "laborCost", "unit"]
+        },
+        {
+          "sourceType": "supplier",
+          "sourceName": "방수재 대리점",
+          "dataToCollect": ["supplierPrice", "coverage", "leadTimeDays"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "방수 검수/하자관리표",
+          "dataToCollect": ["actualDefectRate", "actualRepairCost"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "accessoryCost", "wasteRate", "leadTimeDays"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualDefectRate", "actualLeadTimeDays"],
+        "varianceFields": ["priceVariance", "laborVariance", "defectVariance", "scheduleVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "방수는 자동 확정하지 않고 현장 조건 확인 후 적용한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "WATERPROOF-MEMBRANE-001",
+      "itemName": "도막방수",
+      "category": "WaterproofMaterial",
+      "subcategory": "membrane_waterproofing",
+      "standardSpec": "욕실/발코니 도막방수 NEEDS_RESEARCH",
+      "unit": "m2",
+      "quantityBasis": "도포 면적/도포 횟수/두께 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["액체방수", "탄성방수", "우레탄 방수"],
+      "commonDefectRisk": ["핀홀", "두께 부족", "양생 부족", "접합부 누수"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "official",
+          "sourceName": "표준품셈/표준시장단가",
+          "dataToCollect": ["officialPrice", "laborCost"]
+        },
+        {
+          "sourceType": "supplier",
+          "sourceName": "방수재 브랜드 대리점",
+          "dataToCollect": ["supplierPrice", "coverage", "curingTime", "leadTimeDays"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "leadTimeDays", "wasteRate"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualCuringTime", "actualDefectRate"],
+        "varianceFields": ["priceVariance", "laborVariance", "durationVariance", "defectVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "욕실 전체 철거 여부와 방수 검수 조건을 함께 기록한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "WATERPROOF-ELASTIC-001",
+      "itemName": "탄성방수",
+      "category": "WaterproofMaterial",
+      "subcategory": "elastic_waterproofing",
+      "standardSpec": "균열 대응 탄성방수 NEEDS_RESEARCH",
+      "unit": "m2",
+      "quantityBasis": "적용 면적/균열 위험/도포 횟수 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["도막방수", "우레탄 방수"],
+      "commonDefectRisk": ["바탕면 부적합", "양생 불량", "접착 불량"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "방수재 대리점/전문 시공팀",
+          "dataToCollect": ["supplierPrice", "laborCost", "coverage", "curingTime"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "누수/하자 Case Library",
+          "dataToCollect": ["defectReductionImpact", "actualRepairCost"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "wasteRate"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualDefectRate"],
+        "varianceFields": ["priceVariance", "laborVariance", "defectVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "구축 아파트 균열/결로 조건과 함께 적용 여부를 판단한다."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "WATERPROOF-URETHANE-001",
+      "itemName": "우레탄 방수",
+      "category": "WaterproofMaterial",
+      "subcategory": "urethane_waterproofing",
+      "standardSpec": "발코니/외부/습식구역 우레탄 방수 NEEDS_RESEARCH",
+      "unit": "m2",
+      "quantityBasis": "시공 면적/도포 두께/프라이머 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["탄성방수", "도막방수", "시트방수"],
+      "commonDefectRisk": ["냄새", "양생 지연", "두께 부족", "박리"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "official",
+          "sourceName": "표준품셈/표준시장단가",
+          "dataToCollect": ["officialPrice", "laborCost"]
+        },
+        {
+          "sourceType": "supplier",
+          "sourceName": "우레탄 방수재 대리점",
+          "dataToCollect": ["supplierPrice", "primerCost", "topcoatCost", "curingTime"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "accessoryCost", "leadTimeDays"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualAccessoryCost", "actualDuration"],
+        "varianceFields": ["priceVariance", "laborVariance", "durationVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "이번 프로젝트에서는 발코니 조건 확인 후 적용 여부 판단."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "WATERPROOF-CORNER-REINFORCE-001",
+      "itemName": "코너 보강재",
+      "category": "WaterproofMaterial",
+      "subcategory": "corner_reinforcement",
+      "standardSpec": "방수 코너 보강재 NEEDS_RESEARCH",
+      "unit": "m",
+      "quantityBasis": "벽/바닥 접합부 및 코너 길이 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["방수 테이프", "메쉬 보강재", "실란트 보강"],
+      "commonDefectRisk": ["코너 누수", "균열", "보강 누락"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "방수재 대리점",
+          "dataToCollect": ["supplierPrice", "compatibleWaterproofMaterials", "minimumOrderUnit"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "하자관리표",
+          "dataToCollect": ["cornerLeakHistory", "repairCost"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "quantityBasis"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualConsumption"],
+        "varianceFields": ["priceVariance", "quantityVariance", "defectVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "방수 하자 방지를 위한 필수 조사 항목."
+    },
+    {
+      "projectId": "PRJ-REAL-APT-0001",
+      "itemId": "WATERPROOF-DRAIN-REINFORCE-001",
+      "itemName": "배수구 보강재",
+      "category": "WaterproofMaterial",
+      "subcategory": "drain_reinforcement",
+      "standardSpec": "배수구 주변 방수 보강재 NEEDS_RESEARCH",
+      "unit": "ea",
+      "quantityBasis": "배수구 개소 기준",
+      "officialPrice": "NEEDS_RESEARCH",
+      "marketPrice": "NEEDS_RESEARCH",
+      "supplierPrice": "NEEDS_RESEARCH",
+      "internalPrice": "NEEDS_RESEARCH",
+      "laborCost": "NEEDS_RESEARCH",
+      "accessoryCost": "NEEDS_RESEARCH",
+      "wasteRate": "NEEDS_RESEARCH",
+      "minimumOrderUnit": "NEEDS_RESEARCH",
+      "leadTimeDays": "NEEDS_RESEARCH",
+      "paymentCondition": "NEEDS_RESEARCH",
+      "preferredSupplier": "NEEDS_RESEARCH",
+      "alternativeItems": ["방수 테이프", "배수구 전용 보강 키트", "실란트 보강"],
+      "commonDefectRisk": ["배수구 주변 누수", "방수층 단절", "구배 불량"],
+      "sourceType": "NEEDS_RESEARCH",
+      "sourceName": "NEEDS_RESEARCH",
+      "sourceDate": "NEEDS_RESEARCH",
+      "confidenceLevel": "UNKNOWN",
+      "updateCycle": "monthly_until_verified",
+      "approvalStatus": "NEEDS_RESEARCH",
+      "sourceCandidates": [
+        {
+          "sourceType": "supplier",
+          "sourceName": "방수재/배수구 부자재 거래처",
+          "dataToCollect": ["supplierPrice", "compatibleDrainType", "minimumOrderUnit"]
+        },
+        {
+          "sourceType": "internal",
+          "sourceName": "누수 하자 Case Library",
+          "dataToCollect": ["leakHistory", "repairCost", "defectRate"]
+        }
+      ],
+      "estimateVsActualLink": {
+        "enabled": true,
+        "estimatedFields": ["supplierPrice", "laborCost", "quantityBasis"],
+        "actualFields": ["actualPurchasePrice", "actualLaborCost", "actualConsumption"],
+        "varianceFields": ["priceVariance", "quantityVariance", "defectVariance"]
+      },
+      "approvalFlow": {
+        "nextStep": "CREATE_MASTER_DB_UPDATE_REQUEST",
+        "approvalRequestType": "MasterDbUpdateRequest",
+        "masterDbUpdateAllowedBeforeApproval": false,
+        "rollbackRequired": true
+      },
+      "notes": "욕실 방수 검수와 직접 연결되는 항목."
+    }
+  ]
+}

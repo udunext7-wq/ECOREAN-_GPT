@@ -1,0 +1,26 @@
+{
+  "presetId": "PRESET-APT-FULL-REMODELING",
+  "presetName": "아파트 전체 리모델링",
+  "projectType": "apartmentFullRemodeling",
+  "presetStatus": "STRUCTURE_READY",
+  "candidateProcesses": [
+    {"processGroup": "철거", "decisionBasis": "demolitionScope", "defaultDecision": "NEEDS_CONFIRMATION"},
+    {"processGroup": "폐기물", "decisionBasis": "demolitionScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "설비", "decisionBasis": "plumbingModificationScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "전기", "decisionBasis": "electricalUpgradeScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "방수", "decisionBasis": "bathroomCount, balconyCount, plumbingModificationScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "타일", "decisionBasis": "spaceComposition, finishGrade", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "목공", "decisionBasis": "constructionScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "도배", "decisionBasis": "finishGrade", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "필름", "decisionBasis": "constructionScope", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "바닥재", "decisionBasis": "areaM2, finishGrade", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "주방", "decisionBasis": "kitchenType", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "욕실", "decisionBasis": "bathroomCount", "defaultDecision": "CONDITIONAL"},
+    {"processGroup": "준공청소", "decisionBasis": "constructionScope", "defaultDecision": "CONDITIONAL"}
+  ],
+  "defaultSpecProfile": {"finishGrade": "standard", "budgetLevel": "mid", "source": "defaultSpecEngine"},
+  "documentsToGenerate": ["고객용 견적서", "내부 원가표", "발주서", "공정표", "공사일보", "검수표", "수금표", "현금흐름표", "하자관리표"],
+  "paymentMilestones": ["계약금", "중도금", "잔금", "추가공사비"],
+  "diagnosticFocus": ["철거 범위 미확인", "방수 판단 누락", "전기 증설 확인", "창호 납기", "입주일 충돌"]
+}
+

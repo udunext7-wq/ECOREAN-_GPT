@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "0.1-widget",
+  "widgetId": "riskDashboard",
+  "title": "Risk Dashboard",
+  "mainKpi": "차단이 필요한 하자, 누수, 결로, 발주, 검수 리스크",
+  "warningLevel": "HIGH",
+  "blockingLevel": "BLOCKING",
+  "approvalRequired": true,
+  "sourceData": ["Risk", "Inspection", "WaterproofProcess", "PlumbingProcess", "PurchaseOrder", "Defect", "Cashflow"],
+  "relatedProject": "multiple",
+  "actionButton": ["blockProcess", "requestInspection", "requestAlternativeMaterial", "open3DGraph"],
+  "nextActionRecommendation": "누수와 방수 검수 실패를 최우선으로 확인하고 후속 공정을 차단한다.",
+  "childWidgets": [
+    "하자 위험 현장",
+    "누수 리스크",
+    "결로 리스크",
+    "발주 지연 리스크",
+    "검수 실패 리스크",
+    "고객 클레임 위험",
+    "미수금 위험"
+  ]
+}

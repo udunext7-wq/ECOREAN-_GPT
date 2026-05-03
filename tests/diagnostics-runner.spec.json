@@ -1,0 +1,69 @@
+{
+  "specVersion": "0.1-diagnostics-runner",
+  "runnerName": "ECOREAN Diagnostics Test Runner",
+  "purpose": "조건 기반 공정 판단, 경고, 차단, 승인 요청, rollback 강제를 테스트한다.",
+  "inputFiles": [
+    "tests/rule-validation-cases.json",
+    "src/diagnostics/rule-checker.schema.json",
+    "src/diagnostics/warning-rules.schema.json",
+    "src/diagnostics/blocking-rules.schema.json",
+    "src/diagnostics/approval-required-rules.schema.json"
+  ],
+  "resultTypes": ["PASS", "FAIL", "WARN", "BLOCKED", "APPROVAL_REQUIRED", "NEEDS_CONFIRMATION"],
+  "requiredTestFields": [
+    "testId",
+    "ruleName",
+    "inputCondition",
+    "expectedResult",
+    "actualResult",
+    "passFail",
+    "warningMessage",
+    "blockingReason",
+    "approvalRequired",
+    "rollbackRequired",
+    "relatedProcess",
+    "relatedDocument",
+    "notes"
+  ],
+  "runnerRules": [
+    {
+      "ruleId": "RUNNER-001",
+      "ruleName": "Expected result must match actual result",
+      "failureCondition": "expectedResult != actualResult",
+      "result": "FAIL"
+    },
+    {
+      "ruleId": "RUNNER-002",
+      "ruleName": "Blocking rule must include blockingReason",
+      "failureCondition": "actualResult=BLOCKED AND blockingReason is empty",
+      "result": "FAIL"
+    },
+    {
+      "ruleId": "RUNNER-003",
+      "ruleName": "Approval-required rule must mark approvalRequired",
+      "failureCondition": "actualResult=APPROVAL_REQUIRED AND approvalRequired=false",
+      "result": "FAIL"
+    },
+    {
+      "ruleId": "RUNNER-004",
+      "ruleName": "DB changes must require rollback",
+      "failureCondition": "relatedDocument includes Master DB AND rollbackRequired=false",
+      "result": "FAIL"
+    }
+  ],
+  "blockingSummaryTargets": [
+    "방수 자동 확정",
+    "Master DB 무승인 업데이트",
+    "중도금 청구",
+    "공정 선후행 충돌",
+    "최소 품수 미적용",
+    "고객용/내부용 출력 혼합",
+    "rollback 없는 DB 변경"
+  ],
+  "warningSummaryTargets": [
+    "발주 리드타임 부족",
+    "NEEDS_CONFIRMATION 누락 가능성",
+    "부분공사 범위 불명확"
+  ]
+}
+

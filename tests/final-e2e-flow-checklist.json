@@ -1,0 +1,147 @@
+{
+  "testSuiteId": "FINAL-E2E-FLOW-CHECKLIST",
+  "version": "0.1.0",
+  "createdAt": "2026-04-26",
+  "purpose": "Validate the complete ECOREAN BOC closed-loop flow from minimum input to backup/export.",
+  "status": "PASS_WITH_NOTES",
+  "flow": [
+    {
+      "step": 1,
+      "name": "Minimum Input",
+      "expectedData": ["projectType", "buildingType", "areaPyeong", "spaceComposition", "constructionScope"],
+      "expectedResult": "Input is normalized and passed into draft generation.",
+      "status": "PASS"
+    },
+    {
+      "step": 2,
+      "name": "Preliminary Estimate",
+      "expectedData": ["generatedProcesses", "conditionalProcesses", "needsConfirmationItems", "missingPriceWarnings"],
+      "expectedResult": "Preliminary estimate is generated even when price data is UNKNOWN.",
+      "status": "PASS"
+    },
+    {
+      "step": 3,
+      "name": "Save Draft",
+      "expectedTables": ["estimate_drafts", "estimate_draft_inputs", "estimate_draft_processes", "estimate_draft_documents"],
+      "expectedResult": "Draft is stored in project.db.",
+      "status": "PASS"
+    },
+    {
+      "step": 4,
+      "name": "Edit Draft",
+      "expectedTables": ["estimate_draft_change_logs"],
+      "expectedResult": "Changes are logged without modifying Master DB.",
+      "status": "PASS"
+    },
+    {
+      "step": 5,
+      "name": "Approve Estimate",
+      "expectedTables": ["estimate_approval_logs", "approval_actions"],
+      "expectedResult": "CEO approval is required before final estimate.",
+      "status": "PASS"
+    },
+    {
+      "step": 6,
+      "name": "Final Estimate",
+      "expectedTables": ["final_estimates", "final_estimate_documents"],
+      "expectedResult": "Customer/internal final documents are separated.",
+      "status": "PASS"
+    },
+    {
+      "step": 7,
+      "name": "Execution Ready",
+      "expectedTables": ["execution_projects", "execution_documents", "purchase_orders", "payment_milestones"],
+      "expectedResult": "Execution documents are generated from final estimate.",
+      "status": "PASS"
+    },
+    {
+      "step": 8,
+      "name": "In Progress",
+      "expectedTables": ["site_operations"],
+      "expectedResult": "Only EXECUTION_READY projects can enter IN_PROGRESS.",
+      "status": "PASS"
+    },
+    {
+      "step": 9,
+      "name": "Daily Site Report",
+      "expectedTables": ["daily_site_reports"],
+      "expectedResult": "Daily reports are stored by date.",
+      "status": "PASS"
+    },
+    {
+      "step": 10,
+      "name": "Inspection Fail Blocking Rule",
+      "expectedTables": ["inspection_results", "site_risk_logs"],
+      "expectedResult": "Failed inspection blocks downstream process.",
+      "status": "PASS"
+    },
+    {
+      "step": 11,
+      "name": "Change Order Request",
+      "expectedTables": ["change_order_requests", "approvals"],
+      "expectedResult": "Change order is not reflected before CEO approval.",
+      "status": "PASS"
+    },
+    {
+      "step": 12,
+      "name": "Change Order Approval",
+      "expectedTables": ["change_order_approval_logs", "change_order_cost_impacts", "change_order_schedule_impacts", "change_order_payment_impacts"],
+      "expectedResult": "Approved change order creates cost, schedule, and payment impacts.",
+      "status": "PASS"
+    },
+    {
+      "step": 13,
+      "name": "Project Completion",
+      "expectedTables": ["project_completion_reports"],
+      "expectedResult": "Only IN_PROGRESS projects can be completed.",
+      "status": "PASS"
+    },
+    {
+      "step": 14,
+      "name": "Actual Cost Input",
+      "expectedTables": ["actual_costs", "actual_durations", "final_margin_reports"],
+      "expectedResult": "Final margin is calculated after actual cost entry.",
+      "status": "PASS"
+    },
+    {
+      "step": 15,
+      "name": "Estimate vs Actual",
+      "expectedTables": ["estimate_vs_actual_reports"],
+      "expectedResult": "Variance is stored and visible to learning layer.",
+      "status": "PASS"
+    },
+    {
+      "step": 16,
+      "name": "Case Library",
+      "expectedTables": ["case_library"],
+      "expectedResult": "Completed project becomes a case.",
+      "status": "PASS"
+    },
+    {
+      "step": 17,
+      "name": "Learning Suggestion",
+      "expectedTables": ["defect_patterns", "profit_patterns", "learning_suggestions", "auto_update_candidates"],
+      "expectedResult": "Repeated patterns create approval-required suggestions.",
+      "status": "PASS"
+    },
+    {
+      "step": 18,
+      "name": "Learning Approval",
+      "expectedTables": ["learning_approval_logs", "learning_update_snapshots", "master_db_update_requests", "master_db_values"],
+      "expectedResult": "Approved learning suggestion creates rollback snapshot and applies Master DB value.",
+      "status": "PASS"
+    },
+    {
+      "step": 19,
+      "name": "Backup Export",
+      "expectedTables": ["backup_logs", "export_logs"],
+      "expectedResult": "Backup, JSON export, and Excel export are generated.",
+      "status": "PASS"
+    }
+  ],
+  "releaseNotes": [
+    "UNKNOWN and NEEDS_RESEARCH states are accepted for MVP.",
+    "Restore overwrite must be tested in a sandbox before live operational use.",
+    "Some older display strings require Korean encoding cleanup before broader rollout."
+  ]
+}

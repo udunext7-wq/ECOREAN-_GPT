@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "0.1-custom-preset",
+  "title": "ECOREAN Custom Preset",
+  "type": "object",
+  "required": [
+    "presetId",
+    "presetName",
+    "presetType",
+    "projectType",
+    "buildingType",
+    "defaultInputValues",
+    "defaultProcesses",
+    "defaultSpecs",
+    "excludedProcesses",
+    "conditionalRules",
+    "needsConfirmationRules",
+    "defaultDocuments",
+    "defaultPaymentMilestones",
+    "defaultScheduleRules",
+    "notes"
+  ],
+  "properties": {
+    "presetId": {"type": "string"},
+    "presetName": {"type": "string"},
+    "presetType": {"type": "string", "enum": ["system", "company", "user", "projectDerived"]},
+    "projectType": {"type": "string"},
+    "buildingType": {"type": "string"},
+    "defaultInputValues": {"type": "object", "additionalProperties": true},
+    "defaultProcesses": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "defaultSpecs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "excludedProcesses": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "conditionalRules": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "needsConfirmationRules": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "defaultDocuments": {"type": "array", "items": {"type": "string"}},
+    "defaultPaymentMilestones": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "defaultScheduleRules": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "notes": {"type": "string"}
+  }
+}
+

@@ -1,0 +1,33 @@
+{
+  "ruleSetId": "cost_capture_blocking_rules_v2",
+  "displayNameKo": "Actual Cost Capture V2 차단 규칙",
+  "rules": [
+    {
+      "ruleId": "ACC-BLOCK-001",
+      "ruleName": "missingActualCostBlocksCompletion",
+      "displayNameKo": "실제 원가 미입력 시 완료 차단",
+      "severity": "RED",
+      "blockingStage": "COMPLETION",
+      "condition": "requiredCost.status in ['MISSING_CRITICAL', 'NEEDS_RESEARCH']",
+      "blockingMessageKo": "핵심 실제 원가가 입력되지 않아 COMPLETION 전환이 차단됩니다."
+    },
+    {
+      "ruleId": "ACC-BLOCK-002",
+      "ruleName": "criticalCostMissingCreatesRedAlert",
+      "displayNameKo": "핵심 원가 누락 RED ALERT",
+      "severity": "RED",
+      "blockingStage": "COMPLETION",
+      "condition": "criticalCost.status != 'CAPTURED'",
+      "blockingMessageKo": "철거/폐기물/타일/부자재/인건비/운반비/잡비 중 누락 항목이 있습니다."
+    },
+    {
+      "ruleId": "ACC-ALERT-001",
+      "ruleName": "marginDropCreatesCeoAlert",
+      "displayNameKo": "마진 급감 CEO Alert",
+      "severity": "YELLOW",
+      "blockingStage": "CEO_REVIEW",
+      "condition": "forecastMarginRate < 0.25",
+      "blockingMessageKo": "예상 마진율이 기준 이하로 하락했습니다. 대표 검토가 필요합니다."
+    }
+  ]
+}

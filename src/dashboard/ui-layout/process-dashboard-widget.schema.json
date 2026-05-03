@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "0.1-widget",
+  "widgetId": "processDashboard",
+  "title": "Process Dashboard",
+  "mainKpi": "현재 진행 공정과 선후행 충돌",
+  "warningLevel": "HIGH",
+  "blockingLevel": "BLOCKING",
+  "approvalRequired": false,
+  "sourceData": ["Schedule", "DailyReport", "ProcessDependency", "Diagnostics", "PurchaseOrder"],
+  "relatedProject": "multiple",
+  "actionButton": ["blockSuccessorProcess", "requestScheduleRevision", "requestConfirmation", "open3DGraph"],
+  "nextActionRecommendation": "선후행 오류와 NEEDS_CONFIRMATION 누락을 먼저 확인하고 견적/공정 확정을 막는다.",
+  "childWidgets": [
+    "현재 진행 공정",
+    "공정 충돌 경고",
+    "선후행 오류",
+    "방수 검수 실패",
+    "발주 누락",
+    "NEEDS_CONFIRMATION 누락"
+  ]
+}
