@@ -6,6 +6,7 @@ const {
   buildCustomerEstimateView,
   buildInternalCostView
 } = require('./bathroomEstimateService');
+const { exportEstimateDocument } = require('./estimateExportService');
 
 function nowIso() {
   return new Date().toISOString();
@@ -39,6 +40,9 @@ function openDatabase(filePath) {
 function createSqliteService({ app }) {
   const databaseDir = getDatabaseDir(app);
   fs.mkdirSync(databaseDir, { recursive: true });
+  const estimateExportDir = app && app.isPackaged
+    ? path.join(app.getPath('userData'), 'export', 'estimates')
+    : path.join(__dirname, '..', '..', 'export', 'estimates');
 
   const dbPaths = {
     project: path.join(databaseDir, 'project.db'),
@@ -3078,6 +3082,91 @@ function createSqliteService({ app }) {
       internalView: buildInternalCostView({ ...calculated, pce_decision: pce.decision }),
       dashboardData: getDashboardData()
     };
+  }
+
+  function getStoredBathroomEstimateModel(estimateId) {
+    if (!estimateId) throw new Error('estimateId is required');
+    const estimateRow = db.project.prepare('SELECT * FROM bathroom_estimates WHERE id = ?').get(estimateId);
+    if (!estimateRow) throw new Error(`Bathroom estimate not found: ${estimateId}`);
+    const itemRows = db.project.prepare(`
+      SELECT * FROM bathroom_estimate_items
+      WHERE estimate_id = ?
+      ORDER BY id ASC
+    `).all(estimateId);
+    return {
+      estimate: {
+        id: estimateRow.id,
+        customerName: estimateRow.customer_name,
+        siteName: estimateRow.site_name,
+        bathroomCount: estimateRow.bathroom_count,
+        bathroomAreaM2: estimateRow.bathroom_area_m2,
+        ceilingHeightMm: estimateRow.ceiling_height_mm,
+        constructionMethod: estimateRow.construction_method,
+        waterproofMethod: estimateRow.waterproof_method,
+        tileWallType: estimateRow.tile_wall_type,
+        tileFloorType: estimateRow.tile_floor_type,
+        options: fromJson(estimateRow.options_json, {}),
+        revenue: estimateRow.revenue,
+        totalCost: estimateRow.total_cost,
+        expectedMargin: estimateRow.expected_margin,
+        expectedMarginRate: estimateRow.expected_margin_rate,
+        pceDecision: estimateRow.pce_decision,
+        createdAt: estimateRow.created_at,
+        updatedAt: estimateRow.updated_at
+      },
+      items: itemRows.map((row) => ({
+        id: row.id,
+        category: row.category,
+        itemName: row.item_name,
+        quantity: row.quantity,
+        unit: row.unit,
+        customerUnitPrice: row.customer_unit_price,
+        customerTotal: row.customer_total,
+        materialCost: row.material_cost,
+        laborCost: row.labor_cost,
+        subcontractCost: row.subcontract_cost,
+        internalTotal: row.internal_total,
+        margin: row.margin,
+        marginRate: row.margin_rate
+      }))
+    };
+  }
+
+  function exportBathroomEstimateDocument({ estimateId, documentType = 'customer', format = 'pdf', actor = 'CEO' }) {
+    const createdAt = nowIso();
+    const model = getStoredBathroomEstimateModel(estimateId);
+    const result = exportEstimateDocument({
+      model,
+      type: documentType,
+      format,
+      outputDir: estimateExportDir
+    });
+
+    insertNotification({
+      level: 'INFO',
+      messageKo: `견적 출력 생성: ${result.fileName}`,
+      relatedProjectId: estimateId,
+      actionKo: format === 'xlsx' ? 'Excel Export' : 'PDF Export',
+      createdAt
+    });
+
+    db.logs.prepare(`
+      INSERT INTO action_logs (
+        action_log_id, action_type, actor, project_id, approval_id,
+        payload_json, reason_ko, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      `ACT-EST-EXPORT-${Date.now()}`,
+      'EXPORT_BATHROOM_ESTIMATE',
+      actor,
+      estimateId,
+      null,
+      toJson(result),
+      `${documentType}/${format} 견적 출력 생성`,
+      createdAt
+    );
+
+    return result;
   }
 
   function profitGateForWonLead({ lead, payload = {}, actor = 'CEO', createdAt = nowIso() }) {
@@ -10589,6 +10678,7 @@ function createSqliteService({ app }) {
       estimateDraftCount: countRows(db.project, 'estimate_drafts'),
       bathroomEstimateCount: countRows(db.project, 'bathroom_estimates'),
       bathroomEstimateItemCount: countRows(db.project, 'bathroom_estimate_items'),
+      estimateExportDir,
       portfolioProjectCount: countRows(db.project, 'portfolio_projects'),
       resourceAllocationCount: countRows(db.project, 'resource_allocations'),
       resourceConflictCount: countRows(db.project, 'resource_conflicts'),
@@ -10693,6 +10783,7 @@ function createSqliteService({ app }) {
     updateEstimateDraft,
     calculateBathroomEstimatePreview,
     saveBathroomEstimate,
+    exportBathroomEstimateDocument,
     getProjectExecutionReadiness,
     transitionProjectToExecution,
     getSiteOperationStatus,

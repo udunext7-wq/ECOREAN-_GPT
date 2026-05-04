@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('ecorean', {
     updateEstimateDraft: (payload) => ipcRenderer.invoke('boc:estimate-draft:update', payload),
     calculateBathroomEstimate: (payload) => ipcRenderer.invoke('boc:bathroom-estimate:calculate', payload),
     saveBathroomEstimate: (payload) => ipcRenderer.invoke('boc:bathroom-estimate:save', payload),
+    exportBathroomEstimate: (payload) => ipcRenderer.invoke('boc:bathroom-estimate:export', payload),
     getProjectExecutionReadiness: (payload) => ipcRenderer.invoke('boc:execution:readiness', payload),
     transitionProjectToExecution: (payload) => ipcRenderer.invoke('boc:execution:transition', payload),
     getSiteOperationStatus: (payload) => ipcRenderer.invoke('boc:site:status', payload),

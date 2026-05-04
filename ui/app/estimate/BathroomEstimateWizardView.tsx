@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   calculateBathroomEstimate,
+  exportBathroomEstimate,
   saveBathroomEstimate,
   type BathroomEstimateInput,
   type BathroomEstimatePreview
@@ -87,6 +88,7 @@ export function BathroomEstimateWizardView() {
   const [activeOutput, setActiveOutput] = useState<'customer' | 'internal'>('customer');
   const [messageKo, setMessageKo] = useState('입력값을 넣고 자동 산출을 실행하세요.');
   const [isBusy, setIsBusy] = useState(false);
+  const [savedEstimateId, setSavedEstimateId] = useState<string | null>(null);
   const [estimateNumber] = useState(() => `BATH-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${Math.floor(Math.random() * 900 + 100)}`);
 
   const groupedCustomerRows = useMemo(() => {
@@ -144,12 +146,39 @@ export function BathroomEstimateWizardView() {
     setIsBusy(true);
     try {
       const saved = await saveBathroomEstimate(input);
+      setSavedEstimateId(String(saved.estimateId || ''));
       setMessageKo(`저장 완료: ${String(saved.estimateId || '욕실 견적')}`);
     } catch (error) {
       setMessageKo(error instanceof Error ? error.message : '저장 중 오류가 발생했습니다.');
     } finally {
       setIsBusy(false);
     }
+  }
+
+  async function ensureSavedEstimate() {
+    if (savedEstimateId) return savedEstimateId;
+    const saved = await saveBathroomEstimate(input);
+    const estimateId = String(saved.estimateId || '');
+    setSavedEstimateId(estimateId);
+    return estimateId;
+  }
+
+  async function handleExport(documentType: 'customer' | 'internal', format: 'pdf' | 'xlsx') {
+    setIsBusy(true);
+    try {
+      const estimateId = await ensureSavedEstimate();
+      const result = await exportBathroomEstimate({ estimateId, documentType, format });
+      setMessageKo(`출력 파일 생성 완료: ${String(result.fileName || result.filePath)}`);
+    } catch (error) {
+      setMessageKo(error instanceof Error ? error.message : '출력 파일 생성 중 오류가 발생했습니다.');
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  function handlePrint(documentType: 'customer' | 'internal') {
+    setActiveOutput(documentType);
+    window.setTimeout(() => window.print(), 80);
   }
 
   return (
@@ -276,7 +305,7 @@ export function BathroomEstimateWizardView() {
                 <button className={activeOutput === 'internal' ? 'active' : ''} onClick={() => setActiveOutput('internal')}>내부 원가표 보기</button>
               </div>
               {activeOutput === 'customer' ? (
-                <article className="estimate-document customer-document">
+                <article className="estimate-document customer-document print-container">
                   <header className="document-header">
                     <div>
                       <span>ECOREAN</span>
@@ -347,7 +376,7 @@ export function BathroomEstimateWizardView() {
                   </footer>
                 </article>
               ) : (
-                <article className="estimate-document internal-document">
+                <article className="estimate-document internal-document print-container">
                   <header className="document-header">
                     <div>
                       <span>INTERNAL COST SHEET</span>
@@ -414,8 +443,19 @@ export function BathroomEstimateWizardView() {
               )}
               <div className="wizard-output-actions">
                 <button onClick={handleSave} disabled={isBusy}>저장</button>
-                <button disabled>PDF 출력 준비</button>
-                <button disabled>Excel 출력 준비</button>
+                {activeOutput === 'customer' ? (
+                  <>
+                    <button onClick={() => handleExport('customer', 'pdf')} disabled={isBusy}>PDF 다운로드</button>
+                    <button onClick={() => handleExport('customer', 'xlsx')} disabled={isBusy}>Excel 다운로드</button>
+                    <button onClick={() => handlePrint('customer')} className="no-print">인쇄</button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => handleExport('internal', 'pdf')} disabled={isBusy}>내부 PDF 다운로드</button>
+                    <button onClick={() => handleExport('internal', 'xlsx')} disabled={isBusy}>내부 Excel 다운로드</button>
+                    <button onClick={() => handlePrint('internal')} className="no-print">내부 인쇄</button>
+                  </>
+                )}
               </div>
             </>
           )}

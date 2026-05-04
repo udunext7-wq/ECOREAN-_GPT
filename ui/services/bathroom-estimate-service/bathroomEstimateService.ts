@@ -72,3 +72,15 @@ export async function saveBathroomEstimate(input: BathroomEstimateInput): Promis
   }
   return api.saveBathroomEstimate(input);
 }
+
+export async function exportBathroomEstimate(payload: {
+  estimateId: string;
+  documentType: 'customer' | 'internal';
+  format: 'pdf' | 'xlsx';
+}): Promise<Record<string, unknown>> {
+  const api = window.ecorean?.bocDb;
+  if (!api?.exportBathroomEstimate) {
+    throw new Error('Bathroom estimate export API is not available.');
+  }
+  return api.exportBathroomEstimate(payload);
+}
