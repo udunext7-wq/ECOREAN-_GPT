@@ -52,6 +52,8 @@ contextBridge.exposeInMainWorld('ecorean', {
     updateLeadStatus: (payload) => ipcRenderer.invoke('boc:sales:lead:update-status', payload),
     getProfitGenerationData: () => ipcRenderer.invoke('boc:profit:get'),
     overrideProfitDecision: (payload) => ipcRenderer.invoke('boc:profit:override', payload),
+    getCeoControlTowerData: () => ipcRenderer.invoke('boc:ceo-control-tower:get'),
+    decideCeoApprovalRequest: (payload) => ipcRenderer.invoke('boc:ceo-control-tower:decide', payload),
     getClientContractData: () => ipcRenderer.invoke('boc:client-contract:get'),
     approveContract: (payload) => ipcRenderer.invoke('boc:client-contract:approve', payload),
     getBathroomPricingStandardDashboard: () => ipcRenderer.invoke('boc:bathroom-pricing:get'),

@@ -1039,6 +1039,73 @@ function createSqliteService({ app }) {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS ceo_decision_queue (
+        decision_id TEXT PRIMARY KEY,
+        source_module TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        decision_type TEXT NOT NULL,
+        title_ko TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        site_name_ko TEXT NOT NULL,
+        financial_impact INTEGER NOT NULL,
+        risk_level TEXT NOT NULL,
+        required_action_ko TEXT NOT NULL,
+        deadline TEXT NOT NULL,
+        status TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS approval_requests (
+        request_id TEXT PRIMARY KEY,
+        source_module TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        title_ko TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        reason_ko TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        approved_at TEXT,
+        approved_by TEXT,
+        rejected_at TEXT,
+        rejected_by TEXT,
+        decision_reason_ko TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS red_alert_events (
+        red_alert_id TEXT PRIMARY KEY,
+        source_module TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        title_ko TEXT NOT NULL,
+        reason_ko TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        financial_impact INTEGER NOT NULL,
+        blocking_required INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        resolved_at TEXT,
+        payload_json TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS cashflow_snapshots (
+        snapshot_id TEXT PRIMARY KEY,
+        snapshot_date TEXT NOT NULL,
+        today_expected_inflow INTEGER NOT NULL,
+        today_expected_outflow INTEGER NOT NULL,
+        today_net_cashflow INTEGER NOT NULL,
+        seven_day_expected_inflow INTEGER NOT NULL,
+        seven_day_expected_outflow INTEGER NOT NULL,
+        seven_day_net_cashflow INTEGER NOT NULL,
+        receivable_amount INTEGER NOT NULL,
+        payable_amount INTEGER NOT NULL,
+        data_status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS site_risk_logs (
         risk_log_id TEXT PRIMARY KEY,
         site_operation_id TEXT NOT NULL,
@@ -5815,6 +5882,497 @@ function createSqliteService({ app }) {
       repeatedLossProcessTop,
       notificationLog
     };
+  }
+
+  function riskRank(level) {
+    return level === 'RED' ? 0 : level === 'ORANGE' ? 1 : level === 'YELLOW' ? 2 : 3;
+  }
+
+  function normalizeCeoRiskLevel({ severity, decision, blockingRequired, marginRate = null }) {
+    if (blockingRequired || severity === 'RED' || severity === 'BLOCKING' || decision === 'BLOCK') return 'RED';
+    if (decision === 'MODIFY' || severity === 'WARNING' || severity === 'YELLOW') return 'ORANGE';
+    if (marginRate != null && Number(marginRate) < 0.25) return 'ORANGE';
+    return 'NORMAL';
+  }
+
+  function upsertCeoDecisionItem(item, createdAt = nowIso()) {
+    db.project.prepare(`
+      INSERT OR REPLACE INTO ceo_decision_queue (
+        decision_id, source_module, entity_type, entity_id, decision_type,
+        title_ko, project_id, site_name_ko, financial_impact, risk_level,
+        required_action_ko, deadline, status, payload_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        COALESCE((SELECT payload_json FROM ceo_decision_queue WHERE decision_id = ?), ?),
+        COALESCE((SELECT created_at FROM ceo_decision_queue WHERE decision_id = ?), ?),
+        ?
+      )
+    `).run(
+      item.decisionId,
+      item.sourceModule,
+      item.entityType,
+      item.entityId,
+      item.decisionType,
+      item.titleKo,
+      item.projectId || 'GLOBAL',
+      item.siteNameKo || item.projectId || '데이터 없음',
+      Math.round(Number(item.financialImpact || 0)),
+      item.riskLevel || 'NORMAL',
+      item.requiredActionKo || '상세 확인',
+      item.deadline || createdAt.slice(0, 10),
+      item.status || 'PENDING',
+      item.decisionId,
+      toJson(item.payload || {}),
+      item.decisionId,
+      createdAt,
+      createdAt
+    );
+  }
+
+  function upsertApprovalRequest(item, createdAt = nowIso()) {
+    db.project.prepare(`
+      INSERT OR REPLACE INTO approval_requests (
+        request_id, source_module, entity_id, project_id, title_ko,
+        amount, reason_ko, status, created_at, approved_at, approved_by,
+        rejected_at, rejected_by, decision_reason_ko
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT status FROM approval_requests WHERE request_id = ?), ?),
+        COALESCE((SELECT created_at FROM approval_requests WHERE request_id = ?), ?),
+        (SELECT approved_at FROM approval_requests WHERE request_id = ?),
+        (SELECT approved_by FROM approval_requests WHERE request_id = ?),
+        (SELECT rejected_at FROM approval_requests WHERE request_id = ?),
+        (SELECT rejected_by FROM approval_requests WHERE request_id = ?),
+        COALESCE((SELECT decision_reason_ko FROM approval_requests WHERE request_id = ?), ?)
+      )
+    `).run(
+      item.requestId,
+      item.sourceModule,
+      item.entityId,
+      item.projectId || 'GLOBAL',
+      item.titleKo,
+      Math.round(Number(item.amount || 0)),
+      item.reasonKo || '',
+      item.requestId,
+      item.status || 'PENDING',
+      item.requestId,
+      createdAt,
+      item.requestId,
+      item.requestId,
+      item.requestId,
+      item.requestId,
+      item.requestId,
+      item.reasonKo || '',
+    );
+  }
+
+  function upsertRedAlertEvent(item, createdAt = nowIso()) {
+    db.project.prepare(`
+      INSERT OR REPLACE INTO red_alert_events (
+        red_alert_id, source_module, entity_id, project_id, title_ko,
+        reason_ko, severity, financial_impact, blocking_required, status,
+        created_at, resolved_at, payload_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        COALESCE((SELECT created_at FROM red_alert_events WHERE red_alert_id = ?), ?),
+        (SELECT resolved_at FROM red_alert_events WHERE red_alert_id = ?),
+        ?
+      )
+    `).run(
+      item.redAlertId,
+      item.sourceModule,
+      item.entityId,
+      item.projectId || 'GLOBAL',
+      item.titleKo,
+      item.reasonKo,
+      item.severity || 'RED',
+      Math.round(Number(item.financialImpact || 0)),
+      item.blockingRequired ? 1 : 0,
+      item.status || 'ACTIVE',
+      item.redAlertId,
+      createdAt,
+      item.redAlertId,
+      toJson(item.payload || {})
+    );
+  }
+
+  function syncCeoControlTower(createdAt = nowIso()) {
+    runAutomationScheduler('EVENT_SWEEP_5M');
+
+    db.project.prepare(`
+      SELECT *
+      FROM profit_decisions
+      WHERE decision IN ('BLOCK', 'MODIFY')
+      ORDER BY created_at DESC
+      LIMIT 50
+    `).all().forEach((row) => {
+      const riskLevel = row.decision === 'BLOCK' ? 'RED' : 'ORANGE';
+      upsertCeoDecisionItem({
+        decisionId: `CEO-PCE-${row.id}`,
+        sourceModule: 'PCE',
+        entityType: 'Estimate',
+        entityId: row.estimate_id,
+        decisionType: row.decision,
+        titleKo: row.decision === 'BLOCK' ? 'PCE BLOCK 견적' : 'PCE MODIFY 견적',
+        projectId: row.estimate_id,
+        financialImpact: Math.max(0, Math.round(Number(row.revenue || 0) * 0.25 - (Number(row.revenue || 0) - Number(row.total_cost || 0) - Number(row.risk_buffer || 0)))),
+        riskLevel,
+        requiredActionKo: row.decision === 'BLOCK' ? '차단 또는 대표 예외 승인' : '견적 수정',
+        deadline: row.created_at?.slice(0, 10),
+        payload: row
+      }, createdAt);
+      upsertApprovalRequest({
+        requestId: `APR-PCE-${row.id}`,
+        sourceModule: 'PCE',
+        entityId: row.estimate_id,
+        projectId: row.estimate_id,
+        titleKo: row.decision === 'BLOCK' ? 'PCE BLOCK 예외 승인 검토' : 'PCE MODIFY 견적 수정 검토',
+        amount: row.revenue,
+        reasonKo: `실질 마진율 ${(Number(row.real_margin || 0) * 100).toFixed(1)}%`,
+        status: 'PENDING'
+      }, createdAt);
+      if (row.decision === 'BLOCK') {
+        upsertRedAlertEvent({
+          redAlertId: `RED-PCE-${row.id}`,
+          sourceModule: 'PCE',
+          entityId: row.estimate_id,
+          projectId: row.estimate_id,
+          titleKo: 'PCE BLOCK',
+          reasonKo: `실질 마진율 ${(Number(row.real_margin || 0) * 100).toFixed(1)}%로 기준 미달`,
+          financialImpact: row.revenue,
+          blockingRequired: true,
+          payload: row
+        }, createdAt);
+      }
+    });
+
+    db.logs.prepare("SELECT * FROM event_triggers WHERE status = 'ACTIVE'").all().forEach((row) => {
+      const riskLevel = normalizeCeoRiskLevel({ severity: row.severity, blockingRequired: Boolean(row.blocking_required) });
+      upsertCeoDecisionItem({
+        decisionId: `CEO-EVT-${row.trigger_id}`,
+        sourceModule: row.event_category,
+        entityType: 'EventTrigger',
+        entityId: row.trigger_id,
+        decisionType: row.event_type,
+        titleKo: row.title_ko,
+        projectId: row.project_id,
+        financialImpact: 0,
+        riskLevel,
+        requiredActionKo: row.next_action_ko,
+        deadline: row.detected_at?.slice(0, 10),
+        payload: row
+      }, createdAt);
+      if (riskLevel === 'RED') {
+        upsertRedAlertEvent({
+          redAlertId: `RED-EVT-${row.trigger_id}`,
+          sourceModule: row.event_category,
+          entityId: row.trigger_id,
+          projectId: row.project_id,
+          titleKo: row.title_ko,
+          reasonKo: row.message_ko,
+          financialImpact: 0,
+          blockingRequired: Boolean(row.blocking_required),
+          payload: row
+        }, createdAt);
+      }
+    });
+
+    db.project.prepare("SELECT * FROM live_margin_events WHERE decision IN ('RED_ALERT', 'MARGIN_COST_INCREASE') OR current_margin_rate < 0.25").all().forEach((row) => {
+      const rate = Number(row.current_margin_rate || 0);
+      const riskLevel = rate < 0.2 || row.decision === 'RED_ALERT' ? 'RED' : 'ORANGE';
+      upsertCeoDecisionItem({
+        decisionId: `CEO-LIVE-${row.id}`,
+        sourceModule: 'LiveMargin',
+        entityType: 'LiveMarginEvent',
+        entityId: row.id,
+        decisionType: row.decision,
+        titleKo: rate < 0.2 ? '실시간 마진 20% 미만' : '실시간 마진 위험',
+        projectId: row.project_id,
+        financialImpact: 0,
+        riskLevel,
+        requiredActionKo: '원가 누수 확인',
+        deadline: row.created_at?.slice(0, 10),
+        payload: row
+      }, createdAt);
+      if (riskLevel === 'RED') {
+        upsertRedAlertEvent({
+          redAlertId: `RED-LIVE-${row.id}`,
+          sourceModule: 'LiveMargin',
+          entityId: row.id,
+          projectId: row.project_id,
+          titleKo: 'Live Margin RED ALERT',
+          reasonKo: row.reason,
+          financialImpact: 0,
+          blockingRequired: true,
+          payload: row
+        }, createdAt);
+      }
+    });
+
+    db.project.prepare("SELECT * FROM change_orders WHERE status IN ('PENDING_APPROVAL', 'BLOCKED')").all().forEach((row) => {
+      const riskLevel = row.status === 'BLOCKED' || row.pce_decision === 'BLOCK' ? 'RED' : 'ORANGE';
+      upsertCeoDecisionItem({
+        decisionId: `CEO-CHO-${row.change_order_id}`,
+        sourceModule: 'ChangeOrder',
+        entityType: 'ChangeOrder',
+        entityId: row.change_order_id,
+        decisionType: row.pce_decision,
+        titleKo: row.status === 'BLOCKED' ? '저마진 추가공사 차단' : '추가공사 승인 대기',
+        projectId: row.project_id,
+        siteNameKo: row.site_name_ko,
+        financialImpact: row.additional_amount,
+        riskLevel,
+        requiredActionKo: row.status === 'BLOCKED' ? '금액 재협상' : '승인/반려',
+        deadline: row.request_date,
+        payload: row
+      }, createdAt);
+      upsertApprovalRequest({
+        requestId: `APR-CHO-${row.change_order_id}`,
+        sourceModule: 'ChangeOrder',
+        entityId: row.change_order_id,
+        projectId: row.project_id,
+        titleKo: row.change_content_ko,
+        amount: row.additional_amount,
+        reasonKo: row.change_reason_ko,
+        status: row.status === 'BLOCKED' ? 'REJECTED' : 'PENDING'
+      }, createdAt);
+    });
+
+    db.project.prepare("SELECT * FROM defect_reports WHERE status IN ('OPEN', 'IN_PROGRESS')").all().forEach((row) => {
+      const riskLevel = Number(row.estimated_cost || 0) >= 100000 || ['HIGH', 'CRITICAL'].includes(row.severity) ? 'RED' : 'YELLOW';
+      upsertCeoDecisionItem({
+        decisionId: `CEO-DEF-${row.defect_id}`,
+        sourceModule: 'Defect',
+        entityType: 'DefectReport',
+        entityId: row.defect_id,
+        decisionType: 'DEFECT_COST',
+        titleKo: '하자/AS 비용 발생',
+        projectId: row.project_id,
+        siteNameKo: row.site_name_ko,
+        financialImpact: row.estimated_cost,
+        riskLevel,
+        requiredActionKo: '하자 처리비 승인/원인 분석',
+        deadline: row.received_at,
+        payload: row
+      }, createdAt);
+      if (riskLevel === 'RED') {
+        upsertRedAlertEvent({
+          redAlertId: `RED-DEF-${row.defect_id}`,
+          sourceModule: 'Defect',
+          entityId: row.defect_id,
+          projectId: row.project_id,
+          titleKo: '하자비용 RED ALERT',
+          reasonKo: `${row.defect_type_ko}: ${row.root_cause_ko}`,
+          financialImpact: row.estimated_cost,
+          blockingRequired: false,
+          payload: row
+        }, createdAt);
+      }
+    });
+
+    syncCashflowSnapshot(createdAt);
+  }
+
+  function syncCashflowSnapshot(createdAt = nowIso()) {
+    const today = createdAt.slice(0, 10);
+    const sevenDaysLater = new Date(new Date(today).getTime() + 7 * 86400000).toISOString().slice(0, 10);
+    const receivables = db.project.prepare('SELECT * FROM receivables WHERE receivable_status NOT IN (\'PAID\', \'RECEIVED\', \'COMPLETED\')').all();
+    const payables = db.project.prepare('SELECT * FROM payables WHERE payable_status NOT IN (\'PAID\', \'COMPLETED\')').all();
+    const sum = (rows, predicate) => rows.filter(predicate).reduce((total, row) => total + Number(row.amount || 0), 0);
+    const todayExpectedInflow = sum(receivables, (row) => row.due_date === today);
+    const todayExpectedOutflow = sum(payables, (row) => row.due_date === today);
+    const sevenDayExpectedInflow = sum(receivables, (row) => row.due_date >= today && row.due_date <= sevenDaysLater);
+    const sevenDayExpectedOutflow = sum(payables, (row) => row.due_date >= today && row.due_date <= sevenDaysLater);
+    const receivableAmount = sum(receivables, () => true);
+    const payableAmount = sum(payables, () => true);
+    const dataStatus = receivables.length || payables.length ? 'READY' : 'EMPTY';
+    const snapshotId = `CASH-${today}`;
+    const todayNetCashflow = todayExpectedInflow - todayExpectedOutflow;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO cashflow_snapshots (
+        snapshot_id, snapshot_date, today_expected_inflow, today_expected_outflow,
+        today_net_cashflow, seven_day_expected_inflow, seven_day_expected_outflow,
+        seven_day_net_cashflow, receivable_amount, payable_amount, data_status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      snapshotId,
+      today,
+      todayExpectedInflow,
+      todayExpectedOutflow,
+      todayNetCashflow,
+      sevenDayExpectedInflow,
+      sevenDayExpectedOutflow,
+      sevenDayExpectedInflow - sevenDayExpectedOutflow,
+      receivableAmount,
+      payableAmount,
+      dataStatus,
+      createdAt
+    );
+    if (todayNetCashflow < 0) {
+      upsertRedAlertEvent({
+        redAlertId: `RED-CASH-${today}`,
+        sourceModule: 'Cashflow',
+        entityId: snapshotId,
+        projectId: 'COMPANY',
+        titleKo: '오늘 순현금흐름 음수',
+        reasonKo: `오늘 순현금흐름 ${todayNetCashflow.toLocaleString('ko-KR')}원`,
+        financialImpact: Math.abs(todayNetCashflow),
+        blockingRequired: false,
+        payload: { snapshotId, todayExpectedInflow, todayExpectedOutflow }
+      }, createdAt);
+      upsertCeoDecisionItem({
+        decisionId: `CEO-CASH-${today}`,
+        sourceModule: 'Cashflow',
+        entityType: 'CashflowSnapshot',
+        entityId: snapshotId,
+        decisionType: 'NEGATIVE_CASHFLOW',
+        titleKo: '오늘 현금흐름 음수',
+        projectId: 'COMPANY',
+        siteNameKo: '회사 전체',
+        financialImpact: Math.abs(todayNetCashflow),
+        riskLevel: 'RED',
+        requiredActionKo: '입금/지급 일정 조정',
+        deadline: today,
+        payload: { snapshotId, todayExpectedInflow, todayExpectedOutflow, todayNetCashflow }
+      }, createdAt);
+    }
+    return db.project.prepare('SELECT * FROM cashflow_snapshots WHERE snapshot_id = ?').get(snapshotId);
+  }
+
+  function getCeoControlTowerData() {
+    const createdAt = nowIso();
+    syncCeoControlTower(createdAt);
+    const decisions = db.project.prepare(`
+      SELECT *
+      FROM ceo_decision_queue
+      WHERE status IN ('PENDING', 'ACTIVE')
+      ORDER BY
+        CASE risk_level WHEN 'RED' THEN 0 WHEN 'ORANGE' THEN 1 WHEN 'YELLOW' THEN 2 ELSE 3 END,
+        deadline ASC,
+        updated_at DESC
+    `).all().map((row) => ({
+      decisionId: row.decision_id,
+      sourceModule: row.source_module,
+      entityType: row.entity_type,
+      entityId: row.entity_id,
+      type: row.decision_type,
+      titleKo: row.title_ko,
+      projectId: row.project_id,
+      siteNameKo: row.site_name_ko,
+      financialImpact: row.financial_impact,
+      riskLevel: row.risk_level,
+      requiredActionKo: row.required_action_ko,
+      deadline: row.deadline,
+      status: row.status,
+      payload: fromJson(row.payload_json, {})
+    }));
+    const redAlerts = db.project.prepare(`
+      SELECT *
+      FROM red_alert_events
+      WHERE status = 'ACTIVE'
+      ORDER BY created_at DESC
+      LIMIT 30
+    `).all().map((row) => ({
+      redAlertId: row.red_alert_id,
+      sourceModule: row.source_module,
+      entityId: row.entity_id,
+      projectId: row.project_id,
+      titleKo: row.title_ko,
+      reasonKo: row.reason_ko,
+      severity: row.severity,
+      financialImpact: row.financial_impact,
+      blockingRequired: Boolean(row.blocking_required),
+      createdAt: row.created_at
+    }));
+    const approvalRequests = db.project.prepare(`
+      SELECT *
+      FROM approval_requests
+      ORDER BY CASE status WHEN 'PENDING' THEN 0 ELSE 1 END, created_at DESC
+      LIMIT 50
+    `).all().map((row) => ({
+      requestId: row.request_id,
+      sourceModule: row.source_module,
+      entityId: row.entity_id,
+      projectId: row.project_id,
+      titleKo: row.title_ko,
+      amount: row.amount,
+      reasonKo: row.reason_ko,
+      status: row.status,
+      createdAt: row.created_at,
+      approvedAt: row.approved_at,
+      approvedBy: row.approved_by
+    }));
+    const cashflow = db.project.prepare('SELECT * FROM cashflow_snapshots ORDER BY created_at DESC LIMIT 1').get() || syncCashflowSnapshot(createdAt);
+    return {
+      snapshotDate: createdAt.slice(0, 10),
+      summary: {
+        decisionCount: decisions.length,
+        redAlertCount: redAlerts.length,
+        pendingApprovalCount: approvalRequests.filter((item) => item.status === 'PENDING').length,
+        marginRiskCount: decisions.filter((item) => item.sourceModule === 'LiveMargin' || item.sourceModule === 'PCE').length,
+        materialDelayCount: decisions.filter((item) => item.sourceModule === 'Procurement').length,
+        inspectionFailCount: decisions.filter((item) => /INSPECTION|검수/.test(item.type + item.titleKo)).length,
+        changeOrderCount: decisions.filter((item) => item.sourceModule === 'ChangeOrder').length,
+        defectCost: decisions.filter((item) => item.sourceModule === 'Defect').reduce((sum, item) => sum + Number(item.financialImpact || 0), 0)
+      },
+      cashflow: {
+        todayExpectedInflow: cashflow?.today_expected_inflow || 0,
+        todayExpectedOutflow: cashflow?.today_expected_outflow || 0,
+        todayNetCashflow: cashflow?.today_net_cashflow || 0,
+        sevenDayExpectedInflow: cashflow?.seven_day_expected_inflow || 0,
+        sevenDayExpectedOutflow: cashflow?.seven_day_expected_outflow || 0,
+        sevenDayNetCashflow: cashflow?.seven_day_net_cashflow || 0,
+        receivableAmount: cashflow?.receivable_amount || 0,
+        payableAmount: cashflow?.payable_amount || 0,
+        dataStatus: cashflow?.data_status || 'EMPTY',
+        displayStatusKo: cashflow?.data_status === 'READY' ? '데이터 있음' : '데이터 없음'
+      },
+      decisions,
+      redAlerts,
+      approvalRequests
+    };
+  }
+
+  function decideCeoApprovalRequest({ requestId, decision, actor = 'CEO', reasonKo = '' }) {
+    if (!['APPROVED', 'REJECTED'].includes(decision)) throw new Error('decision must be APPROVED or REJECTED');
+    const createdAt = nowIso();
+    const request = db.project.prepare('SELECT * FROM approval_requests WHERE request_id = ?').get(requestId);
+    if (!request) throw new Error(`CEO approval request not found: ${requestId}`);
+    db.project.prepare(`
+      UPDATE approval_requests
+      SET status = ?,
+          approved_at = CASE WHEN ? = 'APPROVED' THEN ? ELSE approved_at END,
+          approved_by = CASE WHEN ? = 'APPROVED' THEN ? ELSE approved_by END,
+          rejected_at = CASE WHEN ? = 'REJECTED' THEN ? ELSE rejected_at END,
+          rejected_by = CASE WHEN ? = 'REJECTED' THEN ? ELSE rejected_by END,
+          decision_reason_ko = ?
+      WHERE request_id = ?
+    `).run(
+      decision,
+      decision,
+      createdAt,
+      decision,
+      actor,
+      decision,
+      createdAt,
+      decision,
+      actor,
+      reasonKo || (decision === 'APPROVED' ? '대표 승인' : '대표 반려'),
+      requestId
+    );
+    db.project.prepare(`
+      UPDATE ceo_decision_queue
+      SET status = ?, updated_at = ?
+      WHERE entity_id = ? OR decision_id = ?
+    `).run(decision, createdAt, request.entity_id, `CEO-${request.source_module}-${request.entity_id}`);
+    writeOperationalLog({
+      actionType: `CEO_CONTROL_TOWER_${decision}`,
+      actor,
+      projectId: request.project_id,
+      messageKo: `${request.title_ko}: ${decision === 'APPROVED' ? '승인' : '반려'}`,
+      actionKo: decision === 'APPROVED' ? '승인' : '반려',
+      level: decision === 'REJECTED' ? 'WARNING' : 'INFO',
+      payload: { requestId, sourceModule: request.source_module, entityId: request.entity_id },
+      reasonKo: reasonKo || '',
+      createdAt
+    });
+    return { dashboardData: getDashboardData(), controlTowerData: getCeoControlTowerData(), requestId, decision };
   }
 
   function getPortfolioDashboardData() {
@@ -11699,6 +12257,10 @@ function createSqliteService({ app }) {
       changeOrderRequestCount: countRows(db.project, 'change_order_requests'),
       changeOrderCount: countRows(db.project, 'change_orders'),
       defectReportCount: countRows(db.project, 'defect_reports'),
+      ceoDecisionQueueCount: countRows(db.project, 'ceo_decision_queue'),
+      approvalRequestCount: countRows(db.project, 'approval_requests'),
+      redAlertEventCount: countRows(db.project, 'red_alert_events'),
+      cashflowSnapshotCount: countRows(db.project, 'cashflow_snapshots'),
       siteRiskLogCount: countRows(db.project, 'site_risk_logs'),
       projectCompletionReportCount: countRows(db.project, 'project_completion_reports'),
       actualCostCount: countRows(db.project, 'actual_costs'),
@@ -11785,6 +12347,8 @@ function createSqliteService({ app }) {
     getProfitGenerationData,
     runProfitControlEngine,
     overrideProfitDecision,
+    getCeoControlTowerData,
+    decideCeoApprovalRequest,
     getClientContractData,
     approveContract,
     getBathroomPricingStandardDashboard,

@@ -69,6 +69,8 @@ declare global {
         updateLeadStatus: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getProfitGenerationData: () => Promise<Record<string, unknown>>;
         overrideProfitDecision: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getCeoControlTowerData: () => Promise<Record<string, unknown>>;
+        decideCeoApprovalRequest: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getClientContractData: () => Promise<Record<string, unknown>>;
         approveContract: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getBathroomPricingStandardDashboard: () => Promise<Record<string, unknown>>;

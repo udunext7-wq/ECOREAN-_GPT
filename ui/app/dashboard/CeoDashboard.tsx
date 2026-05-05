@@ -55,7 +55,8 @@ export function CeoDashboard() {
       openClientContract: 'client',
       openProfitTemplates: 'profitTemplates',
       openProfitAutomation: 'profitAutomation',
-      openExecutionManagement: 'executionManagement'
+      openExecutionManagement: 'executionManagement',
+      openCeoControlTower: 'ceoControlTower'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
@@ -152,6 +153,7 @@ export function CeoDashboard() {
               <button className="command command-order" onClick={() => openView('approvals', 'click')}>발주</button>
               <button className="command command-claim" onClick={() => openView('project', 'click')}>청구</button>
               <button className="command command-approve" onClick={() => openView('executionManagement', 'confirm')}>현장</button>
+              <button className="command command-block" onClick={() => openView('ceoControlTower', 'warning')}>Control</button>
             </div>
             <div className="today-action-list">
               {dashboard.data.immediateActions.map((action) => (
@@ -235,6 +237,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('client', 'click')}>Client Contract</button>
         <button onClick={() => openView('caseLibrary', 'click')}>Case Library</button>
         <button onClick={() => openView('executionManagement', 'confirm')}>현장 실행</button>
+        <button onClick={() => openView('ceoControlTower', 'warning')}>CEO Control Tower</button>
         <button onClick={() => openView('settings', 'click')}>Backup</button>
       </div>
 
