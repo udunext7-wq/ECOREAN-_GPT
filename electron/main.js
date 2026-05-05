@@ -32,6 +32,14 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:site:inspection:save', (_event, payload) => sqliteService.saveInspectionResult(payload));
   ipcMain.handle('boc:site:issue:create', (_event, payload) => sqliteService.createSiteIssue(payload));
   ipcMain.handle('boc:site:change-order:create', (_event, payload) => sqliteService.createChangeOrderRequest(payload));
+  ipcMain.handle('boc:execution:daily-report:create', (_event, payload) => sqliteService.createDailySiteReportFromSchedule(payload));
+  ipcMain.handle('boc:execution:attendance:create', (_event, payload) => sqliteService.createCrewAttendanceReport(payload));
+  ipcMain.handle('boc:execution:material-receiving:create', (_event, payload) => sqliteService.createMaterialReceivingLog(payload));
+  ipcMain.handle('boc:execution:inspection:create', (_event, payload) => sqliteService.createInspectionChecklistFromSchedule(payload));
+  ipcMain.handle('boc:execution:inspection:result', (_event, payload) => sqliteService.saveInspectionChecklistResults(payload));
+  ipcMain.handle('boc:execution:change-order:create', (_event, payload) => sqliteService.createExecutionChangeOrder(payload));
+  ipcMain.handle('boc:execution:change-order:approve', (_event, payload) => sqliteService.approveExecutionChangeOrder(payload));
+  ipcMain.handle('boc:execution:defect:create', (_event, payload) => sqliteService.createDefectReport(payload));
   ipcMain.handle('boc:completion:readiness', (_event, payload) => sqliteService.getProjectCompletionReadiness(payload));
   ipcMain.handle('boc:completion:complete', (_event, payload) => sqliteService.completeProject(payload));
   ipcMain.handle('boc:cost-capture:get', () => sqliteService.getActualCostCaptureDashboard());

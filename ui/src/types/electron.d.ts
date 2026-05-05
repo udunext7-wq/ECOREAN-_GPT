@@ -44,6 +44,14 @@ declare global {
         saveInspectionResult: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; inspectionResultId: string; blockedProcesses: string[] }>;
         createSiteIssue: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; siteIssueId: string }>;
         createChangeOrderRequest: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; changeOrderId: string }>;
+        createDailySiteReportFromSchedule: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createCrewAttendanceReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createMaterialReceivingLog: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createInspectionChecklistFromSchedule: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        saveInspectionChecklistResults: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createExecutionChangeOrder: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        approveExecutionChangeOrder: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createDefectReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getProjectCompletionReadiness: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         completeProject: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; completionReport: Record<string, unknown> }>;
         getCostCaptureDashboard: () => Promise<Record<string, unknown>>;

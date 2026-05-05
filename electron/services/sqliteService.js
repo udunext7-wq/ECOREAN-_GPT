@@ -10,6 +10,12 @@ const { exportEstimateDocument } = require('./estimateExportService');
 const { buildContractFromEstimate, exportContractPdf } = require('./contractService');
 const { buildScheduleFromEstimate } = require('./scheduleService');
 const { buildPurchaseOrderFromEstimate } = require('./purchaseOrderService');
+const { buildDailySiteReport } = require('./dailyReportService');
+const { buildAttendanceRows } = require('./attendanceService');
+const { buildReceivingRows } = require('./materialReceivingService');
+const { buildBathroomInspectionChecklist, evaluateInspectionItems } = require('./inspectionService');
+const { buildChangeOrderPayload } = require('./changeOrderService');
+const { buildDefectPayload } = require('./defectService');
 
 function nowIso() {
   return new Date().toISOString();
@@ -875,6 +881,56 @@ function createSqliteService({ app }) {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS daily_site_report_items (
+        item_id TEXT PRIMARY KEY,
+        report_id TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        process_name_ko TEXT NOT NULL,
+        work_content_ko TEXT NOT NULL,
+        crew_summary_json TEXT NOT NULL,
+        material_summary_json TEXT NOT NULL,
+        delay_reason_ko TEXT NOT NULL,
+        tomorrow_process_ko TEXT NOT NULL,
+        manager_ko TEXT NOT NULL,
+        approval_status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS crew_attendance_logs (
+        attendance_log_id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        site_name_ko TEXT NOT NULL,
+        work_date TEXT NOT NULL,
+        worker_name_ko TEXT NOT NULL,
+        role_ko TEXT NOT NULL,
+        affiliation_ko TEXT NOT NULL,
+        check_in_time TEXT NOT NULL,
+        check_out_time TEXT NOT NULL,
+        work_hours REAL NOT NULL,
+        daily_wage INTEGER NOT NULL,
+        labor_cost INTEGER NOT NULL,
+        notes_ko TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS material_receiving_logs (
+        receiving_log_id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        purchase_order_id TEXT NOT NULL,
+        item_name_ko TEXT NOT NULL,
+        specification_ko TEXT NOT NULL,
+        ordered_quantity REAL NOT NULL,
+        received_quantity REAL NOT NULL,
+        missing_quantity REAL NOT NULL,
+        unit TEXT NOT NULL,
+        received_at TEXT NOT NULL,
+        supplier_name_ko TEXT NOT NULL,
+        inspection_status TEXT NOT NULL,
+        damage_or_missing INTEGER NOT NULL,
+        notes_ko TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS material_delivery_checks (
         delivery_check_id TEXT PRIMARY KEY,
         site_operation_id TEXT NOT NULL,
@@ -896,6 +952,22 @@ function createSqliteService({ app }) {
         result_status TEXT NOT NULL,
         blocked_processes_json TEXT NOT NULL,
         notes_ko TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS inspection_checklist_items (
+        item_id TEXT PRIMARY KEY,
+        checklist_id TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        process_name_ko TEXT NOT NULL,
+        check_item_ko TEXT NOT NULL,
+        criterion_ko TEXT NOT NULL,
+        result_status TEXT NOT NULL,
+        critical_flag INTEGER NOT NULL,
+        photo_status TEXT NOT NULL,
+        action_required_ko TEXT NOT NULL,
+        inspector_ko TEXT NOT NULL,
+        inspected_at TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
 
@@ -922,6 +994,47 @@ function createSqliteService({ app }) {
         estimate_reflection_allowed INTEGER NOT NULL,
         schedule_reflection_allowed INTEGER NOT NULL,
         approval_status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS change_orders (
+        change_order_id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        site_name_ko TEXT NOT NULL,
+        request_date TEXT NOT NULL,
+        requested_by_ko TEXT NOT NULL,
+        change_content_ko TEXT NOT NULL,
+        change_reason_ko TEXT NOT NULL,
+        additional_amount INTEGER NOT NULL,
+        additional_cost INTEGER NOT NULL,
+        additional_margin INTEGER NOT NULL,
+        additional_margin_rate REAL NOT NULL,
+        schedule_impact_days INTEGER NOT NULL,
+        customer_approval_status TEXT NOT NULL,
+        internal_approval_status TEXT NOT NULL,
+        pce_decision TEXT NOT NULL,
+        pce_id TEXT NOT NULL,
+        signature_status TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS defect_reports (
+        defect_id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        site_name_ko TEXT NOT NULL,
+        received_at TEXT NOT NULL,
+        defect_location_ko TEXT NOT NULL,
+        defect_type_ko TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        root_cause_ko TEXT NOT NULL,
+        manager_ko TEXT NOT NULL,
+        estimated_cost INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        completed_at TEXT,
+        customer_confirmed INTEGER NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       );
@@ -7499,6 +7612,621 @@ function createSqliteService({ app }) {
     return { dashboardData: getDashboardData(), changeOrderId };
   }
 
+  function ensureExecutionContextForRecord(projectId) {
+    const createdAt = nowIso();
+    let executionProject = db.project.prepare('SELECT * FROM execution_projects WHERE project_id = ? ORDER BY updated_at DESC LIMIT 1').get(projectId);
+    if (!executionProject) {
+      const executionProjectId = `EXEC-AUTO-${projectId}`;
+      db.project.prepare(`
+        INSERT OR REPLACE INTO execution_projects (
+          execution_project_id, project_id, final_estimate_id, execution_status,
+          preliminary_execution_warning, warning_reasons_json, created_from_approval_id,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM execution_projects WHERE execution_project_id = ?), ?), ?)
+      `).run(
+        executionProjectId,
+        projectId,
+        `FINAL-AUTO-${projectId}`,
+        'EXECUTION_READY',
+        1,
+        toJson(['자동 실행 기록 생성을 위해 생성된 execution context']),
+        'APP-AUTO-EXECUTION',
+        executionProjectId,
+        createdAt,
+        createdAt
+      );
+      executionProject = db.project.prepare('SELECT * FROM execution_projects WHERE execution_project_id = ?').get(executionProjectId);
+    }
+
+    let siteOperation = db.project.prepare('SELECT * FROM site_operations WHERE project_id = ? ORDER BY updated_at DESC LIMIT 1').get(projectId);
+    if (!siteOperation) {
+      const siteOperationId = `SITE-${executionProject.execution_project_id}`;
+      db.project.prepare(`
+        INSERT OR REPLACE INTO site_operations (
+          site_operation_id, execution_project_id, project_id, site_status,
+          overall_progress_rate, blocked_processes_json, risk_flags_json,
+          started_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT started_at FROM site_operations WHERE site_operation_id = ?), ?), ?)
+      `).run(
+        siteOperationId,
+        executionProject.execution_project_id,
+        projectId,
+        'IN_PROGRESS',
+        1,
+        toJson([]),
+        toJson(['현장 실행 기록 활성화']),
+        siteOperationId,
+        createdAt,
+        createdAt
+      );
+      siteOperation = db.project.prepare('SELECT * FROM site_operations WHERE site_operation_id = ?').get(siteOperationId);
+    }
+
+    return { executionProject, siteOperation };
+  }
+
+  function getScheduleItemsForProject(projectId, scheduleId = null) {
+    const schedule = scheduleId
+      ? db.project.prepare('SELECT * FROM construction_schedules WHERE id = ?').get(scheduleId)
+      : db.project.prepare('SELECT * FROM construction_schedules WHERE estimate_id = ? ORDER BY created_at DESC LIMIT 1').get(projectId);
+    if (!schedule) return { schedule: null, items: [] };
+    const items = db.project.prepare('SELECT * FROM construction_schedule_items WHERE schedule_id = ? ORDER BY sort_order ASC').all(schedule.id);
+    return { schedule, items };
+  }
+
+  function createDailySiteReportFromSchedule({
+    projectId,
+    scheduleId = null,
+    reportDate = new Date().toISOString().slice(0, 10),
+    weatherKo = '맑음',
+    issueSummaryKo = '특이사항 없음',
+    managerKo = '현장관리자',
+    actor = 'CEO'
+  }) {
+    requirePermission({ actor, permissionKey: 'SITE_OPERATION_INPUT', actionType: 'CREATE_DAILY_SITE_REPORT_FROM_SCHEDULE', payload: { projectId, scheduleId } });
+    const { siteOperation } = ensureExecutionContextForRecord(projectId);
+    const { items } = getScheduleItemsForProject(projectId, scheduleId);
+    const report = buildDailySiteReport({ projectId, scheduleItems: items, reportDate, weatherKo, managerKo, issueSummaryKo });
+    const createdAt = nowIso();
+    const reportId = `DSR-${projectId}-${reportDate}`;
+
+    db.project.prepare(`
+      INSERT OR REPLACE INTO daily_site_reports (
+        report_id, site_operation_id, project_id, report_date, process_progress_json,
+        labor_json, material_json, issue_summary_ko, photo_status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM daily_site_reports WHERE report_id = ?), ?), ?)
+    `).run(
+      reportId,
+      siteOperation.site_operation_id,
+      projectId,
+      report.reportDate,
+      toJson([{ processNameKo: report.todayProcessKo, progressStatus: 'IN_PROGRESS' }]),
+      toJson({ status: 'NEEDS_ATTENDANCE_REPORT', noteKo: '출역일보와 연결 필요' }),
+      toJson({ status: 'NEEDS_MATERIAL_USAGE', noteKo: '사용 자재 기록 필요' }),
+      report.issueSummaryKo,
+      report.photoStatus,
+      reportId,
+      createdAt,
+      createdAt
+    );
+
+    db.project.prepare(`
+      INSERT OR REPLACE INTO daily_site_report_items (
+        item_id, report_id, project_id, process_name_ko, work_content_ko,
+        crew_summary_json, material_summary_json, delay_reason_ko, tomorrow_process_ko,
+        manager_ko, approval_status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      `DSRI-${reportId}`,
+      reportId,
+      projectId,
+      report.todayProcessKo,
+      report.workDescriptionKo,
+      toJson([]),
+      toJson([]),
+      report.delayReasonKo,
+      report.tomorrowProcessKo,
+      report.managerKo,
+      report.approvalStatus,
+      createdAt
+    );
+
+    writeOperationalLog({
+      actionType: 'CREATE_DAILY_SITE_REPORT_FROM_SCHEDULE',
+      actor,
+      projectId,
+      messageKo: `공사일보 생성: ${report.todayProcessKo}`,
+      actionKo: '공사일보',
+      level: 'INFO',
+      payload: { reportId, scheduleId, report },
+      reasonKo: '공정표 기준 금일 공정 자동 반영',
+      createdAt
+    });
+
+    return { dashboardData: getDashboardData(), reportId, report };
+  }
+
+  function createCrewAttendanceReport({ projectId, siteNameKo = '현장', workDate, workers = [], actor = 'CEO' }) {
+    requirePermission({ actor, permissionKey: 'SITE_OPERATION_INPUT', actionType: 'CREATE_CREW_ATTENDANCE_REPORT', payload: { projectId } });
+    ensureExecutionContextForRecord(projectId);
+    const createdAt = nowIso();
+    const rows = buildAttendanceRows({ projectId, siteNameKo, workDate, workers });
+    const insert = db.project.prepare(`
+      INSERT INTO crew_attendance_logs (
+        attendance_log_id, project_id, site_name_ko, work_date, worker_name_ko,
+        role_ko, affiliation_ko, check_in_time, check_out_time, work_hours,
+        daily_wage, labor_cost, notes_ko, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    rows.forEach((row, index) => {
+      insert.run(
+        `ATTLOG-${Date.now()}-${index}`,
+        projectId,
+        row.siteNameKo,
+        row.workDate,
+        row.workerNameKo,
+        row.roleKo,
+        row.affiliationKo,
+        row.checkInTime,
+        row.checkOutTime,
+        row.workHours,
+        row.dailyWage,
+        row.laborCost,
+        row.notesKo,
+        createdAt
+      );
+    });
+    const totalLaborCost = rows.reduce((sum, row) => sum + Number(row.laborCost || 0), 0);
+    db.project.prepare(`
+      INSERT INTO labor_cost_records (
+        labor_cost_record_id, crew_allocation_id, crew_member_id, project_id,
+        cost_capture_entry_id, planned_labor_cost, actual_labor_cost,
+        variance_amount, variance_rate, cost_status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      `LABOR-ACTUAL-${projectId}-${Date.now()}`,
+      'ATTENDANCE_LOG',
+      'MULTI_CREW',
+      projectId,
+      null,
+      0,
+      totalLaborCost,
+      totalLaborCost,
+      0,
+      totalLaborCost > 0 ? 'ACTUAL_RECORDED' : 'NO_COST',
+      createdAt,
+      createdAt
+    );
+    writeOperationalLog({
+      actionType: 'CREATE_CREW_ATTENDANCE_REPORT',
+      actor,
+      projectId,
+      messageKo: `출역일보 저장: ${rows.length}명 / 노무비 ${totalLaborCost.toLocaleString('ko-KR')}원`,
+      actionKo: '출역일보',
+      level: 'INFO',
+      payload: { attendanceCount: rows.length, totalLaborCost },
+      reasonKo: '출역 기록과 실제 노무비 연결',
+      createdAt
+    });
+    return { dashboardData: getDashboardData(), attendanceCount: rows.length, totalLaborCost, rows };
+  }
+
+  function createMaterialReceivingLog({ projectId, purchaseOrderId, receivedItems = [], actor = 'CEO' }) {
+    requirePermission({ actor, permissionKey: 'SITE_OPERATION_INPUT', actionType: 'CREATE_MATERIAL_RECEIVING_LOG', payload: { projectId, purchaseOrderId } });
+    ensureExecutionContextForRecord(projectId);
+    const createdAt = nowIso();
+    const purchaseOrder = db.project.prepare('SELECT * FROM purchase_orders WHERE purchase_order_id = ?').get(purchaseOrderId);
+    const rows = buildReceivingRows({ purchaseOrder, items: receivedItems });
+    const insert = db.project.prepare(`
+      INSERT INTO material_receiving_logs (
+        receiving_log_id, project_id, purchase_order_id, item_name_ko, specification_ko,
+        ordered_quantity, received_quantity, missing_quantity, unit, received_at,
+        supplier_name_ko, inspection_status, damage_or_missing, notes_ko, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    rows.forEach((row, index) => {
+      insert.run(
+        `MRL-${Date.now()}-${index}`,
+        projectId,
+        row.purchaseOrderId,
+        row.itemNameKo,
+        row.specificationKo,
+        row.orderedQuantity,
+        row.receivedQuantity,
+        row.missingQuantity,
+        row.unit,
+        row.receivedAt,
+        row.supplierNameKo,
+        row.inspectionStatus,
+        row.damageOrMissing ? 1 : 0,
+        row.notesKo,
+        createdAt
+      );
+    });
+    const shortages = rows.filter((row) => row.missingQuantity > 0);
+    if (shortages.length > 0) {
+      upsertEventTrigger({
+        triggerKey: `MATERIAL-SHORTAGE-${purchaseOrderId}-${Date.now()}`,
+        eventType: 'MATERIAL_RECEIVING_SHORTAGE',
+        eventCategory: 'Procurement',
+        severity: 'RED',
+        projectId,
+        titleKo: '자재 입고 수량 부족',
+        messageKo: `입고 부족 ${shortages.length}건: 발주 수량 대비 미입고가 발생했습니다.`,
+        nextActionKo: '거래처/재발주 확인',
+        blockingRequired: false,
+        payload: { purchaseOrderId, shortages }
+      });
+    }
+    writeOperationalLog({
+      actionType: 'CREATE_MATERIAL_RECEIVING_LOG',
+      actor,
+      projectId,
+      messageKo: shortages.length ? `자재입고 부족 감지: ${shortages.length}건` : '자재입고 확인 완료',
+      actionKo: '자재입고',
+      level: shortages.length ? 'RED' : 'INFO',
+      payload: { purchaseOrderId, rows },
+      reasonKo: '발주 수량과 입고 수량 비교',
+      createdAt
+    });
+    return { dashboardData: getDashboardData(), receivingCount: rows.length, shortageCount: shortages.length, shortages };
+  }
+
+  function createInspectionChecklistFromSchedule({ projectId, scheduleId = null, processNameKo = '욕실 공정', actor = 'CEO' }) {
+    requirePermission({ actor, permissionKey: 'SITE_OPERATION_INPUT', actionType: 'CREATE_INSPECTION_CHECKLIST', payload: { projectId, scheduleId } });
+    const { executionProject } = ensureExecutionContextForRecord(projectId);
+    const createdAt = nowIso();
+    const checklist = buildBathroomInspectionChecklist(processNameKo);
+    const checklistId = `ICL-${projectId}-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO inspection_checklists (
+        checklist_id, execution_project_id, project_id, checklist_type,
+        display_name_ko, payload_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      checklistId,
+      executionProject.execution_project_id,
+      projectId,
+      'BATHROOM_REQUIRED_INSPECTION',
+      checklist.checklistNameKo,
+      toJson({ scheduleId, processNameKo, items: checklist.items }),
+      createdAt
+    );
+    const insert = db.project.prepare(`
+      INSERT INTO inspection_checklist_items (
+        item_id, checklist_id, project_id, process_name_ko, check_item_ko,
+        criterion_ko, result_status, critical_flag, photo_status, action_required_ko,
+        inspector_ko, inspected_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    checklist.items.forEach((item) => {
+      insert.run(
+        `ICLI-${checklistId}-${String(item.sortOrder).padStart(2, '0')}`,
+        checklistId,
+        projectId,
+        item.processNameKo,
+        item.itemNameKo,
+        item.criterionKo,
+        'PENDING',
+        item.critical ? 1 : 0,
+        'PHOTO_PLACEHOLDER',
+        '',
+        actor,
+        createdAt,
+        createdAt
+      );
+    });
+    writeOperationalLog({
+      actionType: 'CREATE_INSPECTION_CHECKLIST',
+      actor,
+      projectId,
+      messageKo: `검수 체크리스트 생성: ${checklist.checklistNameKo}`,
+      actionKo: '검수표',
+      level: 'INFO',
+      payload: { checklistId, itemCount: checklist.items.length },
+      reasonKo: '공정표 기준 욕실 필수 검수 항목 생성',
+      createdAt
+    });
+    return { dashboardData: getDashboardData(), checklistId, checklist };
+  }
+
+  function saveInspectionChecklistResults({ projectId, checklistId, results = [], actor = 'CEO' }) {
+    requirePermission({ actor, permissionKey: 'SITE_OPERATION_INPUT', actionType: 'SAVE_INSPECTION_CHECKLIST_RESULTS', payload: { projectId, checklistId } });
+    const { siteOperation } = ensureExecutionContextForRecord(projectId);
+    const createdAt = nowIso();
+    const existingItems = db.project.prepare('SELECT * FROM inspection_checklist_items WHERE checklist_id = ? ORDER BY item_id').all(checklistId);
+    const resultMap = new Map(results.map((result) => [result.itemId || result.checkItemKo, result]));
+    const evaluatedItems = existingItems.map((item) => {
+      const result = resultMap.get(item.item_id) || resultMap.get(item.check_item_ko) || {};
+      return {
+        itemId: item.item_id,
+        itemNameKo: item.check_item_ko,
+        critical: Boolean(item.critical_flag),
+        result: result.resultStatus || result.result || 'PASS',
+        actionRequiredKo: result.actionRequiredKo || ''
+      };
+    });
+    const evaluation = evaluateInspectionItems(evaluatedItems);
+    const update = db.project.prepare(`
+      UPDATE inspection_checklist_items
+      SET result_status = ?, action_required_ko = ?, inspector_ko = ?, inspected_at = ?
+      WHERE item_id = ?
+    `);
+    evaluatedItems.forEach((item) => {
+      update.run(item.result, item.actionRequiredKo, actor, createdAt, item.itemId);
+    });
+
+    const inspectionResultStatus = evaluation.hasFail ? 'FAILED' : 'PASSED';
+    const inspectionResultId = `INSP-CHK-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO inspection_results (
+        inspection_result_id, site_operation_id, project_id, inspection_type,
+        related_process_id, result_status, blocked_processes_json, notes_ko, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      inspectionResultId,
+      siteOperation.site_operation_id,
+      projectId,
+      'CHECKLIST',
+      checklistId,
+      inspectionResultStatus,
+      toJson(evaluation.blockedProcessesKo),
+      evaluation.hasFail ? `${evaluation.failedItems.map((item) => item.itemNameKo).join(', ')} FAIL` : '전체 PASS',
+      createdAt
+    );
+
+    if (evaluation.hasCriticalFail) {
+      const currentBlocked = fromJson(siteOperation.blocked_processes_json, []);
+      const mergedBlocked = Array.from(new Set([...currentBlocked, ...evaluation.blockedProcessesKo, '다음 의존 공정']));
+      db.project.prepare('UPDATE site_operations SET blocked_processes_json = ?, risk_flags_json = ?, updated_at = ? WHERE site_operation_id = ?')
+        .run(toJson(mergedBlocked), toJson(['Critical 검수 FAIL', '후속 공정 차단']), createdAt, siteOperation.site_operation_id);
+      upsertEventTrigger({
+        triggerKey: `INSPECTION-CRITICAL-FAIL-${checklistId}`,
+        eventType: 'INSPECTION_CRITICAL_FAIL',
+        eventCategory: 'Site',
+        severity: 'RED',
+        projectId,
+        titleKo: '검수 Critical FAIL',
+        messageKo: '중요 검수 항목 FAIL: 후속 의존 공정을 차단합니다.',
+        nextActionKo: '재시공/보완 조치',
+        blockingRequired: true,
+        payload: { checklistId, criticalFailedItems: evaluation.criticalFailedItems }
+      });
+    }
+
+    writeOperationalLog({
+      actionType: 'SAVE_INSPECTION_CHECKLIST_RESULTS',
+      actor,
+      projectId,
+      messageKo: evaluation.hasFail ? '검수 FAIL 발생' : '검수 PASS: 후속 공정 가능',
+      actionKo: '검수',
+      level: evaluation.hasCriticalFail ? 'RED' : evaluation.hasFail ? 'WARNING' : 'INFO',
+      payload: { checklistId, inspectionResultId, evaluation },
+      reasonKo: '검수 체크리스트 결과 저장',
+      createdAt
+    });
+    return { dashboardData: getDashboardData(), checklistId, inspectionResultId, evaluation };
+  }
+
+  function createExecutionChangeOrder({ projectId, siteNameKo = '현장', requestedByKo = '고객', titleKo, changeContentKo, changeReasonKo, additionalAmount, additionalCost, scheduleImpactDays = 0, customerApprovalStatus = 'PENDING', actor = 'CEO' }) {
+    requirePermission({ actor, permissionKey: 'SITE_OPERATION_INPUT', actionType: 'CREATE_EXECUTION_CHANGE_ORDER', payload: { projectId } });
+    ensureExecutionContextForRecord(projectId);
+    const createdAt = nowIso();
+    const payload = buildChangeOrderPayload({
+      titleKo,
+      reasonKo: changeReasonKo,
+      additionalAmount,
+      additionalCost,
+      scheduleImpactDays,
+      customerApprovalStatus
+    });
+    const pce = runProfitControlEngine({
+      estimateId: `CO-${projectId}-${Date.now()}`,
+      revenue: payload.additionalAmount,
+      totalCost: payload.additionalCost,
+      scheduleRisk: payload.scheduleImpactDays * 50000,
+      createdAt
+    });
+    const changeOrderId = `CHO-${projectId}-${Date.now()}`;
+    const blocked = pce.decision === 'BLOCK';
+    db.project.prepare(`
+      INSERT INTO change_orders (
+        change_order_id, project_id, site_name_ko, request_date, requested_by_ko,
+        change_content_ko, change_reason_ko, additional_amount, additional_cost,
+        additional_margin, additional_margin_rate, schedule_impact_days,
+        customer_approval_status, internal_approval_status, pce_decision, pce_id,
+        signature_status, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      changeOrderId,
+      projectId,
+      siteNameKo,
+      createdAt.slice(0, 10),
+      requestedByKo,
+      changeContentKo || payload.titleKo,
+      payload.reasonKo,
+      payload.additionalAmount,
+      payload.additionalCost,
+      payload.additionalMargin,
+      payload.additionalMarginRate,
+      payload.scheduleImpactDays,
+      payload.customerApprovalStatus,
+      blocked ? 'BLOCKED_BY_PCE' : 'PENDING_CEO_APPROVAL',
+      pce.decision,
+      pce.id,
+      'SIGNATURE_PLACEHOLDER',
+      blocked ? 'BLOCKED' : 'PENDING_APPROVAL',
+      createdAt,
+      createdAt
+    );
+    if (blocked) {
+      upsertEventTrigger({
+        triggerKey: `CHANGE-ORDER-PCE-BLOCK-${changeOrderId}`,
+        eventType: 'CHANGE_ORDER_LOW_MARGIN_BLOCKED',
+        eventCategory: 'Cost',
+        severity: 'RED',
+        projectId,
+        titleKo: '저마진 추가공사 차단',
+        messageKo: `추가공사 마진율 ${(pce.realMargin * 100).toFixed(1)}%: PCE BLOCK`,
+        nextActionKo: '금액 재협상',
+        blockingRequired: true,
+        payload: { changeOrderId, pce }
+      });
+    }
+    writeOperationalLog({
+      actionType: 'CREATE_EXECUTION_CHANGE_ORDER',
+      actor,
+      projectId,
+      messageKo: blocked ? '저마진 추가공사 차단' : '추가공사 승인 요청 생성',
+      actionKo: '추가공사',
+      level: blocked ? 'RED' : 'WARNING',
+      payload: { changeOrderId, pce, payload },
+      reasonKo: payload.reasonKo,
+      createdAt
+    });
+    return { dashboardData: getDashboardData(), changeOrderId, pce, blocked };
+  }
+
+  function approveExecutionChangeOrder({ changeOrderId, actor = 'CEO', reasonKo = '대표 승인' }) {
+    const createdAt = nowIso();
+    const changeOrder = db.project.prepare('SELECT * FROM change_orders WHERE change_order_id = ?').get(changeOrderId);
+    if (!changeOrder) throw new Error(`Change order not found: ${changeOrderId}`);
+    if (changeOrder.pce_decision === 'BLOCK') throw new Error('Low-margin change order blocked: PCE decision is BLOCK.');
+    db.project.prepare(`
+      UPDATE change_orders
+      SET internal_approval_status = 'APPROVED', status = 'APPROVED', updated_at = ?
+      WHERE change_order_id = ?
+    `).run(createdAt, changeOrderId);
+    db.project.prepare(`
+      INSERT INTO live_margin_events (
+        id, project_id, estimate_id, current_margin_rate, threshold, decision, reason, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      `LME-CO-${changeOrderId}`,
+      changeOrder.project_id,
+      changeOrderId,
+      Number(changeOrder.additional_margin_rate || 0),
+      0.25,
+      Number(changeOrder.additional_margin_rate || 0) < 0.25 ? 'RED_ALERT' : 'APPROVED_CHANGE_ORDER',
+      '추가공사 승인 후 매출/마진 영향 기록',
+      createdAt
+    );
+    writeOperationalLog({
+      actionType: 'APPROVE_EXECUTION_CHANGE_ORDER',
+      actor,
+      projectId: changeOrder.project_id,
+      messageKo: `추가공사 승인: ${Number(changeOrder.additional_amount || 0).toLocaleString('ko-KR')}원`,
+      actionKo: '추가공사 승인',
+      level: 'INFO',
+      payload: { changeOrderId, additionalAmount: changeOrder.additional_amount },
+      reasonKo,
+      createdAt
+    });
+    return { dashboardData: getDashboardData(), changeOrderId, status: 'APPROVED', revenueImpact: Number(changeOrder.additional_amount || 0) };
+  }
+
+  function createDefectReport({ projectId, siteNameKo = '현장', defectLocationKo, defectTypeKo, severity = 'MEDIUM', rootCauseKo, estimatedCost = 0, managerKo = '현장관리자', actor = 'CEO' }) {
+    requirePermission({ actor, permissionKey: 'SITE_OPERATION_INPUT', actionType: 'CREATE_DEFECT_REPORT', payload: { projectId } });
+    ensureExecutionContextForRecord(projectId);
+    const createdAt = nowIso();
+    const defect = buildDefectPayload({ siteNameKo, defectLocationKo, defectTypeKo, severity, rootCauseKo, estimatedCost, managerKo });
+    const defectId = `DEF-${projectId}-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO defect_reports (
+        defect_id, project_id, site_name_ko, received_at, defect_location_ko,
+        defect_type_ko, severity, root_cause_ko, manager_ko, estimated_cost,
+        status, completed_at, customer_confirmed, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      defectId,
+      projectId,
+      defect.siteNameKo,
+      createdAt.slice(0, 10),
+      defect.defectLocationKo,
+      defect.defectTypeKo,
+      defect.severity,
+      defect.rootCauseKo,
+      defect.managerKo,
+      defect.estimatedCost,
+      defect.status,
+      null,
+      defect.customerConfirmed ? 1 : 0,
+      createdAt,
+      createdAt
+    );
+    db.project.prepare(`
+      INSERT INTO live_margin_events (
+        id, project_id, estimate_id, current_margin_rate, threshold, decision, reason, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      `LME-DEF-${defectId}`,
+      projectId,
+      defectId,
+      0,
+      0.25,
+      defect.estimatedCost > 0 ? 'MARGIN_COST_INCREASE' : 'DEFECT_RECORDED',
+      `하자 예상 처리비 ${defect.estimatedCost.toLocaleString('ko-KR')}원 반영`,
+      createdAt
+    );
+    const rootCauseId = `RCA-DEF-${defectId}`;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO cost_leak_root_causes (
+        root_cause_id, leak_id, project_id, requirement_id, process_id,
+        cost_category, item_name_ko, root_cause_type, root_cause_name_ko,
+        reason_ko, status, approval_required, case_library_link_json,
+        evidence_json, created_at, updated_at, estimate_id, financial_impact, recommended_prevention
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM cost_leak_root_causes WHERE root_cause_id = ?), ?), ?, ?, ?, ?)
+    `).run(
+      rootCauseId,
+      defectId,
+      projectId,
+      defectId,
+      'defect_management',
+      'defect_rework',
+      defect.defectTypeKo,
+      'defect_rework',
+      '시공 하자/재작업',
+      defect.rootCauseKo,
+      'CANDIDATE',
+      1,
+      toJson({ defectId, projectId }),
+      toJson({ estimatedCost: defect.estimatedCost, severity: defect.severity }),
+      rootCauseId,
+      createdAt,
+      createdAt,
+      defectId,
+      defect.estimatedCost,
+      '다음 견적에 하자/재작업 리스크 버퍼 반영'
+    );
+    syncRootCausePatterns(createdAt);
+    if (defect.redAlert) {
+      upsertEventTrigger({
+        triggerKey: `DEFECT-${defectId}`,
+        eventType: 'DEFECT_RED_ALERT',
+        eventCategory: 'Site',
+        severity: 'RED',
+        projectId,
+        titleKo: '하자 RED ALERT',
+        messageKo: `${defect.defectTypeKo} / ${defect.defectLocationKo}: ${defect.rootCauseKo}`,
+        nextActionKo: '하자 처리',
+        blockingRequired: false,
+        payload: { defectId, estimatedCost: defect.estimatedCost }
+      });
+    }
+    writeOperationalLog({
+      actionType: 'CREATE_DEFECT_REPORT',
+      actor,
+      projectId,
+      messageKo: `하자 접수: ${defect.defectTypeKo}`,
+      actionKo: '하자관리',
+      level: defect.redAlert ? 'RED' : 'WARNING',
+      payload: { defectId, rootCauseId, defect },
+      reasonKo: defect.rootCauseKo,
+      createdAt
+    });
+    return { dashboardData: getDashboardData(), defectId, rootCauseId, defect };
+  }
+
   function getChangeOrderIdFromApproval(approvalId) {
     if (!approvalId.startsWith('APP-CO-')) return null;
     const withoutPrefix = approvalId.slice(4);
@@ -10961,10 +11689,16 @@ function createSqliteService({ app }) {
       executionLogCount: countRows(db.project, 'execution_logs'),
       siteOperationCount: countRows(db.project, 'site_operations'),
       dailySiteReportCount: countRows(db.project, 'daily_site_reports'),
+      dailySiteReportItemCount: countRows(db.project, 'daily_site_report_items'),
+      crewAttendanceLogCount: countRows(db.project, 'crew_attendance_logs'),
       materialDeliveryCheckCount: countRows(db.project, 'material_delivery_checks'),
+      materialReceivingLogCount: countRows(db.project, 'material_receiving_logs'),
       inspectionResultCount: countRows(db.project, 'inspection_results'),
+      inspectionChecklistItemCount: countRows(db.project, 'inspection_checklist_items'),
       siteIssueCount: countRows(db.project, 'site_issues'),
       changeOrderRequestCount: countRows(db.project, 'change_order_requests'),
+      changeOrderCount: countRows(db.project, 'change_orders'),
+      defectReportCount: countRows(db.project, 'defect_reports'),
       siteRiskLogCount: countRows(db.project, 'site_risk_logs'),
       projectCompletionReportCount: countRows(db.project, 'project_completion_reports'),
       actualCostCount: countRows(db.project, 'actual_costs'),
@@ -11022,6 +11756,14 @@ function createSqliteService({ app }) {
     saveInspectionResult,
     createSiteIssue,
     createChangeOrderRequest,
+    createDailySiteReportFromSchedule,
+    createCrewAttendanceReport,
+    createMaterialReceivingLog,
+    createInspectionChecklistFromSchedule,
+    saveInspectionChecklistResults,
+    createExecutionChangeOrder,
+    approveExecutionChangeOrder,
+    createDefectReport,
     getProjectCompletionReadiness,
     completeProject,
     getActualCostCaptureDashboard,

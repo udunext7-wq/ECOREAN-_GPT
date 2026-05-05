@@ -69,6 +69,41 @@ export function EstimateEntryPanel({ onOpen }: Props) {
           <strong>자재 발주 목록 자동 생성</strong>
           <em>구매 준비</em>
         </button>
+        <button className="entry-button primary" onClick={() => onOpen('executionManagement', 'confirm')}>
+          <span>현장 실행 관리</span>
+          <strong>공사일보 / 출역 / 입고 / 검수</strong>
+          <em>시공 통제</em>
+        </button>
+        <button className="entry-button" onClick={() => onOpen('executionManagement', 'click')}>
+          <span>공사일보</span>
+          <strong>금일 공정 기록</strong>
+          <em>현장 기록</em>
+        </button>
+        <button className="entry-button" onClick={() => onOpen('executionManagement', 'click')}>
+          <span>출역일보</span>
+          <strong>품수 / 노무비 기록</strong>
+          <em>원가 연결</em>
+        </button>
+        <button className="entry-button" onClick={() => onOpen('executionManagement', 'click')}>
+          <span>자재입고</span>
+          <strong>발주 대비 입고 확인</strong>
+          <em>부족 경고</em>
+        </button>
+        <button className="entry-button" onClick={() => onOpen('executionManagement', 'warning')}>
+          <span>검수 체크리스트</span>
+          <strong>FAIL 시 후속 공정 차단</strong>
+          <em>RED ALERT</em>
+        </button>
+        <button className="entry-button" onClick={() => onOpen('executionManagement', 'warning')}>
+          <span>추가공사 승인</span>
+          <strong>PCE 기반 저마진 차단</strong>
+          <em>승인 필요</em>
+        </button>
+        <button className="entry-button" onClick={() => onOpen('executionManagement', 'warning')}>
+          <span>하자관리</span>
+          <strong>Root Cause / 예방 룰 연결</strong>
+          <em>학습 반영</em>
+        </button>
       </div>
     </section>
   );
