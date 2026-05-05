@@ -311,5 +311,7 @@ module.exports = {
   exportEstimateDocument,
   buildPdfLines,
   buildCustomerSheets,
-  buildInternalSheets
+  buildInternalSheets,
+  createBasicPdf,
+  createXlsx
 };

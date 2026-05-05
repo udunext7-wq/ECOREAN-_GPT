@@ -1,6 +1,6 @@
 export type Severity = 'GREEN' | 'YELLOW' | 'RED';
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'BLOCKING';
-export type ViewKey = 'dashboard' | 'project' | 'approvals' | 'risks' | 'ontology' | 'masterDb' | 'estimate' | 'bathroomEstimate' | 'caseLibrary' | 'costCapture' | 'marginSafety' | 'vendorPrice' | 'portfolio' | 'crew' | 'finance' | 'sales' | 'client' | 'settings' | 'profitTemplates' | 'profitAutomation';
+export type ViewKey = 'dashboard' | 'project' | 'approvals' | 'risks' | 'ontology' | 'masterDb' | 'estimate' | 'bathroomEstimate' | 'contractDocuments' | 'constructionSchedule' | 'purchaseOrders' | 'caseLibrary' | 'costCapture' | 'marginSafety' | 'vendorPrice' | 'portfolio' | 'crew' | 'finance' | 'sales' | 'client' | 'settings' | 'profitTemplates' | 'profitAutomation';
 
 export type TopBarKpi = {
   id: string;

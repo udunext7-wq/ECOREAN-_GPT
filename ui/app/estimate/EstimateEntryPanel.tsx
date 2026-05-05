@@ -54,6 +54,21 @@ export function EstimateEntryPanel({ onOpen }: Props) {
           <strong>원가 / 마진 / PCE 확인</strong>
           <em>내부용</em>
         </button>
+        <button className="entry-button" onClick={() => onOpen('contractDocuments', 'click')}>
+          <span>계약 문서</span>
+          <strong>견적 승인 후 계약서 생성</strong>
+          <em>실행 준비</em>
+        </button>
+        <button className="entry-button" onClick={() => onOpen('constructionSchedule', 'click')}>
+          <span>공정표</span>
+          <strong>철거부터 인도까지 자동 생성</strong>
+          <em>일정 관리</em>
+        </button>
+        <button className="entry-button" onClick={() => onOpen('purchaseOrders', 'click')}>
+          <span>발주 관리</span>
+          <strong>자재 발주 목록 자동 생성</strong>
+          <em>구매 준비</em>
+        </button>
       </div>
     </section>
   );

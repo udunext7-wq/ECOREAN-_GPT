@@ -7,6 +7,9 @@ const {
   buildInternalCostView
 } = require('./bathroomEstimateService');
 const { exportEstimateDocument } = require('./estimateExportService');
+const { buildContractFromEstimate, exportContractPdf } = require('./contractService');
+const { buildScheduleFromEstimate } = require('./scheduleService');
+const { buildPurchaseOrderFromEstimate } = require('./purchaseOrderService');
 
 function nowIso() {
   return new Date().toISOString();
@@ -43,6 +46,9 @@ function createSqliteService({ app }) {
   const estimateExportDir = app && app.isPackaged
     ? path.join(app.getPath('userData'), 'export', 'estimates')
     : path.join(__dirname, '..', '..', 'export', 'estimates');
+  const contractExportDir = app && app.isPackaged
+    ? path.join(app.getPath('userData'), 'export', 'contracts')
+    : path.join(__dirname, '..', '..', 'export', 'contracts');
 
   const dbPaths = {
     project: path.join(databaseDir, 'project.db'),
@@ -768,6 +774,47 @@ function createSqliteService({ app }) {
         amount_status TEXT NOT NULL,
         payload_json TEXT NOT NULL,
         created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS construction_schedules (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        contract_id TEXT,
+        schedule_name TEXT NOT NULL,
+        start_date TEXT NOT NULL,
+        end_date TEXT NOT NULL,
+        duration_days INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS construction_schedule_items (
+        id TEXT PRIMARY KEY,
+        schedule_id TEXT NOT NULL,
+        process_name TEXT NOT NULL,
+        start_date TEXT NOT NULL,
+        end_date TEXT NOT NULL,
+        duration_days INTEGER NOT NULL,
+        dependency TEXT NOT NULL,
+        assignee TEXT NOT NULL,
+        status TEXT NOT NULL,
+        sort_order INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS purchase_order_items (
+        id TEXT PRIMARY KEY,
+        purchase_order_id TEXT NOT NULL,
+        item_name TEXT NOT NULL,
+        specification TEXT NOT NULL,
+        quantity REAL NOT NULL,
+        unit TEXT NOT NULL,
+        expected_unit_price INTEGER NOT NULL,
+        expected_total INTEGER NOT NULL,
+        supplier_name TEXT NOT NULL,
+        order_status TEXT NOT NULL,
+        required_date TEXT NOT NULL,
+        notes TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS site_report_templates (
@@ -1849,6 +1896,30 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'final_estimates', 'estimated_margin', 'estimated_margin INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'final_estimates', 'estimated_margin_rate', 'estimated_margin_rate REAL NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'final_estimates', 'margin_safety_status', "margin_safety_status TEXT NOT NULL DEFAULT 'NOT_EVALUATED'");
+    ensureColumn(db.project, 'contracts', 'estimate_id', 'estimate_id TEXT');
+    ensureColumn(db.project, 'contracts', 'contract_number', 'contract_number TEXT');
+    ensureColumn(db.project, 'contracts', 'customer_name', "customer_name TEXT NOT NULL DEFAULT 'UNKNOWN'");
+    ensureColumn(db.project, 'contracts', 'site_name', "site_name TEXT NOT NULL DEFAULT 'UNKNOWN'");
+    ensureColumn(db.project, 'contracts', 'project_name', "project_name TEXT NOT NULL DEFAULT '욕실 단독 리모델링 공사'");
+    ensureColumn(db.project, 'contracts', 'deposit_amount', 'deposit_amount INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'contracts', 'progress_payment_amount', 'progress_payment_amount INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'contracts', 'balance_amount', 'balance_amount INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'contracts', 'start_date', "start_date TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.project, 'contracts', 'end_date', "end_date TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.project, 'contracts', 'duration_days', 'duration_days INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'contracts', 'payment_terms', "payment_terms TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.project, 'contracts', 'warranty_terms', "warranty_terms TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.project, 'contracts', 'cancellation_terms', "cancellation_terms TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.project, 'contracts', 'special_terms', "special_terms TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.project, 'contracts', 'status', "status TEXT NOT NULL DEFAULT 'DRAFT'");
+    ensureColumn(db.project, 'purchase_orders', 'estimate_id', 'estimate_id TEXT');
+    ensureColumn(db.project, 'purchase_orders', 'contract_id', 'contract_id TEXT');
+    ensureColumn(db.project, 'purchase_orders', 'order_number', 'order_number TEXT');
+    ensureColumn(db.project, 'purchase_orders', 'supplier_name', "supplier_name TEXT NOT NULL DEFAULT '거래처 미정'");
+    ensureColumn(db.project, 'purchase_orders', 'total_amount', 'total_amount INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'purchase_orders', 'status', "status TEXT NOT NULL DEFAULT 'DRAFT'");
+    ensureColumn(db.project, 'purchase_orders', 'required_date', "required_date TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.project, 'purchase_orders', 'updated_at', "updated_at TEXT NOT NULL DEFAULT ''");
   }
 
   function countRows(database, tableName) {
@@ -3167,6 +3238,156 @@ function createSqliteService({ app }) {
     );
 
     return result;
+  }
+
+  function generateBathroomContract({ estimateId, startDate = null, actor = 'CEO' }) {
+    const createdAt = nowIso();
+    const model = getStoredBathroomEstimateModel(estimateId);
+    const contract = buildContractFromEstimate({ ...model, startDate });
+    const contractId = contract.contractNumber;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO contracts (
+        contract_id, client_id, project_id, lead_id, contract_status, contract_amount,
+        deposit_rate, interim_rate, balance_rate, scope_summary_ko, exclusions_ko,
+        change_order_terms_ko, defect_warranty_terms_ko, approval_required, approved_by,
+        approved_at, created_at, updated_at, estimate_id, contract_number, customer_name,
+        site_name, project_name, deposit_amount, progress_payment_amount, balance_amount,
+        start_date, end_date, duration_days, payment_terms, warranty_terms,
+        cancellation_terms, special_terms, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      contractId,
+      `CLIENT-${estimateId}`,
+      estimateId,
+      null,
+      contract.status,
+      contract.contractAmount,
+      0.3,
+      0.4,
+      0.3,
+      contract.scopeSummaryKo,
+      contract.specialTerms,
+      '추가공사는 별도 승인 후 반영합니다.',
+      contract.warrantyTerms,
+      1,
+      null,
+      null,
+      createdAt,
+      createdAt,
+      estimateId,
+      contract.contractNumber,
+      contract.customerName,
+      contract.siteName,
+      contract.projectName,
+      contract.depositAmount,
+      contract.progressPaymentAmount,
+      contract.balanceAmount,
+      contract.startDate,
+      contract.endDate,
+      contract.durationDays,
+      contract.paymentTerms,
+      contract.warrantyTerms,
+      contract.cancellationTerms,
+      contract.specialTerms,
+      contract.status
+    );
+    insertNotification({ level: 'INFO', messageKo: `계약서 생성: ${contract.contractNumber}`, relatedProjectId: estimateId, actionKo: '계약서 생성', createdAt });
+    return { contractId, contract };
+  }
+
+  function exportBathroomContractPdf({ contractId, actor = 'CEO' }) {
+    const row = db.project.prepare('SELECT * FROM contracts WHERE contract_id = ?').get(contractId);
+    if (!row) throw new Error(`Contract not found: ${contractId}`);
+    const contract = {
+      contractNumber: row.contract_number || row.contract_id,
+      estimateId: row.estimate_id || row.project_id,
+      customerName: row.customer_name,
+      siteName: row.site_name,
+      projectName: row.project_name,
+      scopeSummaryKo: row.scope_summary_ko,
+      contractAmount: row.contract_amount,
+      depositAmount: row.deposit_amount,
+      progressPaymentAmount: row.progress_payment_amount,
+      balanceAmount: row.balance_amount,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      durationDays: row.duration_days,
+      paymentTerms: row.payment_terms,
+      warrantyTerms: row.warranty_terms,
+      cancellationTerms: row.cancellation_terms,
+      specialTerms: row.special_terms
+    };
+    const result = exportContractPdf({ contract, outputDir: contractExportDir });
+    insertNotification({ level: 'INFO', messageKo: `계약서 PDF 생성: ${result.fileName}`, relatedProjectId: contract.estimateId, actionKo: 'Contract PDF', createdAt: nowIso() });
+    return result;
+  }
+
+  function generateBathroomSchedule({ estimateId, contractId = null, startDate = null }) {
+    const createdAt = nowIso();
+    const model = getStoredBathroomEstimateModel(estimateId);
+    const schedule = buildScheduleFromEstimate({ ...model, contractId, startDate });
+    const scheduleId = `SCH-${estimateId}`;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO construction_schedules (
+        id, estimate_id, contract_id, schedule_name, start_date, end_date,
+        duration_days, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(scheduleId, estimateId, contractId, schedule.scheduleName, schedule.startDate, schedule.endDate, schedule.durationDays, schedule.status, createdAt, createdAt);
+    db.project.prepare('DELETE FROM construction_schedule_items WHERE schedule_id = ?').run(scheduleId);
+    const insertItem = db.project.prepare(`
+      INSERT INTO construction_schedule_items (
+        id, schedule_id, process_name, start_date, end_date, duration_days,
+        dependency, assignee, status, sort_order
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    schedule.items.forEach((item) => {
+      insertItem.run(`${scheduleId}-${String(item.sortOrder).padStart(2, '0')}`, scheduleId, item.processName, item.startDate, item.endDate, item.durationDays, item.dependency || '', item.assignee, item.status, item.sortOrder);
+    });
+    insertNotification({ level: 'INFO', messageKo: `공정표 생성: ${schedule.scheduleName}`, relatedProjectId: estimateId, actionKo: '공정표 생성', createdAt });
+    return { scheduleId, schedule };
+  }
+
+  function generateBathroomPurchaseOrder({ estimateId, contractId = null, requiredDate = null }) {
+    const createdAt = nowIso();
+    const model = getStoredBathroomEstimateModel(estimateId);
+    const purchaseOrder = buildPurchaseOrderFromEstimate({ ...model, contractId, requiredDate });
+    const purchaseOrderId = purchaseOrder.orderNumber;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO purchase_orders (
+        purchase_order_id, execution_project_id, project_id, order_status, unknown_price_warning,
+        payload_json, created_at, estimate_id, contract_id, order_number, supplier_name,
+        total_amount, status, required_date, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      purchaseOrderId,
+      `EXEC-PENDING-${estimateId}`,
+      estimateId,
+      purchaseOrder.status,
+      1,
+      toJson({ source: 'BATHROOM_ESTIMATE', itemCount: purchaseOrder.items.length }),
+      createdAt,
+      estimateId,
+      contractId,
+      purchaseOrder.orderNumber,
+      purchaseOrder.supplierName,
+      purchaseOrder.totalAmount,
+      purchaseOrder.status,
+      purchaseOrder.requiredDate,
+      createdAt
+    );
+    db.project.prepare('DELETE FROM purchase_order_items WHERE purchase_order_id = ?').run(purchaseOrderId);
+    const insertItem = db.project.prepare(`
+      INSERT INTO purchase_order_items (
+        id, purchase_order_id, item_name, specification, quantity, unit,
+        expected_unit_price, expected_total, supplier_name, order_status,
+        required_date, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    purchaseOrder.items.forEach((item, index) => {
+      insertItem.run(`${purchaseOrderId}-ITEM-${String(index + 1).padStart(3, '0')}`, purchaseOrderId, item.itemName, item.specification, item.quantity, item.unit, item.expectedUnitPrice, item.expectedTotal, item.supplierName, item.orderStatus, item.requiredDate, item.notes);
+    });
+    insertNotification({ level: 'WARNING', messageKo: `발주서 생성: ${purchaseOrder.orderNumber} / 실제 공급가 확인 필요`, relatedProjectId: estimateId, actionKo: '발주서 생성', createdAt });
+    return { purchaseOrderId, purchaseOrder };
   }
 
   function profitGateForWonLead({ lead, payload = {}, actor = 'CEO', createdAt = nowIso() }) {
@@ -10679,6 +10900,10 @@ function createSqliteService({ app }) {
       bathroomEstimateCount: countRows(db.project, 'bathroom_estimates'),
       bathroomEstimateItemCount: countRows(db.project, 'bathroom_estimate_items'),
       estimateExportDir,
+      contractExportDir,
+      constructionScheduleCount: countRows(db.project, 'construction_schedules'),
+      constructionScheduleItemCount: countRows(db.project, 'construction_schedule_items'),
+      purchaseOrderItemCount: countRows(db.project, 'purchase_order_items'),
       portfolioProjectCount: countRows(db.project, 'portfolio_projects'),
       resourceAllocationCount: countRows(db.project, 'resource_allocations'),
       resourceConflictCount: countRows(db.project, 'resource_conflicts'),
@@ -10784,6 +11009,10 @@ function createSqliteService({ app }) {
     calculateBathroomEstimatePreview,
     saveBathroomEstimate,
     exportBathroomEstimateDocument,
+    generateBathroomContract,
+    exportBathroomContractPdf,
+    generateBathroomSchedule,
+    generateBathroomPurchaseOrder,
     getProjectExecutionReadiness,
     transitionProjectToExecution,
     getSiteOperationStatus,

@@ -2,6 +2,10 @@ import { useMemo, useState } from 'react';
 import {
   calculateBathroomEstimate,
   exportBathroomEstimate,
+  exportBathroomContractPdf,
+  generateBathroomContract,
+  generateBathroomPurchaseOrder,
+  generateBathroomSchedule,
   saveBathroomEstimate,
   type BathroomEstimateInput,
   type BathroomEstimatePreview
@@ -89,6 +93,7 @@ export function BathroomEstimateWizardView() {
   const [messageKo, setMessageKo] = useState('입력값을 넣고 자동 산출을 실행하세요.');
   const [isBusy, setIsBusy] = useState(false);
   const [savedEstimateId, setSavedEstimateId] = useState<string | null>(null);
+  const [generatedContractId, setGeneratedContractId] = useState<string | null>(null);
   const [estimateNumber] = useState(() => `BATH-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${Math.floor(Math.random() * 900 + 100)}`);
 
   const groupedCustomerRows = useMemo(() => {
@@ -179,6 +184,68 @@ export function BathroomEstimateWizardView() {
   function handlePrint(documentType: 'customer' | 'internal') {
     setActiveOutput(documentType);
     window.setTimeout(() => window.print(), 80);
+  }
+
+  function executionBlockedMessage() {
+    const decision = preview?.estimate.pce_decision;
+    if (decision === 'BLOCK') return '수익성 검증 BLOCK 상태에서는 계약/공정표/발주서를 생성할 수 없습니다.';
+    if (decision === 'MODIFY') return '수정 필요 상태입니다. 견적 수정 후 계약서를 생성하세요.';
+    return '';
+  }
+
+  async function handleGenerateContract() {
+    setIsBusy(true);
+    try {
+      const estimateId = await ensureSavedEstimate();
+      const result = await generateBathroomContract(estimateId);
+      const contractId = String(result.contractId || '');
+      setGeneratedContractId(contractId);
+      setMessageKo(`계약서 생성 완료: ${contractId}`);
+    } catch (error) {
+      setMessageKo(error instanceof Error ? error.message : '계약서 생성 중 오류가 발생했습니다.');
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleExportContractPdf() {
+    setIsBusy(true);
+    try {
+      const contractId = generatedContractId || String((await generateBathroomContract(await ensureSavedEstimate())).contractId || '');
+      setGeneratedContractId(contractId);
+      const result = await exportBathroomContractPdf(contractId);
+      setMessageKo(`계약서 PDF 생성 완료: ${String(result.fileName || result.filePath)}`);
+    } catch (error) {
+      setMessageKo(error instanceof Error ? error.message : '계약서 PDF 생성 중 오류가 발생했습니다.');
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleGenerateSchedule() {
+    setIsBusy(true);
+    try {
+      const estimateId = await ensureSavedEstimate();
+      const result = await generateBathroomSchedule(estimateId, generatedContractId || undefined);
+      setMessageKo(`공정표 생성 완료: ${String(result.scheduleId || '욕실 공정표')}`);
+    } catch (error) {
+      setMessageKo(error instanceof Error ? error.message : '공정표 생성 중 오류가 발생했습니다.');
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleGeneratePurchaseOrder() {
+    setIsBusy(true);
+    try {
+      const estimateId = await ensureSavedEstimate();
+      const result = await generateBathroomPurchaseOrder(estimateId, generatedContractId || undefined);
+      setMessageKo(`발주서 생성 완료: ${String(result.purchaseOrderId || '욕실 발주서')}`);
+    } catch (error) {
+      setMessageKo(error instanceof Error ? error.message : '발주서 생성 중 오류가 발생했습니다.');
+    } finally {
+      setIsBusy(false);
+    }
   }
 
   return (
@@ -457,6 +524,19 @@ export function BathroomEstimateWizardView() {
                   </>
                 )}
               </div>
+              <section className="execution-document-actions">
+                <div>
+                  <span className="eyebrow">EXECUTION READY</span>
+                  <h4>견적 승인 후 실행 문서 생성</h4>
+                  {executionBlockedMessage() ? <p className="execution-block-message">{executionBlockedMessage()}</p> : <p>GO 또는 SCALE 견적은 계약서, 공정표, 발주서를 바로 생성할 수 있습니다.</p>}
+                </div>
+                <div className="wizard-output-actions">
+                  <button onClick={handleGenerateContract} disabled={isBusy || Boolean(executionBlockedMessage())}>계약서 생성</button>
+                  <button onClick={handleExportContractPdf} disabled={isBusy || Boolean(executionBlockedMessage())}>계약서 PDF</button>
+                  <button onClick={handleGenerateSchedule} disabled={isBusy || Boolean(executionBlockedMessage())}>공정표 생성</button>
+                  <button onClick={handleGeneratePurchaseOrder} disabled={isBusy || Boolean(executionBlockedMessage())}>발주서 생성</button>
+                </div>
+              </section>
             </>
           )}
         </section>

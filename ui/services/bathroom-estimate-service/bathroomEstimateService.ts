@@ -84,3 +84,27 @@ export async function exportBathroomEstimate(payload: {
   }
   return api.exportBathroomEstimate(payload);
 }
+
+export async function generateBathroomContract(estimateId: string): Promise<Record<string, unknown>> {
+  const api = window.ecorean?.bocDb;
+  if (!api?.generateBathroomContract) throw new Error('Contract generation API is not available.');
+  return api.generateBathroomContract({ estimateId });
+}
+
+export async function exportBathroomContractPdf(contractId: string): Promise<Record<string, unknown>> {
+  const api = window.ecorean?.bocDb;
+  if (!api?.exportBathroomContractPdf) throw new Error('Contract PDF API is not available.');
+  return api.exportBathroomContractPdf({ contractId });
+}
+
+export async function generateBathroomSchedule(estimateId: string, contractId?: string): Promise<Record<string, unknown>> {
+  const api = window.ecorean?.bocDb;
+  if (!api?.generateBathroomSchedule) throw new Error('Schedule generation API is not available.');
+  return api.generateBathroomSchedule({ estimateId, contractId });
+}
+
+export async function generateBathroomPurchaseOrder(estimateId: string, contractId?: string): Promise<Record<string, unknown>> {
+  const api = window.ecorean?.bocDb;
+  if (!api?.generateBathroomPurchaseOrder) throw new Error('Purchase order generation API is not available.');
+  return api.generateBathroomPurchaseOrder({ estimateId, contractId });
+}
