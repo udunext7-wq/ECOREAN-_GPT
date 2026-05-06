@@ -82,6 +82,10 @@ declare global {
         markVendorPaymentPaid: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createPaymentRequestMessage: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         requestVendorPaymentApproval: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getProjectClosingCenterData: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createProjectClosingSnapshot: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        finalizeProjectClosing: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        saveHighMarginTemplateFromClosing: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getBathroomPricingStandardDashboard: () => Promise<Record<string, unknown>>;
         evaluateBathroomQuote: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getCaseLibrarySnapshot: () => Promise<Record<string, unknown>>;

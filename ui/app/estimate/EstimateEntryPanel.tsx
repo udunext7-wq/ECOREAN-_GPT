@@ -25,6 +25,9 @@ export function EstimateEntryPanel({ onOpen }: Props) {
         <button className="secondary-dashboard-button" onClick={() => onOpen('payment', 'warning')}>
           Payment
         </button>
+        <button className="secondary-dashboard-button" onClick={() => onOpen('closing', 'warning')}>
+          Project Closing
+        </button>
       </div>
 
       <div className="estimate-entry-grid">
@@ -97,6 +100,11 @@ export function EstimateEntryPanel({ onOpen }: Props) {
           <span>결제 / 현금흐름</span>
           <strong>계약금 / 중도금 / 잔금 / 지급 승인</strong>
           <em>돈 흐름 통제</em>
+        </button>
+        <button className="entry-button primary" onClick={() => onOpen('closing', 'warning')}>
+          <span>프로젝트 마감</span>
+          <strong>실제 수익 / 실제 원가 / 최종 마진 확정</strong>
+          <em>마감 학습</em>
         </button>
         <button className="entry-button" onClick={() => onOpen('executionManagement', 'click')}>
           <span>공사일보</span>

@@ -1203,6 +1203,77 @@ function createSqliteService({ app }) {
         resolved_at TEXT
       );
 
+      CREATE TABLE IF NOT EXISTS project_closing_snapshots (
+        closing_snapshot_id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        estimate_id TEXT,
+        contract_id TEXT,
+        estimated_revenue INTEGER NOT NULL,
+        actual_received_revenue INTEGER NOT NULL,
+        estimated_cost INTEGER NOT NULL,
+        actual_cost INTEGER NOT NULL,
+        expected_margin INTEGER NOT NULL,
+        actual_margin INTEGER NOT NULL,
+        expected_margin_rate REAL NOT NULL,
+        actual_margin_rate REAL NOT NULL,
+        margin_variance INTEGER NOT NULL,
+        planned_start_date TEXT,
+        actual_start_date TEXT,
+        planned_end_date TEXT,
+        actual_end_date TEXT,
+        schedule_variance_days INTEGER NOT NULL,
+        estimated_labor_cost INTEGER NOT NULL,
+        actual_labor_cost INTEGER NOT NULL,
+        estimated_material_cost INTEGER NOT NULL,
+        actual_material_cost INTEGER NOT NULL,
+        change_order_revenue INTEGER NOT NULL,
+        change_order_cost INTEGER NOT NULL,
+        defect_cost INTEGER NOT NULL,
+        unpaid_receivable INTEGER NOT NULL,
+        unpaid_payable INTEGER NOT NULL,
+        closing_status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS project_closing_cost_leaks (
+        leak_id TEXT PRIMARY KEY,
+        closing_snapshot_id TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        estimated_amount INTEGER NOT NULL,
+        actual_amount INTEGER NOT NULL,
+        variance_amount INTEGER NOT NULL,
+        variance_rate REAL NOT NULL,
+        root_cause TEXT NOT NULL,
+        recommended_prevention TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS project_closing_reports (
+        report_id TEXT PRIMARY KEY,
+        closing_snapshot_id TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        report_status TEXT NOT NULL,
+        printable_payload_json TEXT NOT NULL,
+        pdf_export_ready INTEGER NOT NULL,
+        excel_export_ready INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS estimate_calibration_rules (
+        id TEXT PRIMARY KEY,
+        source_project_id TEXT NOT NULL,
+        source_category TEXT NOT NULL,
+        rule_type TEXT NOT NULL,
+        adjustment_target TEXT NOT NULL,
+        adjustment_value REAL NOT NULL,
+        reason TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS site_risk_logs (
         risk_log_id TEXT PRIMARY KEY,
         site_operation_id TEXT NOT NULL,
@@ -4156,6 +4227,604 @@ function createSqliteService({ app }) {
     };
   }
 
+  function daysBetween(startDate, endDate) {
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
+    return Math.round((end.getTime() - start.getTime()) / 86400000);
+  }
+
+  function sumProjectRows(tableName, amountField, projectId, statusClause = '') {
+    const sql = `SELECT COALESCE(SUM(${amountField}), 0) AS total FROM ${tableName} WHERE project_id = ? ${statusClause}`;
+    return Number(db.project.prepare(sql).get(projectId)?.total || 0);
+  }
+
+  function latestClosingContract(projectId) {
+    return db.project.prepare(`
+      SELECT *
+      FROM contracts
+      WHERE project_id = ? OR estimate_id = ?
+      ORDER BY updated_at DESC, created_at DESC
+      LIMIT 1
+    `).get(projectId, projectId);
+  }
+
+  function latestClosingEstimate(projectId, contract = null) {
+    const estimateId = contract?.estimate_id || projectId;
+    return db.project.prepare(`
+      SELECT *
+      FROM bathroom_estimates
+      WHERE id = ?
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get(estimateId);
+  }
+
+  function buildProjectClosingBasis(projectId, createdAt = nowIso()) {
+    syncPaymentSchedules(createdAt);
+    updatePaymentOverdues(createdAt);
+    const contract = latestClosingContract(projectId);
+    const estimate = latestClosingEstimate(projectId, contract);
+    const estimateId = estimate?.id || contract?.estimate_id || projectId;
+    const schedule = db.project.prepare(`
+      SELECT *
+      FROM construction_schedules
+      WHERE estimate_id = ?
+      ORDER BY updated_at DESC, created_at DESC
+      LIMIT 1
+    `).get(estimateId);
+    const completionReport = db.project.prepare(`
+      SELECT *
+      FROM project_completion_reports
+      WHERE project_id = ?
+      ORDER BY updated_at DESC, created_at DESC
+      LIMIT 1
+    `).get(projectId);
+    const actualCost = db.project.prepare(`
+      SELECT *
+      FROM actual_costs
+      WHERE project_id = ?
+      ORDER BY updated_at DESC, created_at DESC
+      LIMIT 1
+    `).get(projectId);
+    const siteOperation = db.project.prepare(`
+      SELECT *
+      FROM site_operations
+      WHERE project_id = ?
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get(projectId);
+    const itemCost = db.project.prepare(`
+      SELECT
+        COALESCE(SUM(customer_total), 0) AS customer_total,
+        COALESCE(SUM(material_cost), 0) AS material_cost,
+        COALESCE(SUM(labor_cost), 0) AS labor_cost,
+        COALESCE(SUM(subcontract_cost), 0) AS subcontract_cost,
+        COALESCE(SUM(internal_total), 0) AS internal_total
+      FROM bathroom_estimate_items
+      WHERE estimate_id = ?
+    `).get(estimateId);
+    const actualLaborFromAttendance = sumProjectRows('crew_attendance_logs', 'labor_cost', projectId);
+    const actualCapturedCost = sumProjectRows('cost_capture_entries', 'amount', projectId);
+    const poMaterial = db.project.prepare(`
+      SELECT COALESCE(SUM(poi.expected_total), 0) AS total
+      FROM purchase_order_items poi
+      JOIN purchase_orders po ON po.purchase_order_id = poi.purchase_order_id
+      WHERE po.project_id = ? OR po.estimate_id = ?
+    `).get(projectId, estimateId)?.total || 0;
+    const changeOrderRevenue = sumProjectRows('change_orders', 'additional_amount', projectId, "AND status IN ('APPROVED', 'REFLECTED', 'COMPLETED')");
+    const changeOrderCost = sumProjectRows('change_orders', 'additional_cost', projectId, "AND status IN ('APPROVED', 'REFLECTED', 'COMPLETED')");
+    const defectCost = sumProjectRows('defect_reports', 'estimated_cost', projectId);
+    const unpaidReceivable = db.project.prepare(`
+      SELECT COALESCE(SUM(MAX(scheduled_amount - actual_received_amount, 0)), 0) AS total
+      FROM customer_payments
+      WHERE project_id = ? AND payment_status NOT IN ('PAID', 'RECEIVED')
+    `).get(projectId)?.total || 0;
+    const unpaidPayable = db.project.prepare(`
+      SELECT COALESCE(SUM(MAX(scheduled_amount - actual_paid_amount, 0)), 0) AS total
+      FROM vendor_payments
+      WHERE project_id = ? AND payment_status NOT IN ('PAID')
+    `).get(projectId)?.total || 0;
+    const actualReceivedRevenue = sumProjectRows('customer_payments', 'actual_received_amount', projectId);
+    const unresolvedMajorDefects = db.project.prepare(`
+      SELECT COUNT(*) AS total
+      FROM defect_reports
+      WHERE project_id = ?
+        AND severity IN ('HIGH', 'CRITICAL')
+        AND status NOT IN ('COMPLETED', 'CLOSED', 'RESOLVED')
+    `).get(projectId)?.total || 0;
+
+    const estimatedRevenue = Number(contract?.contract_amount || estimate?.revenue || itemCost.customer_total || 0);
+    const estimatedCost = Number(estimate?.total_cost || itemCost.internal_total || Math.round(estimatedRevenue * 0.75));
+    const estimatedLaborCost = Number(itemCost.labor_cost || Math.round(estimatedCost * 0.35));
+    const estimatedMaterialCost = Number(itemCost.material_cost || Math.round(estimatedCost * 0.45));
+    const actualLaborCost = Number(actualCost?.labor_cost || actualLaborFromAttendance || 0);
+    const actualMaterialCost = Number(actualCost?.material_cost || poMaterial || 0);
+    const actualCostTotal = Number(
+      actualCost?.total_actual_cost ||
+      (actualCapturedCost + actualLaborCost + actualMaterialCost + changeOrderCost + defectCost) ||
+      estimatedCost
+    );
+    const actualRevenue = Number(actualReceivedRevenue || 0);
+    const expectedMargin = estimatedRevenue - estimatedCost;
+    const actualMargin = actualRevenue - actualCostTotal;
+    const expectedMarginRate = estimatedRevenue > 0 ? expectedMargin / estimatedRevenue : 0;
+    const actualMarginRate = actualRevenue > 0 ? actualMargin / actualRevenue : 0;
+    const plannedStartDate = schedule?.start_date || contract?.start_date || null;
+    const plannedEndDate = schedule?.end_date || contract?.end_date || null;
+    const actualStartDate = siteOperation?.started_at?.slice(0, 10) || plannedStartDate;
+    const actualEndDate = completionReport?.completion_date || createdAt.slice(0, 10);
+    const scheduleVarianceDays = Math.max(0, daysBetween(plannedEndDate, actualEndDate));
+
+    let closingStatus = 'READY_TO_CLOSE';
+    if (unpaidReceivable > 0) closingStatus = 'BLOCKED_BY_RECEIVABLE';
+    else if (unpaidPayable > 0) closingStatus = 'BLOCKED_BY_PAYABLE';
+    else if (unresolvedMajorDefects > 0) closingStatus = 'BLOCKED_BY_DEFECT';
+    else if (actualMargin < 0) closingStatus = 'CLOSED_LOSS';
+    else if (actualMarginRate < 0.25) closingStatus = 'CLOSED_REVIEW_REQUIRED';
+    else closingStatus = 'CLOSED_PROFIT';
+
+    return {
+      projectId,
+      estimateId,
+      contractId: contract?.contract_id || null,
+      estimatedRevenue,
+      actualReceivedRevenue: actualRevenue,
+      estimatedCost,
+      actualCost: actualCostTotal,
+      expectedMargin,
+      actualMargin,
+      expectedMarginRate,
+      actualMarginRate,
+      marginVariance: actualMargin - expectedMargin,
+      plannedStartDate,
+      actualStartDate,
+      plannedEndDate,
+      actualEndDate,
+      scheduleVarianceDays,
+      estimatedLaborCost,
+      actualLaborCost,
+      estimatedMaterialCost,
+      actualMaterialCost,
+      changeOrderRevenue,
+      changeOrderCost,
+      defectCost,
+      unpaidReceivable: Number(unpaidReceivable || 0),
+      unpaidPayable: Number(unpaidPayable || 0),
+      unresolvedMajorDefects: Number(unresolvedMajorDefects || 0),
+      closingStatus,
+      source: { contract, estimate, schedule, completionReport, actualCost }
+    };
+  }
+
+  const closingLeakPreventionKo = {
+    MATERIAL_COST_OVER: '다음 견적에서 자재 단가 버퍼 또는 실공급가 확인을 강제합니다.',
+    LABOR_COST_OVER: '다음 견적에서 최소 품수와 작업 생산성 기준을 보정합니다.',
+    SUBCONTRACT_COST_OVER: '외주 단가 승인 기준과 최소 마진 방어선을 강화합니다.',
+    SCHEDULE_DELAY_COST: '공정표에 지연 버퍼와 검수 차단 규칙을 반영합니다.',
+    DEFECT_REWORK_COST: '하자 예방 체크리스트와 검수 포인트를 추가합니다.',
+    ESTIMATE_MISSING_ITEM: '누락 비용을 필수 포함 항목으로 추가합니다.',
+    CHANGE_ORDER_UNDERPRICED: '추가공사 최소 마진율과 별도 수금 조건을 강제합니다.',
+    VENDOR_PRICE_VARIANCE: '거래처 실공급가 검증과 가격 이력 비교를 강화합니다.',
+    CLIENT_SCOPE_CHANGE: '고객 범위 변경 승인서와 수금 조건을 강화합니다.',
+    UNKNOWN: '대표 검토 후 원인 분류가 필요합니다.'
+  };
+
+  function pushClosingLeak(leaks, snapshot, category, estimatedAmount, actualAmount, rootCause = null) {
+    const estimated = Math.round(Number(estimatedAmount || 0));
+    const actual = Math.round(Number(actualAmount || 0));
+    const variance = actual - estimated;
+    if (variance <= 0) return;
+    leaks.push({
+      leakId: `PCL-${snapshot.projectId}-${category}`,
+      closingSnapshotId: snapshot.closingSnapshotId,
+      projectId: snapshot.projectId,
+      category,
+      estimatedAmount: estimated,
+      actualAmount: actual,
+      varianceAmount: variance,
+      varianceRate: estimated > 0 ? variance / estimated : 1,
+      rootCause: rootCause || category,
+      recommendedPrevention: closingLeakPreventionKo[category] || closingLeakPreventionKo.UNKNOWN
+    });
+  }
+
+  function analyzeProjectClosingCostLeaks(snapshot, basis, createdAt = nowIso()) {
+    const leaks = [];
+    pushClosingLeak(leaks, snapshot, 'MATERIAL_COST_OVER', basis.estimatedMaterialCost, basis.actualMaterialCost);
+    pushClosingLeak(leaks, snapshot, 'LABOR_COST_OVER', basis.estimatedLaborCost, basis.actualLaborCost);
+    pushClosingLeak(leaks, snapshot, 'DEFECT_REWORK_COST', 0, basis.defectCost);
+    pushClosingLeak(leaks, snapshot, 'SCHEDULE_DELAY_COST', 0, basis.scheduleVarianceDays * 50000);
+    pushClosingLeak(leaks, snapshot, 'ESTIMATE_MISSING_ITEM', basis.estimatedCost, basis.actualCost);
+    if (basis.changeOrderRevenue > 0 && basis.changeOrderRevenue - basis.changeOrderCost < basis.changeOrderRevenue * 0.25) {
+      pushClosingLeak(leaks, snapshot, 'CHANGE_ORDER_UNDERPRICED', Math.round(basis.changeOrderRevenue * 0.75), basis.changeOrderCost);
+    }
+
+    db.project.prepare('DELETE FROM project_closing_cost_leaks WHERE closing_snapshot_id = ?').run(snapshot.closingSnapshotId);
+    const insert = db.project.prepare(`
+      INSERT INTO project_closing_cost_leaks (
+        leak_id, closing_snapshot_id, project_id, category, estimated_amount,
+        actual_amount, variance_amount, variance_rate, root_cause,
+        recommended_prevention, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    leaks.forEach((leak) => insert.run(
+      leak.leakId,
+      leak.closingSnapshotId,
+      leak.projectId,
+      leak.category,
+      leak.estimatedAmount,
+      leak.actualAmount,
+      leak.varianceAmount,
+      leak.varianceRate,
+      leak.rootCause,
+      leak.recommendedPrevention,
+      createdAt
+    ));
+    return leaks;
+  }
+
+  function createEstimateCalibrationRulesFromClosing(projectId, leaks, createdAt = nowIso()) {
+    const rules = leaks.map((leak) => {
+      const ruleType = leak.category.includes('LABOR') ? 'LABOR_FACTOR_ADJUSTMENT'
+        : leak.category.includes('MATERIAL') ? 'MATERIAL_BUFFER_ADJUSTMENT'
+          : leak.category.includes('DEFECT') ? 'INSPECTION_PREVENTION_CHECK'
+            : leak.category.includes('CHANGE_ORDER') ? 'CHANGE_ORDER_MARGIN_RULE'
+              : 'MANDATORY_CHECKLIST_ITEM';
+      const id = `ECR-${projectId}-${leak.category}`;
+      const adjustmentValue = leak.estimatedAmount > 0 ? Math.min(0.3, Math.max(0.05, leak.varianceRate)) : 0.1;
+      db.project.prepare(`
+        INSERT OR REPLACE INTO estimate_calibration_rules (
+          id, source_project_id, source_category, rule_type, adjustment_target,
+          adjustment_value, reason, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM estimate_calibration_rules WHERE id = ?), ?))
+      `).run(
+        id,
+        projectId,
+        leak.category,
+        ruleType,
+        leak.category,
+        adjustmentValue,
+        leak.recommendedPrevention,
+        'ACTIVE',
+        id,
+        createdAt
+      );
+      return db.project.prepare('SELECT * FROM estimate_calibration_rules WHERE id = ?').get(id);
+    });
+    return rules;
+  }
+
+  function buildClosingReportPayload(snapshot, leaks, rules, templateCandidate) {
+    return {
+      titleKo: '프로젝트 마감 리포트',
+      projectId: snapshot.project_id,
+      finalJudgement: snapshot.closing_status,
+      revenue: {
+        estimatedRevenue: snapshot.estimated_revenue,
+        actualReceivedRevenue: snapshot.actual_received_revenue,
+        unpaidReceivable: snapshot.unpaid_receivable
+      },
+      cost: {
+        estimatedCost: snapshot.estimated_cost,
+        actualCost: snapshot.actual_cost,
+        actualMaterialCost: snapshot.actual_material_cost,
+        actualLaborCost: snapshot.actual_labor_cost,
+        defectCost: snapshot.defect_cost,
+        unpaidPayable: snapshot.unpaid_payable
+      },
+      margin: {
+        expectedMargin: snapshot.expected_margin,
+        actualMargin: snapshot.actual_margin,
+        expectedMarginRate: snapshot.expected_margin_rate,
+        actualMarginRate: snapshot.actual_margin_rate,
+        marginVariance: snapshot.margin_variance
+      },
+      schedule: {
+        plannedStartDate: snapshot.planned_start_date,
+        actualStartDate: snapshot.actual_start_date,
+        plannedEndDate: snapshot.planned_end_date,
+        actualEndDate: snapshot.actual_end_date,
+        scheduleVarianceDays: snapshot.schedule_variance_days
+      },
+      costLeaks: leaks,
+      estimateCalibrationRules: rules,
+      templateCandidate
+    };
+  }
+
+  function upsertClosingReport(snapshot, leaks, rules, templateCandidate, createdAt = nowIso()) {
+    const reportId = `PCR-${snapshot.project_id}`;
+    const payload = buildClosingReportPayload(snapshot, leaks, rules, templateCandidate);
+    db.project.prepare(`
+      INSERT OR REPLACE INTO project_closing_reports (
+        report_id, closing_snapshot_id, project_id, report_status,
+        printable_payload_json, pdf_export_ready, excel_export_ready,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM project_closing_reports WHERE report_id = ?), ?), ?)
+    `).run(
+      reportId,
+      snapshot.closing_snapshot_id,
+      snapshot.project_id,
+      'EXPORT_READY',
+      toJson(payload),
+      1,
+      1,
+      reportId,
+      createdAt,
+      createdAt
+    );
+    return db.project.prepare('SELECT * FROM project_closing_reports WHERE report_id = ?').get(reportId);
+  }
+
+  function syncClosingAlerts(createdAt = nowIso()) {
+    db.project.prepare(`
+      SELECT *
+      FROM project_closing_snapshots
+      WHERE closing_status IN ('BLOCKED_BY_RECEIVABLE', 'BLOCKED_BY_PAYABLE', 'BLOCKED_BY_DEFECT', 'CLOSED_REVIEW_REQUIRED', 'CLOSED_LOSS')
+    `).all().forEach((row) => {
+      const isRed = row.closing_status !== 'CLOSED_REVIEW_REQUIRED';
+      upsertCeoDecisionItem({
+        decisionId: `CEO-CLOSING-${row.project_id}`,
+        sourceModule: 'Closing',
+        entityType: 'ProjectClosingSnapshot',
+        entityId: row.closing_snapshot_id,
+        decisionType: row.closing_status,
+        titleKo: isRed ? '프로젝트 마감 차단' : '실제 마진 25% 미만',
+        projectId: row.project_id,
+        siteNameKo: row.project_id,
+        financialImpact: Math.abs(Number(row.margin_variance || 0)),
+        riskLevel: isRed ? 'RED' : 'ORANGE',
+        requiredActionKo: '마감 리포트 검토',
+        deadline: row.updated_at?.slice(0, 10),
+        payload: row
+      }, createdAt);
+      if (isRed) {
+        upsertRedAlertEvent({
+          redAlertId: `RED-CLOSING-${row.project_id}`,
+          sourceModule: 'Closing',
+          entityId: row.closing_snapshot_id,
+          projectId: row.project_id,
+          titleKo: '프로젝트 마감 RED ALERT',
+          reasonKo: row.closing_status,
+          financialImpact: Math.abs(Number(row.margin_variance || 0)),
+          blockingRequired: true,
+          payload: row
+        }, createdAt);
+      }
+    });
+
+    db.project.prepare(`
+      SELECT *
+      FROM project_closing_snapshots
+      WHERE actual_margin_rate >= 0.35
+        AND unpaid_receivable = 0
+        AND closing_status = 'CLOSED_PROFIT'
+    `).all().forEach((row) => {
+      upsertCeoDecisionItem({
+        decisionId: `CEO-CLOSING-TEMPLATE-${row.project_id}`,
+        sourceModule: 'Closing',
+        entityType: 'ProjectClosingSnapshot',
+        entityId: row.closing_snapshot_id,
+        decisionType: 'PROFIT_TEMPLATE_CANDIDATE',
+        titleKo: '고마진 템플릿 후보',
+        projectId: row.project_id,
+        siteNameKo: row.project_id,
+        financialImpact: row.actual_margin,
+        riskLevel: 'NORMAL',
+        requiredActionKo: '템플릿 저장 검토',
+        deadline: row.updated_at?.slice(0, 10),
+        payload: row
+      }, createdAt);
+    });
+  }
+
+  function maybeCreateClosingProfitTemplate(basis, snapshot, createdAt = nowIso()) {
+    if (
+      snapshot.actual_margin_rate < 0.35 ||
+      snapshot.unpaid_receivable > 0 ||
+      basis.unresolvedMajorDefects > 0 ||
+      snapshot.schedule_variance_days > 2
+    ) {
+      return {
+        eligible: false,
+        reasonKo: '고마진 템플릿 저장 조건 미충족'
+      };
+    }
+    const template = createProfitTemplateFromCompletion({
+      projectId: snapshot.project_id,
+      projectType: 'bathroom_remodel',
+      areaM2: Number(basis.source.estimate?.bathroom_area_m2 || 0),
+      actualCosts: {
+        totalActualCost: snapshot.actual_cost,
+        materialCost: snapshot.actual_material_cost,
+        laborCost: snapshot.actual_labor_cost,
+        changeOrderCost: snapshot.change_order_cost,
+        defectCost: snapshot.defect_cost
+      },
+      actualDurationDays: Math.max(1, daysBetween(snapshot.actual_start_date, snapshot.actual_end_date)),
+      finalMarginRate: snapshot.actual_margin_rate * 100,
+      defects: [],
+      claims: [],
+      reworkRequired: false,
+      estimatedDurationDays: Math.max(1, daysBetween(snapshot.planned_start_date, snapshot.planned_end_date)),
+      createdAt
+    });
+    return {
+      eligible: Boolean(template?.created),
+      template,
+      reasonKo: template?.created ? '고마진 프로젝트 구조가 템플릿 후보로 저장되었습니다.' : '템플릿 저장 조건을 통과하지 못했습니다.'
+    };
+  }
+
+  function createProjectClosingSnapshot({ projectId, actor = 'CEO' }) {
+    const createdAt = nowIso();
+    if (!projectId) throw new Error('Project closing requires projectId.');
+    const basis = buildProjectClosingBasis(projectId, createdAt);
+    const closingSnapshotId = `PCS-${projectId}`;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO project_closing_snapshots (
+        closing_snapshot_id, project_id, estimate_id, contract_id, estimated_revenue,
+        actual_received_revenue, estimated_cost, actual_cost, expected_margin,
+        actual_margin, expected_margin_rate, actual_margin_rate, margin_variance,
+        planned_start_date, actual_start_date, planned_end_date, actual_end_date,
+        schedule_variance_days, estimated_labor_cost, actual_labor_cost,
+        estimated_material_cost, actual_material_cost, change_order_revenue,
+        change_order_cost, defect_cost, unpaid_receivable, unpaid_payable,
+        closing_status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM project_closing_snapshots WHERE closing_snapshot_id = ?), ?), ?)
+    `).run(
+      closingSnapshotId,
+      basis.projectId,
+      basis.estimateId,
+      basis.contractId,
+      basis.estimatedRevenue,
+      basis.actualReceivedRevenue,
+      basis.estimatedCost,
+      basis.actualCost,
+      basis.expectedMargin,
+      basis.actualMargin,
+      basis.expectedMarginRate,
+      basis.actualMarginRate,
+      basis.marginVariance,
+      basis.plannedStartDate,
+      basis.actualStartDate,
+      basis.plannedEndDate,
+      basis.actualEndDate,
+      basis.scheduleVarianceDays,
+      basis.estimatedLaborCost,
+      basis.actualLaborCost,
+      basis.estimatedMaterialCost,
+      basis.actualMaterialCost,
+      basis.changeOrderRevenue,
+      basis.changeOrderCost,
+      basis.defectCost,
+      basis.unpaidReceivable,
+      basis.unpaidPayable,
+      basis.closingStatus,
+      closingSnapshotId,
+      createdAt,
+      createdAt
+    );
+    const snapshot = db.project.prepare('SELECT * FROM project_closing_snapshots WHERE closing_snapshot_id = ?').get(closingSnapshotId);
+    const costLeaks = analyzeProjectClosingCostLeaks({ ...basis, closingSnapshotId }, basis, createdAt);
+    const calibrationRules = createEstimateCalibrationRulesFromClosing(projectId, costLeaks, createdAt);
+    const templateCandidate = maybeCreateClosingProfitTemplate(basis, snapshot, createdAt);
+    const closingReport = upsertClosingReport(snapshot, costLeaks, calibrationRules, templateCandidate, createdAt);
+
+    insertNotification({
+      level: snapshot.closing_status.startsWith('BLOCKED') || snapshot.closing_status === 'CLOSED_LOSS' ? 'RED' : snapshot.closing_status === 'CLOSED_REVIEW_REQUIRED' ? 'WARNING' : 'INFO',
+      messageKo: `프로젝트 마감 스냅샷 생성: ${snapshot.closing_status}`,
+      relatedProjectId: projectId,
+      actionKo: 'Project Closing',
+      createdAt
+    });
+    db.logs.prepare(`
+      INSERT INTO action_logs (
+        action_log_id, action_type, actor, project_id, approval_id,
+        payload_json, reason_ko, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(`ACT-CLOSING-${projectId}-${Date.now()}`, 'PROJECT_CLOSING_SNAPSHOT', actor, projectId, null, toJson(snapshot), '프로젝트 마감 스냅샷 생성', createdAt);
+    syncClosingAlerts(createdAt);
+    return {
+      closingSnapshot: snapshot,
+      costLeaks,
+      calibrationRules,
+      templateCandidate,
+      closingReport,
+      canClose: !String(snapshot.closing_status).startsWith('BLOCKED'),
+      closingCenterData: getProjectClosingCenterData({ projectId, skipRefresh: true })
+    };
+  }
+
+  function finalizeProjectClosing({ projectId, actor = 'CEO', override = false, reasonKo = '프로젝트 마감 확정' }) {
+    const createdAt = nowIso();
+    const result = createProjectClosingSnapshot({ projectId, actor });
+    const status = result.closingSnapshot.closing_status;
+    if (String(status).startsWith('BLOCKED') && !override) {
+      throw new Error(`Project closing blocked: ${status}`);
+    }
+    db.logs.prepare(`
+      INSERT INTO action_logs (
+        action_log_id, action_type, actor, project_id, approval_id,
+        payload_json, reason_ko, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(`ACT-CLOSING-FINAL-${projectId}-${Date.now()}`, 'PROJECT_CLOSING_FINALIZE', actor, projectId, null, toJson({ status, override }), reasonKo, createdAt);
+    insertNotification({ level: status === 'CLOSED_PROFIT' ? 'INFO' : 'WARNING', messageKo: `프로젝트 마감 확정: ${status}`, relatedProjectId: projectId, actionKo: 'Closing Finalized', createdAt });
+    return { ...result, finalized: true, overrideUsed: Boolean(override) };
+  }
+
+  function saveHighMarginTemplateFromClosing({ projectId, actor = 'CEO' }) {
+    const createdAt = nowIso();
+    const basis = buildProjectClosingBasis(projectId, createdAt);
+    const snapshot = db.project.prepare('SELECT * FROM project_closing_snapshots WHERE project_id = ? ORDER BY updated_at DESC LIMIT 1').get(projectId)
+      || createProjectClosingSnapshot({ projectId, actor }).closingSnapshot;
+    return maybeCreateClosingProfitTemplate(basis, snapshot, createdAt);
+  }
+
+  function getProjectClosingCenterData({ projectId = null, skipRefresh = false } = {}) {
+    if (projectId && !skipRefresh) {
+      const existing = db.project.prepare('SELECT * FROM project_closing_snapshots WHERE project_id = ?').get(projectId);
+      if (!existing) createProjectClosingSnapshot({ projectId });
+    }
+    const snapshots = db.project.prepare(`
+      SELECT *
+      FROM project_closing_snapshots
+      WHERE (? IS NULL OR project_id = ?)
+      ORDER BY updated_at DESC
+      LIMIT 50
+    `).all(projectId, projectId);
+    const costLeaks = db.project.prepare(`
+      SELECT *
+      FROM project_closing_cost_leaks
+      WHERE (? IS NULL OR project_id = ?)
+      ORDER BY variance_amount DESC, created_at DESC
+      LIMIT 100
+    `).all(projectId, projectId);
+    const reports = db.project.prepare(`
+      SELECT *
+      FROM project_closing_reports
+      WHERE (? IS NULL OR project_id = ?)
+      ORDER BY updated_at DESC
+      LIMIT 50
+    `).all(projectId, projectId).map((row) => ({ ...row, printablePayload: fromJson(row.printable_payload_json, {}) }));
+    const calibrationRules = db.project.prepare(`
+      SELECT *
+      FROM estimate_calibration_rules
+      WHERE (? IS NULL OR source_project_id = ?)
+      ORDER BY created_at DESC
+      LIMIT 100
+    `).all(projectId, projectId);
+    const summary = {
+      closingProjectCount: snapshots.length,
+      blockedCount: snapshots.filter((row) => String(row.closing_status).startsWith('BLOCKED')).length,
+      reviewRequiredCount: snapshots.filter((row) => row.closing_status === 'CLOSED_REVIEW_REQUIRED').length,
+      lossCount: snapshots.filter((row) => row.closing_status === 'CLOSED_LOSS').length,
+      profitCount: snapshots.filter((row) => row.closing_status === 'CLOSED_PROFIT').length,
+      highMarginTemplateCandidateCount: snapshots.filter((row) => Number(row.actual_margin_rate || 0) >= 0.35 && Number(row.unpaid_receivable || 0) === 0).length,
+      totalActualMargin: snapshots.reduce((total, row) => total + Number(row.actual_margin || 0), 0),
+      totalCostLeakAmount: costLeaks.reduce((total, row) => total + Number(row.variance_amount || 0), 0)
+    };
+    return {
+      snapshotDate: nowIso().slice(0, 10),
+      summary,
+      snapshots,
+      costLeaks,
+      reports,
+      calibrationRules,
+      statusLabelsKo: {
+        READY_TO_CLOSE: '마감 검토 가능',
+        BLOCKED_BY_RECEIVABLE: '미수금으로 마감 불가',
+        BLOCKED_BY_PAYABLE: '미지급으로 마감 주의',
+        BLOCKED_BY_DEFECT: '하자 미해결로 마감 불가',
+        CLOSED_PROFIT: '수익 마감',
+        CLOSED_LOSS: '손실 마감',
+        CLOSED_REVIEW_REQUIRED: '대표 검토 필요'
+      }
+    };
+  }
+
   function exportBathroomEstimateDocument({ estimateId, documentType = 'customer', format = 'pdf', actor = 'CEO' }) {
     const createdAt = nowIso();
     const model = getStoredBathroomEstimateModel(estimateId);
@@ -6972,6 +7641,7 @@ function createSqliteService({ app }) {
     syncPaymentSchedules(createdAt);
     updatePaymentOverdues(createdAt);
     syncCashflowSnapshot(createdAt);
+    syncClosingAlerts(createdAt);
   }
 
   function syncCashflowSnapshot(createdAt = nowIso()) {
@@ -13155,6 +13825,10 @@ function createSqliteService({ app }) {
       vendorPaymentCount: countRows(db.project, 'vendor_payments'),
       paymentTransactionCount: countRows(db.project, 'payment_transactions'),
       paymentAlertCount: countRows(db.project, 'payment_alerts'),
+      projectClosingSnapshotCount: countRows(db.project, 'project_closing_snapshots'),
+      projectClosingCostLeakCount: countRows(db.project, 'project_closing_cost_leaks'),
+      projectClosingReportCount: countRows(db.project, 'project_closing_reports'),
+      estimateCalibrationRuleCount: countRows(db.project, 'estimate_calibration_rules'),
       siteRiskLogCount: countRows(db.project, 'site_risk_logs'),
       projectCompletionReportCount: countRows(db.project, 'project_completion_reports'),
       actualCostCount: countRows(db.project, 'actual_costs'),
@@ -13254,6 +13928,10 @@ function createSqliteService({ app }) {
     markVendorPaymentPaid,
     createPaymentRequestMessage,
     requestVendorPaymentApproval,
+    getProjectClosingCenterData,
+    createProjectClosingSnapshot,
+    finalizeProjectClosing,
+    saveHighMarginTemplateFromClosing,
     getBathroomPricingStandardDashboard,
     evaluateBathroomQuote,
     getCaseLibrarySnapshot,
