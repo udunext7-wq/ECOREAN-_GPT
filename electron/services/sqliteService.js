@@ -1141,6 +1141,68 @@ function createSqliteService({ app }) {
         created_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS customer_payments (
+        payment_id TEXT PRIMARY KEY,
+        contract_id TEXT NOT NULL,
+        estimate_id TEXT,
+        project_id TEXT NOT NULL,
+        customer_name TEXT NOT NULL,
+        site_name TEXT NOT NULL,
+        payment_type TEXT NOT NULL,
+        due_date TEXT NOT NULL,
+        scheduled_amount INTEGER NOT NULL,
+        actual_received_date TEXT,
+        actual_received_amount INTEGER NOT NULL,
+        payment_status TEXT NOT NULL,
+        notes_ko TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS vendor_payments (
+        payment_id TEXT PRIMARY KEY,
+        purchase_order_id TEXT NOT NULL,
+        contract_id TEXT,
+        project_id TEXT NOT NULL,
+        vendor_name TEXT NOT NULL,
+        site_name TEXT NOT NULL,
+        due_date TEXT NOT NULL,
+        scheduled_amount INTEGER NOT NULL,
+        actual_paid_date TEXT,
+        actual_paid_amount INTEGER NOT NULL,
+        payment_status TEXT NOT NULL,
+        approval_status TEXT NOT NULL,
+        notes_ko TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS payment_transactions (
+        transaction_id TEXT PRIMARY KEY,
+        payment_id TEXT NOT NULL,
+        payment_kind TEXT NOT NULL,
+        transaction_type TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        transaction_date TEXT NOT NULL,
+        actor TEXT NOT NULL,
+        notes_ko TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS payment_alerts (
+        alert_id TEXT PRIMARY KEY,
+        payment_id TEXT NOT NULL,
+        payment_kind TEXT NOT NULL,
+        alert_type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        due_date TEXT NOT NULL,
+        message_ko TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        resolved_at TEXT
+      );
+
       CREATE TABLE IF NOT EXISTS site_risk_logs (
         risk_log_id TEXT PRIMARY KEY,
         site_operation_id TEXT NOT NULL,
@@ -2135,6 +2197,10 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'purchase_orders', 'status', "status TEXT NOT NULL DEFAULT 'DRAFT'");
     ensureColumn(db.project, 'purchase_orders', 'required_date', "required_date TEXT NOT NULL DEFAULT ''");
     ensureColumn(db.project, 'purchase_orders', 'updated_at', "updated_at TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.project, 'cashflow_snapshots', 'today_actual_inflow', 'today_actual_inflow INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'cashflow_snapshots', 'today_actual_outflow', 'today_actual_outflow INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'cashflow_snapshots', 'seven_day_actual_inflow', 'seven_day_actual_inflow INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'cashflow_snapshots', 'seven_day_actual_outflow', 'seven_day_actual_outflow INTEGER NOT NULL DEFAULT 0');
   }
 
   function countRows(database, tableName) {
@@ -3726,6 +3792,370 @@ function createSqliteService({ app }) {
     };
   }
 
+  function addDaysIso(dateText, days) {
+    const base = dateText ? new Date(dateText) : new Date();
+    if (Number.isNaN(base.getTime())) return new Date().toISOString().slice(0, 10);
+    base.setDate(base.getDate() + days);
+    return base.toISOString().slice(0, 10);
+  }
+
+  function syncCustomerPaymentScheduleFromContract(contractId, createdAt = nowIso()) {
+    const row = db.project.prepare('SELECT * FROM contracts WHERE contract_id = ? OR contract_number = ?').get(contractId, contractId);
+    if (!row) return [];
+    const startDate = row.start_date || createdAt.slice(0, 10);
+    const endDate = row.end_date || addDaysIso(startDate, Number(row.duration_days || 7));
+    const progressDate = addDaysIso(startDate, Math.max(1, Math.floor(Number(row.duration_days || 7) / 2)));
+    const schedule = [
+      { type: 'DEPOSIT', labelKo: '계약금', amount: Number(row.deposit_amount || Math.round(Number(row.contract_amount || 0) * 0.3)), dueDate: startDate },
+      { type: 'PROGRESS', labelKo: '중도금', amount: Number(row.progress_payment_amount || Math.round(Number(row.contract_amount || 0) * 0.4)), dueDate: progressDate },
+      { type: 'BALANCE', labelKo: '잔금', amount: Number(row.balance_amount || Math.round(Number(row.contract_amount || 0) * 0.3)), dueDate: endDate }
+    ];
+    const insertPayment = db.project.prepare(`
+      INSERT OR IGNORE INTO customer_payments (
+        payment_id, contract_id, estimate_id, project_id, customer_name, site_name,
+        payment_type, due_date, scheduled_amount, actual_received_date,
+        actual_received_amount, payment_status, notes_ko, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertReceivable = db.project.prepare(`
+      INSERT OR IGNORE INTO receivables (
+        receivable_id, project_id, amount, due_date, actual_received_date,
+        receivable_status, notes_ko, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    schedule.forEach((item) => {
+      const paymentId = `CPAY-${row.contract_id}-${item.type}`;
+      insertPayment.run(
+        paymentId,
+        row.contract_id,
+        row.estimate_id,
+        row.project_id,
+        row.customer_name || 'UNKNOWN',
+        row.site_name || row.project_id,
+        item.type,
+        item.dueDate,
+        item.amount,
+        null,
+        0,
+        'SCHEDULED',
+        item.labelKo,
+        createdAt,
+        createdAt
+      );
+      insertReceivable.run(
+        `REC-${paymentId}`,
+        row.project_id,
+        item.amount,
+        item.dueDate,
+        null,
+        'EXPECTED',
+        `${item.labelKo} 예정`,
+        createdAt,
+        createdAt
+      );
+    });
+    return db.project.prepare('SELECT * FROM customer_payments WHERE contract_id = ? ORDER BY due_date').all(row.contract_id);
+  }
+
+  function syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt = nowIso()) {
+    const row = db.project.prepare('SELECT * FROM purchase_orders WHERE purchase_order_id = ? OR order_number = ?').get(purchaseOrderId, purchaseOrderId);
+    if (!row) return null;
+    const paymentId = `VPAY-${row.purchase_order_id}`;
+    const dueDate = row.required_date || addDaysIso(createdAt.slice(0, 10), 7);
+    const amount = Number(row.total_amount || 0);
+    db.project.prepare(`
+      INSERT OR IGNORE INTO vendor_payments (
+        payment_id, purchase_order_id, contract_id, project_id, vendor_name, site_name,
+        due_date, scheduled_amount, actual_paid_date, actual_paid_amount,
+        payment_status, approval_status, notes_ko, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      paymentId,
+      row.purchase_order_id,
+      row.contract_id,
+      row.project_id,
+      row.supplier_name || '거래처 미정',
+      row.project_id,
+      dueDate,
+      amount,
+      null,
+      0,
+      'SCHEDULED',
+      amount >= 1000000 ? 'PENDING_CEO_APPROVAL' : 'NOT_REQUIRED',
+      '발주서 기반 지급 예정',
+      createdAt,
+      createdAt
+    );
+    db.project.prepare(`
+      INSERT OR IGNORE INTO payables (
+        payable_id, project_id, vendor_id, amount, due_date, actual_paid_date,
+        payable_status, payable_type, notes_ko, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      `PAY-${paymentId}`,
+      row.project_id,
+      row.supplier_name || 'VENDOR_UNKNOWN',
+      amount,
+      dueDate,
+      null,
+      'EXPECTED',
+      'VENDOR_PAYMENT',
+      '발주서 기반 지급 예정',
+      createdAt,
+      createdAt
+    );
+    if (amount >= 1000000) {
+      upsertApprovalRequest({
+        requestId: `APR-PAY-${paymentId}`,
+        sourceModule: 'PAYMENT',
+        entityId: paymentId,
+        projectId: row.project_id,
+        titleKo: '협력업체 지급 승인',
+        amount,
+        reasonKo: `${row.supplier_name || '거래처'} 지급 예정금액 CEO 승인 필요`,
+        status: 'PENDING'
+      }, createdAt);
+    }
+    return db.project.prepare('SELECT * FROM vendor_payments WHERE payment_id = ?').get(paymentId);
+  }
+
+  function syncPaymentSchedules(createdAt = nowIso()) {
+    db.project.prepare('SELECT * FROM contracts').all().forEach((contract) => {
+      syncCustomerPaymentScheduleFromContract(contract.contract_id, createdAt);
+    });
+    db.project.prepare('SELECT * FROM purchase_orders').all().forEach((purchaseOrder) => {
+      syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrder.purchase_order_id, createdAt);
+    });
+  }
+
+  function updatePaymentOverdues(createdAt = nowIso()) {
+    const today = createdAt.slice(0, 10);
+    const customerRows = db.project.prepare("SELECT * FROM customer_payments WHERE payment_status NOT IN ('PAID', 'PARTIAL_PAID') AND due_date < ?").all(today);
+    customerRows.forEach((row) => {
+      const balance = Math.max(0, Number(row.scheduled_amount || 0) - Number(row.actual_received_amount || 0));
+      db.project.prepare('UPDATE customer_payments SET payment_status = ?, updated_at = ? WHERE payment_id = ?').run('OVERDUE', createdAt, row.payment_id);
+      db.project.prepare("UPDATE receivables SET receivable_status = 'OVERDUE', updated_at = ? WHERE receivable_id = ?").run(createdAt, `REC-${row.payment_id}`);
+      db.project.prepare(`
+        INSERT OR REPLACE INTO payment_alerts (
+          alert_id, payment_id, payment_kind, alert_type, severity, amount,
+          due_date, message_ko, status, created_at, resolved_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM payment_alerts WHERE alert_id = ?), ?), ?)
+      `).run(
+        `PAL-CUST-${row.payment_id}`,
+        row.payment_id,
+        'CUSTOMER',
+        'CUSTOMER_OVERDUE',
+        balance >= 1000000 ? 'RED' : 'YELLOW',
+        balance,
+        row.due_date,
+        `${row.customer_name} ${row.site_name} ${row.notes_ko} 연체`,
+        'ACTIVE',
+        `PAL-CUST-${row.payment_id}`,
+        createdAt,
+        null
+      );
+      createCommunicationDraft({
+        messageType: 'CLIENT_PAYMENT_REQUEST',
+        relatedEntityType: 'Receivable',
+        relatedEntityId: `REC-${row.payment_id}`,
+        targetType: 'CLIENT',
+        targetName: row.customer_name,
+        status: 'READY',
+        createdAt
+      });
+      if (balance >= 1000000) {
+        upsertRedAlertEvent({
+          redAlertId: `RED-PAY-CUST-${row.payment_id}`,
+          sourceModule: 'Payment',
+          entityId: row.payment_id,
+          projectId: row.project_id,
+          titleKo: '고객 입금 연체',
+          reasonKo: `${row.notes_ko} ${balance.toLocaleString('ko-KR')}원 연체`,
+          financialImpact: balance,
+          blockingRequired: false,
+          payload: row
+        }, createdAt);
+      }
+    });
+
+    const vendorRows = db.project.prepare("SELECT * FROM vendor_payments WHERE payment_status NOT IN ('PAID', 'PARTIAL_PAID') AND due_date < ?").all(today);
+    vendorRows.forEach((row) => {
+      const balance = Math.max(0, Number(row.scheduled_amount || 0) - Number(row.actual_paid_amount || 0));
+      db.project.prepare('UPDATE vendor_payments SET payment_status = ?, updated_at = ? WHERE payment_id = ?').run('OVERDUE', createdAt, row.payment_id);
+      db.project.prepare("UPDATE payables SET payable_status = 'OVERDUE', updated_at = ? WHERE payable_id = ?").run(createdAt, `PAY-${row.payment_id}`);
+      db.project.prepare(`
+        INSERT OR REPLACE INTO payment_alerts (
+          alert_id, payment_id, payment_kind, alert_type, severity, amount,
+          due_date, message_ko, status, created_at, resolved_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM payment_alerts WHERE alert_id = ?), ?), ?)
+      `).run(
+        `PAL-VENDOR-${row.payment_id}`,
+        row.payment_id,
+        'VENDOR',
+        'VENDOR_OVERDUE',
+        balance >= 1000000 ? 'RED' : 'ORANGE',
+        balance,
+        row.due_date,
+        `${row.vendor_name} 지급 연체`,
+        'ACTIVE',
+        `PAL-VENDOR-${row.payment_id}`,
+        createdAt,
+        null
+      );
+      upsertCeoDecisionItem({
+        decisionId: `CEO-PAY-VENDOR-${row.payment_id}`,
+        sourceModule: 'Payment',
+        entityType: 'VendorPayment',
+        entityId: row.payment_id,
+        decisionType: 'VENDOR_PAYMENT_OVERDUE',
+        titleKo: '협력업체 지급 연체',
+        projectId: row.project_id,
+        siteNameKo: row.site_name,
+        financialImpact: balance,
+        riskLevel: balance >= 1000000 ? 'RED' : 'ORANGE',
+        requiredActionKo: '지급 승인/일정 조정',
+        deadline: row.due_date,
+        payload: row
+      }, createdAt);
+    });
+  }
+
+  function rebuildPaymentCashflowSnapshot(createdAt = nowIso()) {
+    syncPaymentSchedules(createdAt);
+    updatePaymentOverdues(createdAt);
+    return syncCashflowSnapshot(createdAt);
+  }
+
+  function markCustomerPaymentReceived({ paymentId, amount, receivedDate = null, actor = 'CEO', notesKo = '입금 처리' }) {
+    const createdAt = nowIso();
+    const row = db.project.prepare('SELECT * FROM customer_payments WHERE payment_id = ?').get(paymentId);
+    if (!row) throw new Error(`Customer payment not found: ${paymentId}`);
+    const actualAmount = Number(row.actual_received_amount || 0) + Number(amount || row.scheduled_amount || 0);
+    const scheduled = Number(row.scheduled_amount || 0);
+    const status = actualAmount >= scheduled ? 'PAID' : 'PARTIAL_PAID';
+    const date = receivedDate || createdAt.slice(0, 10);
+    db.project.prepare(`
+      UPDATE customer_payments
+      SET actual_received_date = ?, actual_received_amount = ?, payment_status = ?, notes_ko = ?, updated_at = ?
+      WHERE payment_id = ?
+    `).run(date, actualAmount, status, notesKo, createdAt, paymentId);
+    db.project.prepare(`
+      UPDATE receivables
+      SET actual_received_date = ?, receivable_status = ?, updated_at = ?
+      WHERE receivable_id = ?
+    `).run(date, status === 'PAID' ? 'RECEIVED' : 'PARTIAL', createdAt, `REC-${paymentId}`);
+    db.project.prepare(`
+      INSERT INTO payment_transactions (
+        transaction_id, payment_id, payment_kind, transaction_type, amount,
+        transaction_date, actor, notes_ko, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(`PTR-CUST-${paymentId}-${Date.now()}`, paymentId, 'CUSTOMER', status, Number(amount || scheduled), date, actor, notesKo, createdAt);
+    rebuildPaymentCashflowSnapshot(createdAt);
+    return { paymentId, status, paymentCenterData: getPaymentCenterData() };
+  }
+
+  function markVendorPaymentPaid({ paymentId, amount, paidDate = null, actor = 'CEO', notesKo = '지급 처리' }) {
+    const createdAt = nowIso();
+    const row = db.project.prepare('SELECT * FROM vendor_payments WHERE payment_id = ?').get(paymentId);
+    if (!row) throw new Error(`Vendor payment not found: ${paymentId}`);
+    if (row.approval_status === 'PENDING_CEO_APPROVAL') {
+      const approval = db.project.prepare('SELECT * FROM approval_requests WHERE request_id = ?').get(`APR-PAY-${paymentId}`);
+      if (!approval || approval.status !== 'APPROVED') throw new Error('Vendor payment blocked: CEO approval required.');
+    }
+    const actualAmount = Number(row.actual_paid_amount || 0) + Number(amount || row.scheduled_amount || 0);
+    const scheduled = Number(row.scheduled_amount || 0);
+    const status = actualAmount >= scheduled ? 'PAID' : 'PARTIAL_PAID';
+    const date = paidDate || createdAt.slice(0, 10);
+    db.project.prepare(`
+      UPDATE vendor_payments
+      SET actual_paid_date = ?, actual_paid_amount = ?, payment_status = ?, notes_ko = ?, updated_at = ?
+      WHERE payment_id = ?
+    `).run(date, actualAmount, status, notesKo, createdAt, paymentId);
+    db.project.prepare(`
+      UPDATE payables
+      SET actual_paid_date = ?, payable_status = ?, updated_at = ?
+      WHERE payable_id = ?
+    `).run(date, status === 'PAID' ? 'PAID' : 'PARTIAL', createdAt, `PAY-${paymentId}`);
+    db.project.prepare(`
+      INSERT INTO payment_transactions (
+        transaction_id, payment_id, payment_kind, transaction_type, amount,
+        transaction_date, actor, notes_ko, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(`PTR-VENDOR-${paymentId}-${Date.now()}`, paymentId, 'VENDOR', status, Number(amount || scheduled), date, actor, notesKo, createdAt);
+    rebuildPaymentCashflowSnapshot(createdAt);
+    return { paymentId, status, paymentCenterData: getPaymentCenterData() };
+  }
+
+  function createPaymentRequestMessage({ paymentId, actor = 'CEO' }) {
+    const row = db.project.prepare('SELECT * FROM customer_payments WHERE payment_id = ?').get(paymentId);
+    if (!row) throw new Error(`Customer payment not found: ${paymentId}`);
+    return generateCommunicationMessage({
+      messageType: 'CLIENT_PAYMENT_REQUEST',
+      relatedEntityType: 'Receivable',
+      relatedEntityId: `REC-${paymentId}`,
+      targetType: 'CLIENT',
+      targetName: row.customer_name,
+      status: 'READY',
+      data: { actor }
+    });
+  }
+
+  function requestVendorPaymentApproval({ paymentId, actor = 'CEO', reasonKo = '협력업체 지급 승인 요청' }) {
+    const createdAt = nowIso();
+    const row = db.project.prepare('SELECT * FROM vendor_payments WHERE payment_id = ?').get(paymentId);
+    if (!row) throw new Error(`Vendor payment not found: ${paymentId}`);
+    upsertApprovalRequest({
+      requestId: `APR-PAY-${paymentId}`,
+      sourceModule: 'PAYMENT',
+      entityId: paymentId,
+      projectId: row.project_id,
+      titleKo: '협력업체 지급 승인',
+      amount: row.scheduled_amount,
+      reasonKo,
+      status: 'PENDING'
+    }, createdAt);
+    db.project.prepare("UPDATE vendor_payments SET approval_status = 'PENDING_CEO_APPROVAL', updated_at = ? WHERE payment_id = ?").run(createdAt, paymentId);
+    return { paymentId, approvalRequestId: `APR-PAY-${paymentId}`, paymentCenterData: getPaymentCenterData() };
+  }
+
+  function getPaymentCenterData() {
+    const createdAt = nowIso();
+    const cashflow = rebuildPaymentCashflowSnapshot(createdAt);
+    const customerPayments = db.project.prepare('SELECT * FROM customer_payments ORDER BY due_date, payment_id').all();
+    const vendorPayments = db.project.prepare('SELECT * FROM vendor_payments ORDER BY due_date, payment_id').all();
+    const transactions = db.project.prepare('SELECT * FROM payment_transactions ORDER BY created_at DESC LIMIT 100').all();
+    const alerts = db.project.prepare('SELECT * FROM payment_alerts ORDER BY created_at DESC LIMIT 100').all();
+    const today = createdAt.slice(0, 10);
+    const sevenDaysLater = addDaysIso(today, 7);
+    const sum = (rows, field, predicate) => rows.filter(predicate).reduce((total, row) => total + Number(row[field] || 0), 0);
+    return {
+      snapshotDate: today,
+      summary: {
+        todayExpectedInflow: cashflow?.today_expected_inflow || 0,
+        todayActualInflow: cashflow?.today_actual_inflow || 0,
+        todayExpectedOutflow: cashflow?.today_expected_outflow || 0,
+        todayActualOutflow: cashflow?.today_actual_outflow || 0,
+        todayNetCashflow: cashflow?.today_net_cashflow || 0,
+        sevenDayExpectedInflow: cashflow?.seven_day_expected_inflow || 0,
+        sevenDayExpectedOutflow: cashflow?.seven_day_expected_outflow || 0,
+        sevenDayNetCashflow: cashflow?.seven_day_net_cashflow || 0,
+        receivableAmount: cashflow?.receivable_amount || 0,
+        payableAmount: cashflow?.payable_amount || 0,
+        overdueReceivableAmount: sum(customerPayments, 'scheduled_amount', (row) => row.payment_status === 'OVERDUE'),
+        overduePayableAmount: sum(vendorPayments, 'scheduled_amount', (row) => row.payment_status === 'OVERDUE'),
+        sevenDayCustomerPaymentCount: customerPayments.filter((row) => row.due_date >= today && row.due_date <= sevenDaysLater).length,
+        sevenDayVendorPaymentCount: vendorPayments.filter((row) => row.due_date >= today && row.due_date <= sevenDaysLater).length,
+        dataStatus: cashflow?.data_status || 'EMPTY',
+        displayStatusKo: cashflow?.data_status === 'READY' ? '데이터 있음' : '데이터 없음'
+      },
+      customerPayments,
+      vendorPayments,
+      transactions,
+      alerts,
+      communicationData: getCommunicationCenterData()
+    };
+  }
+
   function exportBathroomEstimateDocument({ estimateId, documentType = 'customer', format = 'pdf', actor = 'CEO' }) {
     const createdAt = nowIso();
     const model = getStoredBathroomEstimateModel(estimateId);
@@ -3824,6 +4254,8 @@ function createSqliteService({ app }) {
       status: 'READY',
       createdAt
     });
+    syncCustomerPaymentScheduleFromContract(contractId, createdAt);
+    syncCashflowSnapshot(createdAt);
     return { contractId, contract };
   }
 
@@ -3936,6 +4368,8 @@ function createSqliteService({ app }) {
       status: 'READY',
       createdAt
     });
+    syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
+    syncCashflowSnapshot(createdAt);
     return { purchaseOrderId, purchaseOrder };
   }
 
@@ -6535,6 +6969,8 @@ function createSqliteService({ app }) {
       }
     });
 
+    syncPaymentSchedules(createdAt);
+    updatePaymentOverdues(createdAt);
     syncCashflowSnapshot(createdAt);
   }
 
@@ -6543,11 +6979,18 @@ function createSqliteService({ app }) {
     const sevenDaysLater = new Date(new Date(today).getTime() + 7 * 86400000).toISOString().slice(0, 10);
     const receivables = db.project.prepare('SELECT * FROM receivables WHERE receivable_status NOT IN (\'PAID\', \'RECEIVED\', \'COMPLETED\')').all();
     const payables = db.project.prepare('SELECT * FROM payables WHERE payable_status NOT IN (\'PAID\', \'COMPLETED\')').all();
+    const customerPayments = db.project.prepare('SELECT * FROM customer_payments').all();
+    const vendorPayments = db.project.prepare('SELECT * FROM vendor_payments').all();
     const sum = (rows, predicate) => rows.filter(predicate).reduce((total, row) => total + Number(row.amount || 0), 0);
+    const sumField = (rows, field, predicate) => rows.filter(predicate).reduce((total, row) => total + Number(row[field] || 0), 0);
     const todayExpectedInflow = sum(receivables, (row) => row.due_date === today);
     const todayExpectedOutflow = sum(payables, (row) => row.due_date === today);
     const sevenDayExpectedInflow = sum(receivables, (row) => row.due_date >= today && row.due_date <= sevenDaysLater);
     const sevenDayExpectedOutflow = sum(payables, (row) => row.due_date >= today && row.due_date <= sevenDaysLater);
+    const todayActualInflow = sumField(customerPayments, 'actual_received_amount', (row) => row.actual_received_date === today);
+    const todayActualOutflow = sumField(vendorPayments, 'actual_paid_amount', (row) => row.actual_paid_date === today);
+    const sevenDayActualInflow = sumField(customerPayments, 'actual_received_amount', (row) => row.actual_received_date >= today && row.actual_received_date <= sevenDaysLater);
+    const sevenDayActualOutflow = sumField(vendorPayments, 'actual_paid_amount', (row) => row.actual_paid_date >= today && row.actual_paid_date <= sevenDaysLater);
     const receivableAmount = sum(receivables, () => true);
     const payableAmount = sum(payables, () => true);
     const dataStatus = receivables.length || payables.length ? 'READY' : 'EMPTY';
@@ -6557,8 +7000,9 @@ function createSqliteService({ app }) {
       INSERT OR REPLACE INTO cashflow_snapshots (
         snapshot_id, snapshot_date, today_expected_inflow, today_expected_outflow,
         today_net_cashflow, seven_day_expected_inflow, seven_day_expected_outflow,
-        seven_day_net_cashflow, receivable_amount, payable_amount, data_status, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        seven_day_net_cashflow, receivable_amount, payable_amount, data_status, created_at,
+        today_actual_inflow, today_actual_outflow, seven_day_actual_inflow, seven_day_actual_outflow
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       snapshotId,
       today,
@@ -6571,7 +7015,11 @@ function createSqliteService({ app }) {
       receivableAmount,
       payableAmount,
       dataStatus,
-      createdAt
+      createdAt,
+      todayActualInflow,
+      todayActualOutflow,
+      sevenDayActualInflow,
+      sevenDayActualOutflow
     );
     if (todayNetCashflow < 0) {
       upsertRedAlertEvent({
@@ -6683,9 +7131,13 @@ function createSqliteService({ app }) {
       cashflow: {
         todayExpectedInflow: cashflow?.today_expected_inflow || 0,
         todayExpectedOutflow: cashflow?.today_expected_outflow || 0,
+        todayActualInflow: cashflow?.today_actual_inflow || 0,
+        todayActualOutflow: cashflow?.today_actual_outflow || 0,
         todayNetCashflow: cashflow?.today_net_cashflow || 0,
         sevenDayExpectedInflow: cashflow?.seven_day_expected_inflow || 0,
         sevenDayExpectedOutflow: cashflow?.seven_day_expected_outflow || 0,
+        sevenDayActualInflow: cashflow?.seven_day_actual_inflow || 0,
+        sevenDayActualOutflow: cashflow?.seven_day_actual_outflow || 0,
         sevenDayNetCashflow: cashflow?.seven_day_net_cashflow || 0,
         receivableAmount: cashflow?.receivable_amount || 0,
         payableAmount: cashflow?.payable_amount || 0,
@@ -6730,6 +7182,13 @@ function createSqliteService({ app }) {
       SET status = ?, updated_at = ?
       WHERE entity_id = ? OR decision_id = ?
     `).run(decision, createdAt, request.entity_id, `CEO-${request.source_module}-${request.entity_id}`);
+    if (request.source_module === 'PAYMENT') {
+      db.project.prepare(`
+        UPDATE vendor_payments
+        SET approval_status = ?, updated_at = ?
+        WHERE payment_id = ?
+      `).run(decision === 'APPROVED' ? 'APPROVED' : 'REJECTED', createdAt, request.entity_id);
+    }
     writeOperationalLog({
       actionType: `CEO_CONTROL_TOWER_${decision}`,
       actor,
@@ -9065,6 +9524,21 @@ function createSqliteService({ app }) {
       '추가공사 승인 후 매출/마진 영향 기록',
       createdAt
     );
+    db.project.prepare(`
+      INSERT OR IGNORE INTO receivables (
+        receivable_id, project_id, amount, due_date, actual_received_date,
+        receivable_status, notes_ko, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(`REC-CO-${changeOrderId}`, changeOrder.project_id, Number(changeOrder.additional_amount || 0), createdAt.slice(0, 10), null, 'EXPECTED', '추가공사비 예정', createdAt, createdAt);
+    if (Number(changeOrder.additional_cost || 0) > 0) {
+      db.project.prepare(`
+        INSERT OR IGNORE INTO payables (
+          payable_id, project_id, vendor_id, amount, due_date, actual_paid_date,
+          payable_status, payable_type, notes_ko, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(`PAY-CO-${changeOrderId}`, changeOrder.project_id, 'CHANGE_ORDER_COST', Number(changeOrder.additional_cost || 0), createdAt.slice(0, 10), null, 'EXPECTED', 'CHANGE_ORDER_COST', '추가공사 원가 예정', createdAt, createdAt);
+    }
+    syncCashflowSnapshot(createdAt);
     writeOperationalLog({
       actionType: 'APPROVE_EXECUTION_CHANGE_ORDER',
       actor,
@@ -9122,6 +9596,15 @@ function createSqliteService({ app }) {
       `하자 예상 처리비 ${defect.estimatedCost.toLocaleString('ko-KR')}원 반영`,
       createdAt
     );
+    if (Number(defect.estimatedCost || 0) > 0) {
+      db.project.prepare(`
+        INSERT OR IGNORE INTO payables (
+          payable_id, project_id, vendor_id, amount, due_date, actual_paid_date,
+          payable_status, payable_type, notes_ko, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(`PAY-DEF-${defectId}`, projectId, 'DEFECT_REWORK', Number(defect.estimatedCost || 0), createdAt.slice(0, 10), null, 'EXPECTED', 'DEFECT_COST', '하자/AS 예상 비용', createdAt, createdAt);
+      syncCashflowSnapshot(createdAt);
+    }
     const rootCauseId = `RCA-DEF-${defectId}`;
     db.project.prepare(`
       INSERT OR REPLACE INTO cost_leak_root_causes (
@@ -12668,6 +13151,10 @@ function createSqliteService({ app }) {
       approvalRequestCount: countRows(db.project, 'approval_requests'),
       redAlertEventCount: countRows(db.project, 'red_alert_events'),
       cashflowSnapshotCount: countRows(db.project, 'cashflow_snapshots'),
+      customerPaymentCount: countRows(db.project, 'customer_payments'),
+      vendorPaymentCount: countRows(db.project, 'vendor_payments'),
+      paymentTransactionCount: countRows(db.project, 'payment_transactions'),
+      paymentAlertCount: countRows(db.project, 'payment_alerts'),
       siteRiskLogCount: countRows(db.project, 'site_risk_logs'),
       projectCompletionReportCount: countRows(db.project, 'project_completion_reports'),
       actualCostCount: countRows(db.project, 'actual_costs'),
@@ -12762,6 +13249,11 @@ function createSqliteService({ app }) {
     generateCommunicationMessage,
     markCommunicationMessageSent,
     cancelCommunicationMessage,
+    getPaymentCenterData,
+    markCustomerPaymentReceived,
+    markVendorPaymentPaid,
+    createPaymentRequestMessage,
+    requestVendorPaymentApproval,
     getBathroomPricingStandardDashboard,
     evaluateBathroomQuote,
     getCaseLibrarySnapshot,

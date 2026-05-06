@@ -17,6 +17,7 @@ import { CeoControlTowerView } from '../../app/dashboard/CeoControlTowerView';
 import { ExecutionManagementView } from '../../app/execution/ExecutionManagementView';
 import { MasterDbAdminView } from '../../app/master-db/MasterDbAdminView';
 import { Ontology3DView } from '../../app/ontology/Ontology3DView';
+import { PaymentCenterView } from '../../app/payment/PaymentCenterView';
 import { PortfolioDashboardView } from '../../app/portfolio/PortfolioDashboardView';
 import { ProfitTemplateLibraryView } from '../../app/profit/ProfitTemplateLibraryView';
 import { ProfitAutomationDashboardView } from '../../app/profit/ProfitAutomationDashboardView';
@@ -55,6 +56,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     executionManagement: '현장 실행 관리',
     ceoControlTower: 'CEO Control Tower',
     communication: 'Communication Center',
+    payment: 'Payment Center',
     caseLibrary: 'Case Library',
     costCapture: 'Actual Cost Capture',
     marginSafety: 'Margin Safety',
@@ -69,7 +71,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     profitAutomation: 'Profit Automation Loop'
   };
 
-  const isWideView = ['masterDb', 'estimate', 'bathroomEstimate', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'profitTemplates', 'profitAutomation'].includes(view);
+  const isWideView = ['masterDb', 'estimate', 'bathroomEstimate', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'profitTemplates', 'profitAutomation'].includes(view);
 
   return (
     <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
@@ -102,6 +104,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'profitAutomation' ? <ProfitAutomationDashboardView /> : null}
       {view === 'client' ? <ClientDashboardView /> : null}
       {view === 'communication' ? <CommunicationCenterView /> : null}
+      {view === 'payment' ? <PaymentCenterView /> : null}
       {view === 'contractDocuments' ? <ContractDocumentView /> : null}
       {view === 'constructionSchedule' ? <ConstructionScheduleView /> : null}
       {view === 'purchaseOrders' ? <PurchaseOrderView /> : null}

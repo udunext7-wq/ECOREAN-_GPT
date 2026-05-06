@@ -65,6 +65,11 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:communication:generate', (_event, payload) => sqliteService.generateCommunicationMessage(payload));
   ipcMain.handle('boc:communication:mark-sent', (_event, payload) => sqliteService.markCommunicationMessageSent(payload));
   ipcMain.handle('boc:communication:cancel', (_event, payload) => sqliteService.cancelCommunicationMessage(payload));
+  ipcMain.handle('boc:payment:get', () => sqliteService.getPaymentCenterData());
+  ipcMain.handle('boc:payment:customer-received', (_event, payload) => sqliteService.markCustomerPaymentReceived(payload));
+  ipcMain.handle('boc:payment:vendor-paid', (_event, payload) => sqliteService.markVendorPaymentPaid(payload));
+  ipcMain.handle('boc:payment:request-message', (_event, payload) => sqliteService.createPaymentRequestMessage(payload));
+  ipcMain.handle('boc:payment:request-vendor-approval', (_event, payload) => sqliteService.requestVendorPaymentApproval(payload));
   ipcMain.handle('boc:bathroom-pricing:get', () => sqliteService.getBathroomPricingStandardDashboard());
   ipcMain.handle('boc:bathroom-pricing:evaluate', (_event, payload) => sqliteService.evaluateBathroomQuote(payload));
   ipcMain.handle('boc:case-library:get', () => sqliteService.getCaseLibrarySnapshot());

@@ -57,7 +57,8 @@ export function CeoDashboard() {
       openProfitAutomation: 'profitAutomation',
       openExecutionManagement: 'executionManagement',
       openCeoControlTower: 'ceoControlTower',
-      openCommunication: 'communication'
+      openCommunication: 'communication',
+      openPaymentCenter: 'payment'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
@@ -237,6 +238,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('profitAutomation', 'confirm')}>Profit Loop</button>
         <button onClick={() => openView('client', 'click')}>Client Contract</button>
         <button onClick={() => openView('communication', 'click')}>Communication</button>
+        <button onClick={() => openView('payment', 'warning')}>Payment</button>
         <button onClick={() => openView('caseLibrary', 'click')}>Case Library</button>
         <button onClick={() => openView('executionManagement', 'confirm')}>현장 실행</button>
         <button onClick={() => openView('ceoControlTower', 'warning')}>CEO Control Tower</button>

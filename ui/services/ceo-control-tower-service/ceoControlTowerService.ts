@@ -1,9 +1,13 @@
 export type CfoCashflowSummary = {
   todayExpectedInflow: number;
   todayExpectedOutflow: number;
+  todayActualInflow?: number;
+  todayActualOutflow?: number;
   todayNetCashflow: number;
   sevenDayExpectedInflow: number;
   sevenDayExpectedOutflow: number;
+  sevenDayActualInflow?: number;
+  sevenDayActualOutflow?: number;
   sevenDayNetCashflow: number;
   receivableAmount: number;
   payableAmount: number;
