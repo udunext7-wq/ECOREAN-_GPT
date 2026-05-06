@@ -73,6 +73,10 @@ declare global {
         decideCeoApprovalRequest: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getClientContractData: () => Promise<Record<string, unknown>>;
         approveContract: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getCommunicationCenterData: () => Promise<Record<string, unknown>>;
+        generateCommunicationMessage: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        markCommunicationMessageSent: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        cancelCommunicationMessage: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getBathroomPricingStandardDashboard: () => Promise<Record<string, unknown>>;
         evaluateBathroomQuote: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getCaseLibrarySnapshot: () => Promise<Record<string, unknown>>;

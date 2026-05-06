@@ -4,6 +4,7 @@ import { EstimateApprovalView } from '../../app/approvals/EstimateApprovalView';
 import { LearningApprovalView } from '../../app/approvals/LearningApprovalView';
 import { CaseLibraryView } from '../../app/case-library/CaseLibraryView';
 import { ClientDashboardView } from '../../app/client/ClientDashboardView';
+import { CommunicationCenterView } from '../../app/communication/CommunicationCenterView';
 import { ContractDocumentView } from '../../app/contract/ContractDocumentView';
 import { CostCaptureDashboard } from '../../app/cost-capture/CostCaptureDashboard';
 import { CrewDashboardView } from '../../app/crew/CrewDashboardView';
@@ -53,6 +54,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     purchaseOrders: '발주 관리',
     executionManagement: '현장 실행 관리',
     ceoControlTower: 'CEO Control Tower',
+    communication: 'Communication Center',
     caseLibrary: 'Case Library',
     costCapture: 'Actual Cost Capture',
     marginSafety: 'Margin Safety',
@@ -67,7 +69,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     profitAutomation: 'Profit Automation Loop'
   };
 
-  const isWideView = ['masterDb', 'estimate', 'bathroomEstimate', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'profitTemplates', 'profitAutomation'].includes(view);
+  const isWideView = ['masterDb', 'estimate', 'bathroomEstimate', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'profitTemplates', 'profitAutomation'].includes(view);
 
   return (
     <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
@@ -99,6 +101,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'profitTemplates' ? <ProfitTemplateLibraryView /> : null}
       {view === 'profitAutomation' ? <ProfitAutomationDashboardView /> : null}
       {view === 'client' ? <ClientDashboardView /> : null}
+      {view === 'communication' ? <CommunicationCenterView /> : null}
       {view === 'contractDocuments' ? <ContractDocumentView /> : null}
       {view === 'constructionSchedule' ? <ConstructionScheduleView /> : null}
       {view === 'purchaseOrders' ? <PurchaseOrderView /> : null}

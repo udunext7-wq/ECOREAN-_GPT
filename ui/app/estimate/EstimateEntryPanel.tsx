@@ -19,6 +19,9 @@ export function EstimateEntryPanel({ onOpen }: Props) {
         <button className="secondary-dashboard-button" onClick={() => onOpen('ceoControlTower', 'warning')}>
           CEO Control Tower
         </button>
+        <button className="secondary-dashboard-button" onClick={() => onOpen('communication', 'click')}>
+          Communication
+        </button>
       </div>
 
       <div className="estimate-entry-grid">
@@ -81,6 +84,11 @@ export function EstimateEntryPanel({ onOpen }: Props) {
           <span>CEO Control Tower</span>
           <strong>오늘 위험 / 승인 / 현금흐름</strong>
           <em>대표 판단</em>
+        </button>
+        <button className="entry-button primary" onClick={() => onOpen('communication', 'click')}>
+          <span>커뮤니케이션 센터</span>
+          <strong>고객 안내 / 발주 메시지 / 결제 요청</strong>
+          <em>복사 발송</em>
         </button>
         <button className="entry-button" onClick={() => onOpen('executionManagement', 'click')}>
           <span>공사일보</span>

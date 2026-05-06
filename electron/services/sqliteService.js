@@ -16,6 +16,7 @@ const { buildReceivingRows } = require('./materialReceivingService');
 const { buildBathroomInspectionChecklist, evaluateInspectionItems } = require('./inspectionService');
 const { buildChangeOrderPayload } = require('./changeOrderService');
 const { buildDefectPayload } = require('./defectService');
+const { buildCommunicationMessage, defaultCommunicationTemplates } = require('./communicationService');
 
 function nowIso() {
   return new Date().toISOString();
@@ -591,6 +592,40 @@ function createSqliteService({ app }) {
         action_type TEXT NOT NULL,
         audience TEXT NOT NULL,
         message_ko TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS communication_templates (
+        id TEXT PRIMARY KEY,
+        template_type TEXT NOT NULL UNIQUE,
+        title TEXT NOT NULL,
+        body_template TEXT NOT NULL,
+        is_active INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS communication_messages (
+        id TEXT PRIMARY KEY,
+        message_type TEXT NOT NULL,
+        target_type TEXT NOT NULL,
+        target_name TEXT NOT NULL,
+        target_contact TEXT NOT NULL,
+        related_entity_type TEXT NOT NULL,
+        related_entity_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        sent_at TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS communication_send_logs (
+        id TEXT PRIMARY KEY,
+        message_id TEXT NOT NULL,
+        channel TEXT NOT NULL,
+        status TEXT NOT NULL,
+        result_message TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
 
@@ -3383,6 +3418,314 @@ function createSqliteService({ app }) {
     };
   }
 
+  function formatWon(value) {
+    const amount = Number(value || 0);
+    return amount > 0 ? `${amount.toLocaleString('ko-KR')}원` : '금액 확인 필요';
+  }
+
+  function ensureCommunicationTemplates(createdAt = nowIso()) {
+    const insert = db.project.prepare(`
+      INSERT OR IGNORE INTO communication_templates (
+        id, template_type, title, body_template, is_active, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    defaultCommunicationTemplates().forEach((template) => {
+      insert.run(
+        `COMM-TPL-${template.templateType}`,
+        template.templateType,
+        template.title,
+        template.bodyTemplate,
+        1,
+        createdAt,
+        createdAt
+      );
+    });
+  }
+
+  function communicationTemplateFor(messageType) {
+    ensureCommunicationTemplates();
+    const row = db.project.prepare('SELECT * FROM communication_templates WHERE template_type = ? AND is_active = 1').get(messageType);
+    if (!row) return null;
+    return {
+      templateType: row.template_type,
+      title: row.title,
+      bodyTemplate: row.body_template
+    };
+  }
+
+  function communicationDataFromEntity({ messageType, relatedEntityType, relatedEntityId, fallbackData = {} }) {
+    const data = {
+      customerName: fallbackData.customerName || '고객명 확인 필요',
+      siteName: fallbackData.siteName || '현장명 확인 필요',
+      vendorName: fallbackData.vendorName || '협력업체',
+      amountKo: fallbackData.amountKo || '금액 확인 필요',
+      paymentTerms: fallbackData.paymentTerms || '결제 조건 확인 필요',
+      scheduleKo: fallbackData.scheduleKo || '일정 확인 필요',
+      processSummaryKo: fallbackData.processSummaryKo || '공정 정보 확인 필요',
+      itemSummaryKo: fallbackData.itemSummaryKo || '품목 확인 필요',
+      requiredDate: fallbackData.requiredDate || '필요일 확인 필요',
+      dueDate: fallbackData.dueDate || '기한 확인 필요',
+      notesKo: fallbackData.notesKo || '특이사항 없음',
+      nextActionKo: fallbackData.nextActionKo || '확인 후 진행',
+      changeContentKo: fallbackData.changeContentKo || '변경 내용 확인 필요',
+      changeReasonKo: fallbackData.changeReasonKo || '변경 사유 확인 필요',
+      scheduleImpactKo: fallbackData.scheduleImpactKo || '일정 영향 확인 필요',
+      inspectionResultKo: fallbackData.inspectionResultKo || '검수 결과 확인 필요',
+      defectLocationKo: fallbackData.defectLocationKo || '하자 위치 확인 필요',
+      defectTypeKo: fallbackData.defectTypeKo || '하자 유형 확인 필요',
+      completedAt: fallbackData.completedAt || '완료일 확인 필요',
+      sourceModuleKo: fallbackData.sourceModuleKo || 'BOC',
+      ...fallbackData
+    };
+
+    if (relatedEntityType === 'Estimate' || messageType === 'CLIENT_ESTIMATE_NOTICE') {
+      const row = db.project.prepare('SELECT * FROM bathroom_estimates WHERE id = ?').get(relatedEntityId);
+      if (row) {
+        data.customerName = row.customer_name;
+        data.siteName = row.site_name;
+        data.amountKo = formatWon(row.revenue);
+        data.notesKo = `PCE 결과: ${row.pce_decision}`;
+      }
+    }
+
+    if (relatedEntityType === 'Contract' || messageType === 'CLIENT_CONTRACT_NOTICE') {
+      const row = db.project.prepare('SELECT * FROM contracts WHERE contract_id = ? OR contract_number = ?').get(relatedEntityId, relatedEntityId);
+      if (row) {
+        data.customerName = row.customer_name || data.customerName;
+        data.siteName = row.site_name || data.siteName;
+        data.amountKo = formatWon(row.contract_amount);
+        data.paymentTerms = row.payment_terms || `계약금 ${formatWon(row.deposit_amount)} / 중도금 ${formatWon(row.progress_payment_amount)} / 잔금 ${formatWon(row.balance_amount)}`;
+        data.scheduleKo = `${row.start_date || '시작일 확인'} ~ ${row.end_date || '완료일 확인'} (${row.duration_days || '기간 확인'}일)`;
+      }
+    }
+
+    if (relatedEntityType === 'Schedule' || messageType === 'CLIENT_SCHEDULE_NOTICE') {
+      const row = db.project.prepare('SELECT * FROM construction_schedules WHERE id = ?').get(relatedEntityId);
+      const items = db.project.prepare('SELECT process_name FROM construction_schedule_items WHERE schedule_id = ? ORDER BY sort_order LIMIT 8').all(relatedEntityId);
+      if (row) {
+        data.siteName = row.schedule_name || data.siteName;
+        data.scheduleKo = `${row.start_date} ~ ${row.end_date} (${row.duration_days}일)`;
+        data.processSummaryKo = items.map((item) => item.process_name).join(' → ') || data.processSummaryKo;
+      }
+    }
+
+    if (relatedEntityType === 'PurchaseOrder' || messageType.startsWith('VENDOR_')) {
+      const row = db.project.prepare('SELECT * FROM purchase_orders WHERE purchase_order_id = ? OR order_number = ?').get(relatedEntityId, relatedEntityId);
+      const items = db.project.prepare('SELECT item_name, quantity, unit FROM purchase_order_items WHERE purchase_order_id = ? ORDER BY id LIMIT 8').all(relatedEntityId);
+      if (row) {
+        data.vendorName = row.supplier_name || data.vendorName;
+        data.purchaseOrderId = row.purchase_order_id || row.order_number;
+        data.siteName = row.project_id || data.siteName;
+        data.amountKo = formatWon(row.total_amount);
+        data.requiredDate = row.required_date || data.requiredDate;
+        data.itemSummaryKo = items.map((item) => `${item.item_name} ${item.quantity}${item.unit}`).join(', ') || data.itemSummaryKo;
+        data.notesKo = row.unknown_price_warning ? '실제 공급가 확인 필요' : data.notesKo;
+      }
+    }
+
+    if (relatedEntityType === 'MaterialReceiving' || messageType === 'VENDOR_SHORTAGE_NOTICE') {
+      const rows = db.project.prepare('SELECT * FROM material_receiving_logs WHERE purchase_order_id = ? AND missing_quantity > 0').all(relatedEntityId);
+      if (rows.length > 0) {
+        data.purchaseOrderId = relatedEntityId;
+        data.siteName = rows[0].project_id;
+        data.vendorName = rows[0].supplier_name_ko || data.vendorName;
+        data.itemSummaryKo = rows.map((row) => `${row.item_name_ko} 부족 ${row.missing_quantity}${row.unit}`).join(', ');
+        data.notesKo = '발주 수량 대비 입고 부족 발생';
+      }
+    }
+
+    if (relatedEntityType === 'Inspection' || messageType === 'CLIENT_INSPECTION_RESULT') {
+      const row = db.project.prepare('SELECT * FROM inspection_results WHERE inspection_result_id = ?').get(relatedEntityId);
+      if (row) {
+        data.siteName = row.project_id;
+        data.inspectionResultKo = row.result_status === 'FAILED' ? 'FAIL' : 'PASS';
+        data.notesKo = row.notes_ko || data.notesKo;
+        data.nextActionKo = row.result_status === 'FAILED' ? '보완 조치 후 재검수' : '후속 공정 진행 가능';
+      }
+    }
+
+    if (relatedEntityType === 'ChangeOrder' || messageType === 'CLIENT_CHANGE_ORDER_APPROVAL') {
+      const row = db.project.prepare('SELECT * FROM change_orders WHERE change_order_id = ?').get(relatedEntityId);
+      if (row) {
+        data.siteName = row.site_name_ko;
+        data.changeContentKo = row.change_content_ko;
+        data.changeReasonKo = row.change_reason_ko;
+        data.amountKo = formatWon(row.additional_amount);
+        data.scheduleImpactKo = `${row.schedule_impact_days || 0}일`;
+      }
+    }
+
+    if (relatedEntityType === 'Defect' || messageType.startsWith('CLIENT_DEFECT')) {
+      const row = db.project.prepare('SELECT * FROM defect_reports WHERE defect_id = ?').get(relatedEntityId);
+      if (row) {
+        data.siteName = row.site_name_ko;
+        data.defectLocationKo = row.defect_location_ko;
+        data.defectTypeKo = row.defect_type_ko;
+        data.amountKo = formatWon(row.estimated_cost);
+        data.nextActionKo = row.status === 'COMPLETED' ? '고객 확인 요청' : '처리 일정 안내 예정';
+        data.completedAt = row.completed_at || data.completedAt;
+      }
+    }
+
+    if (relatedEntityType === 'Receivable' || messageType === 'CLIENT_PAYMENT_REQUEST') {
+      const row = db.project.prepare('SELECT * FROM receivables WHERE receivable_id = ?').get(relatedEntityId);
+      if (row) {
+        data.siteName = row.project_id;
+        data.amountKo = formatWon(row.amount);
+        data.dueDate = row.due_date;
+        data.notesKo = row.notes_ko || data.notesKo;
+      }
+    }
+
+    return data;
+  }
+
+  function createCommunicationDraft(payload = {}) {
+    ensureCommunicationTemplates();
+    const createdAt = payload.createdAt || nowIso();
+    const messageType = payload.messageType;
+    const relatedEntityType = payload.relatedEntityType || 'UNKNOWN';
+    const relatedEntityId = payload.relatedEntityId || 'UNKNOWN';
+    const messageId = payload.messageId || `COMM-${messageType}-${relatedEntityId}`;
+    const existing = db.project.prepare('SELECT * FROM communication_messages WHERE id = ?').get(messageId);
+    if (existing && !payload.force) {
+      return { messageId, message: existing, existing: true };
+    }
+
+    const template = communicationTemplateFor(messageType);
+    const data = communicationDataFromEntity({
+      messageType,
+      relatedEntityType,
+      relatedEntityId,
+      fallbackData: payload.data || {}
+    });
+    const message = buildCommunicationMessage({
+      messageType,
+      template,
+      data,
+      targetType: payload.targetType || (messageType.startsWith('VENDOR_') ? 'VENDOR' : messageType.startsWith('INTERNAL_') ? 'INTERNAL' : 'CLIENT'),
+      targetName: payload.targetName,
+      targetContact: payload.targetContact,
+      relatedEntityType,
+      relatedEntityId,
+      status: payload.status || 'DRAFT'
+    });
+
+    db.project.prepare(`
+      INSERT OR REPLACE INTO communication_messages (
+        id, message_type, target_type, target_name, target_contact,
+        related_entity_type, related_entity_id, title, body, status,
+        created_at, sent_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM communication_messages WHERE id = ?), ?), ?)
+    `).run(
+      messageId,
+      message.messageType,
+      message.targetType,
+      message.targetName,
+      message.targetContact,
+      message.relatedEntityType,
+      message.relatedEntityId,
+      message.title,
+      message.body,
+      message.status,
+      messageId,
+      createdAt,
+      null
+    );
+
+    insertNotification({
+      level: 'INFO',
+      messageKo: `커뮤니케이션 초안 생성: ${message.title}`,
+      relatedProjectId: relatedEntityId,
+      actionKo: '메시지 초안',
+      createdAt
+    });
+
+    return {
+      messageId,
+      message: db.project.prepare('SELECT * FROM communication_messages WHERE id = ?').get(messageId),
+      existing: false
+    };
+  }
+
+  function generateCommunicationMessage(payload = {}) {
+    return { ...createCommunicationDraft(payload), communicationCenterData: getCommunicationCenterData() };
+  }
+
+  function markCommunicationMessageSent({ messageId, channel = 'COPY_MANUAL', actor = 'CEO', resultMessage = '복사 후 발송 완료 처리' }) {
+    const createdAt = nowIso();
+    const row = db.project.prepare('SELECT * FROM communication_messages WHERE id = ?').get(messageId);
+    if (!row) throw new Error(`Communication message not found: ${messageId}`);
+    db.project.prepare('UPDATE communication_messages SET status = ?, sent_at = ? WHERE id = ?').run('SENT', createdAt, messageId);
+    db.project.prepare(`
+      INSERT INTO communication_send_logs (
+        id, message_id, channel, status, result_message, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).run(`COMMLOG-${messageId}-${Date.now()}`, messageId, channel, 'SENT', resultMessage, createdAt);
+    writeOperationalLog({
+      actionType: 'MARK_COMMUNICATION_SENT',
+      actor,
+      projectId: row.related_entity_id,
+      messageKo: `발송 완료 처리: ${row.title}`,
+      actionKo: '발송 완료',
+      level: 'INFO',
+      payload: { messageId, channel },
+      reasonKo: resultMessage,
+      createdAt
+    });
+    return { messageId, status: 'SENT', communicationCenterData: getCommunicationCenterData() };
+  }
+
+  function cancelCommunicationMessage({ messageId, actor = 'CEO', reasonKo = '발송 취소' }) {
+    const createdAt = nowIso();
+    const row = db.project.prepare('SELECT * FROM communication_messages WHERE id = ?').get(messageId);
+    if (!row) throw new Error(`Communication message not found: ${messageId}`);
+    db.project.prepare('UPDATE communication_messages SET status = ? WHERE id = ?').run('CANCELLED', messageId);
+    db.project.prepare(`
+      INSERT INTO communication_send_logs (
+        id, message_id, channel, status, result_message, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).run(`COMMLOG-${messageId}-${Date.now()}`, messageId, 'SYSTEM', 'CANCELLED', reasonKo, createdAt);
+    writeOperationalLog({
+      actionType: 'CANCEL_COMMUNICATION',
+      actor,
+      projectId: row.related_entity_id,
+      messageKo: `메시지 취소: ${row.title}`,
+      actionKo: '메시지 취소',
+      level: 'WARNING',
+      payload: { messageId },
+      reasonKo,
+      createdAt
+    });
+    return { messageId, status: 'CANCELLED', communicationCenterData: getCommunicationCenterData() };
+  }
+
+  function getCommunicationCenterData() {
+    ensureCommunicationTemplates();
+    const messages = db.project.prepare('SELECT * FROM communication_messages ORDER BY created_at DESC LIMIT 100').all();
+    const logs = db.project.prepare('SELECT * FROM communication_send_logs ORDER BY created_at DESC LIMIT 100').all();
+    const templates = db.project.prepare('SELECT * FROM communication_templates ORDER BY template_type').all();
+    const byStatus = messages.reduce((acc, row) => {
+      acc[row.status] = (acc[row.status] || 0) + 1;
+      return acc;
+    }, {});
+    return {
+      snapshotDate: new Date().toISOString().slice(0, 10),
+      summary: {
+        totalMessages: messages.length,
+        draftCount: byStatus.DRAFT || 0,
+        readyCount: byStatus.READY || 0,
+        sentCount: byStatus.SENT || 0,
+        failedCount: byStatus.FAILED || 0,
+        cancelledCount: byStatus.CANCELLED || 0,
+        templateCount: templates.length
+      },
+      messages,
+      sendLogs: logs,
+      templates
+    };
+  }
+
   function exportBathroomEstimateDocument({ estimateId, documentType = 'customer', format = 'pdf', actor = 'CEO' }) {
     const createdAt = nowIso();
     const model = getStoredBathroomEstimateModel(estimateId);
@@ -3472,6 +3815,15 @@ function createSqliteService({ app }) {
       contract.status
     );
     insertNotification({ level: 'INFO', messageKo: `계약서 생성: ${contract.contractNumber}`, relatedProjectId: estimateId, actionKo: '계약서 생성', createdAt });
+    createCommunicationDraft({
+      messageType: 'CLIENT_CONTRACT_NOTICE',
+      relatedEntityType: 'Contract',
+      relatedEntityId: contractId,
+      targetType: 'CLIENT',
+      targetName: contract.customerName,
+      status: 'READY',
+      createdAt
+    });
     return { contractId, contract };
   }
 
@@ -3524,6 +3876,14 @@ function createSqliteService({ app }) {
       insertItem.run(`${scheduleId}-${String(item.sortOrder).padStart(2, '0')}`, scheduleId, item.processName, item.startDate, item.endDate, item.durationDays, item.dependency || '', item.assignee, item.status, item.sortOrder);
     });
     insertNotification({ level: 'INFO', messageKo: `공정표 생성: ${schedule.scheduleName}`, relatedProjectId: estimateId, actionKo: '공정표 생성', createdAt });
+    createCommunicationDraft({
+      messageType: 'CLIENT_SCHEDULE_NOTICE',
+      relatedEntityType: 'Schedule',
+      relatedEntityId: scheduleId,
+      targetType: 'CLIENT',
+      status: 'READY',
+      createdAt
+    });
     return { scheduleId, schedule };
   }
 
@@ -3567,6 +3927,15 @@ function createSqliteService({ app }) {
       insertItem.run(`${purchaseOrderId}-ITEM-${String(index + 1).padStart(3, '0')}`, purchaseOrderId, item.itemName, item.specification, item.quantity, item.unit, item.expectedUnitPrice, item.expectedTotal, item.supplierName, item.orderStatus, item.requiredDate, item.notes);
     });
     insertNotification({ level: 'WARNING', messageKo: `발주서 생성: ${purchaseOrder.orderNumber} / 실제 공급가 확인 필요`, relatedProjectId: estimateId, actionKo: '발주서 생성', createdAt });
+    createCommunicationDraft({
+      messageType: 'VENDOR_PURCHASE_ORDER',
+      relatedEntityType: 'PurchaseOrder',
+      relatedEntityId: purchaseOrderId,
+      targetType: 'VENDOR',
+      targetName: purchaseOrder.supplierName,
+      status: 'READY',
+      createdAt
+    });
     return { purchaseOrderId, purchaseOrder };
   }
 
@@ -8427,6 +8796,17 @@ function createSqliteService({ app }) {
       reasonKo: '발주 수량과 입고 수량 비교',
       createdAt
     });
+    if (shortages.length > 0) {
+      createCommunicationDraft({
+        messageType: 'VENDOR_SHORTAGE_NOTICE',
+        relatedEntityType: 'MaterialReceiving',
+        relatedEntityId: purchaseOrderId,
+        targetType: 'VENDOR',
+        targetName: shortages[0].supplierNameKo,
+        status: 'READY',
+        createdAt
+      });
+    }
     return { dashboardData: getDashboardData(), receivingCount: rows.length, shortageCount: shortages.length, shortages };
   }
 
@@ -8563,6 +8943,14 @@ function createSqliteService({ app }) {
       reasonKo: '검수 체크리스트 결과 저장',
       createdAt
     });
+    createCommunicationDraft({
+      messageType: 'CLIENT_INSPECTION_RESULT',
+      relatedEntityType: 'Inspection',
+      relatedEntityId: inspectionResultId,
+      targetType: 'CLIENT',
+      status: evaluation.hasFail ? 'READY' : 'DRAFT',
+      createdAt
+    });
     return { dashboardData: getDashboardData(), checklistId, inspectionResultId, evaluation };
   }
 
@@ -8640,6 +9028,14 @@ function createSqliteService({ app }) {
       level: blocked ? 'RED' : 'WARNING',
       payload: { changeOrderId, pce, payload },
       reasonKo: payload.reasonKo,
+      createdAt
+    });
+    createCommunicationDraft({
+      messageType: 'CLIENT_CHANGE_ORDER_APPROVAL',
+      relatedEntityType: 'ChangeOrder',
+      relatedEntityId: changeOrderId,
+      targetType: 'CLIENT',
+      status: blocked ? 'DRAFT' : 'READY',
       createdAt
     });
     return { dashboardData: getDashboardData(), changeOrderId, pce, blocked };
@@ -8780,6 +9176,14 @@ function createSqliteService({ app }) {
       level: defect.redAlert ? 'RED' : 'WARNING',
       payload: { defectId, rootCauseId, defect },
       reasonKo: defect.rootCauseKo,
+      createdAt
+    });
+    createCommunicationDraft({
+      messageType: 'CLIENT_DEFECT_RECEIVED',
+      relatedEntityType: 'Defect',
+      relatedEntityId: defectId,
+      targetType: 'CLIENT',
+      status: 'READY',
       createdAt
     });
     return { dashboardData: getDashboardData(), defectId, rootCauseId, defect };
@@ -12225,6 +12629,9 @@ function createSqliteService({ app }) {
       contractDocumentCount: countRows(db.project, 'contract_documents'),
       contractApprovalLogCount: countRows(db.project, 'contract_approval_logs'),
       clientDocumentLogCount: countRows(db.project, 'client_document_logs'),
+      communicationMessageCount: countRows(db.project, 'communication_messages'),
+      communicationTemplateCount: countRows(db.project, 'communication_templates'),
+      communicationSendLogCount: countRows(db.project, 'communication_send_logs'),
       estimateDraftInputCount: countRows(db.project, 'estimate_draft_inputs'),
       estimateDraftProcessCount: countRows(db.project, 'estimate_draft_processes'),
       estimateDraftConfirmationCount: countRows(db.project, 'estimate_draft_confirmations'),
@@ -12351,6 +12758,10 @@ function createSqliteService({ app }) {
     decideCeoApprovalRequest,
     getClientContractData,
     approveContract,
+    getCommunicationCenterData,
+    generateCommunicationMessage,
+    markCommunicationMessageSent,
+    cancelCommunicationMessage,
     getBathroomPricingStandardDashboard,
     evaluateBathroomQuote,
     getCaseLibrarySnapshot,

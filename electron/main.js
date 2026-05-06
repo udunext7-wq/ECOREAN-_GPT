@@ -61,6 +61,10 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:ceo-control-tower:decide', (_event, payload) => sqliteService.decideCeoApprovalRequest(payload));
   ipcMain.handle('boc:client-contract:get', () => sqliteService.getClientContractData());
   ipcMain.handle('boc:client-contract:approve', (_event, payload) => sqliteService.approveContract(payload));
+  ipcMain.handle('boc:communication:get', () => sqliteService.getCommunicationCenterData());
+  ipcMain.handle('boc:communication:generate', (_event, payload) => sqliteService.generateCommunicationMessage(payload));
+  ipcMain.handle('boc:communication:mark-sent', (_event, payload) => sqliteService.markCommunicationMessageSent(payload));
+  ipcMain.handle('boc:communication:cancel', (_event, payload) => sqliteService.cancelCommunicationMessage(payload));
   ipcMain.handle('boc:bathroom-pricing:get', () => sqliteService.getBathroomPricingStandardDashboard());
   ipcMain.handle('boc:bathroom-pricing:evaluate', (_event, payload) => sqliteService.evaluateBathroomQuote(payload));
   ipcMain.handle('boc:case-library:get', () => sqliteService.getCaseLibrarySnapshot());
