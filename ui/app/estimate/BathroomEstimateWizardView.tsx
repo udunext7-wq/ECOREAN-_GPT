@@ -10,6 +10,7 @@ import {
   type BathroomEstimateInput,
   type BathroomEstimatePreview
 } from '../../services/bathroom-estimate-service/bathroomEstimateService';
+import { AIEstimateAssistantPanel } from './AIEstimateAssistantPanel';
 
 const steps = ['기본 정보', '시공 방식', '옵션', '자동 산출', '출력'];
 
@@ -269,6 +270,8 @@ export function BathroomEstimateWizardView() {
           </button>
         ))}
       </div>
+
+      <AIEstimateAssistantPanel input={input} preview={preview} />
 
       {step === 0 ? (
         <section className="wizard-panel">

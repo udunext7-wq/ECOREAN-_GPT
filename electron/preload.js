@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('ecorean', {
     calculateBathroomEstimate: (payload) => ipcRenderer.invoke('boc:bathroom-estimate:calculate', payload),
     saveBathroomEstimate: (payload) => ipcRenderer.invoke('boc:bathroom-estimate:save', payload),
     exportBathroomEstimate: (payload) => ipcRenderer.invoke('boc:bathroom-estimate:export', payload),
+    getAiEstimateIntelligence: (payload) => ipcRenderer.invoke('boc:ai-estimate:intelligence', payload),
+    decideAiRecommendationAction: (payload) => ipcRenderer.invoke('boc:ai-estimate:action', payload),
     generateBathroomContract: (payload) => ipcRenderer.invoke('boc:bathroom-contract:generate', payload),
     exportBathroomContractPdf: (payload) => ipcRenderer.invoke('boc:bathroom-contract:export-pdf', payload),
     generateBathroomSchedule: (payload) => ipcRenderer.invoke('boc:bathroom-schedule:generate', payload),

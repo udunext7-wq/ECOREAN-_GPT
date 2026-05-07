@@ -31,6 +31,8 @@ declare global {
         calculateBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         saveBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         exportBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getAiEstimateIntelligence: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        decideAiRecommendationAction: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         generateBathroomContract: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         exportBathroomContractPdf: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         generateBathroomSchedule: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

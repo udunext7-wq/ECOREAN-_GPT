@@ -17,6 +17,7 @@ const { buildBathroomInspectionChecklist, evaluateInspectionItems } = require('.
 const { buildChangeOrderPayload } = require('./changeOrderService');
 const { buildDefectPayload } = require('./defectService');
 const { buildCommunicationMessage, defaultCommunicationTemplates } = require('./communicationService');
+const { buildEstimateIntelligence } = require('./aiEstimateIntelligenceService');
 
 function nowIso() {
   return new Date().toISOString();
@@ -1271,6 +1272,55 @@ function createSqliteService({ app }) {
         adjustment_value REAL NOT NULL,
         reason TEXT NOT NULL,
         status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS ai_estimate_recommendations (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        recommendation_type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        suggested_action TEXT NOT NULL,
+        status TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS ai_estimate_warnings (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        warning_type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        suggested_action TEXT NOT NULL,
+        status TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS ai_estimate_risk_scores (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        margin_risk TEXT NOT NULL,
+        defect_risk TEXT NOT NULL,
+        cost_leak_risk TEXT NOT NULL,
+        risk_score_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS ai_recommendation_actions (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        recommendation_id TEXT NOT NULL,
+        action_type TEXT NOT NULL,
+        actor TEXT NOT NULL,
+        reason_ko TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
 
@@ -3504,6 +3554,168 @@ function createSqliteService({ app }) {
       customerView: buildCustomerEstimateView(calculated),
       internalView: buildInternalCostView({ ...calculated, pce_decision: pce.decision }),
       dashboardData: getDashboardData()
+    };
+  }
+
+  function getAiEstimateContext(projectType = 'bathroom_remodel') {
+    const templates = db.project.prepare(`
+      SELECT *
+      FROM profit_templates
+      WHERE project_type = ?
+      ORDER BY margin DESC, created_at DESC
+      LIMIT 20
+    `).all(projectType).map((row) => ({
+      ...row,
+      costStructure: fromJson(row.cost_structure_json, {}),
+      crewStructure: fromJson(row.crew_structure_json, {}),
+      scheduleStructure: fromJson(row.schedule_structure_json, {}),
+      rootCauseSummary: fromJson(row.root_cause_summary_json, []),
+      preventionRulesApplied: fromJson(row.prevention_rules_applied_json, [])
+    }));
+    const calibrationRules = db.project.prepare(`
+      SELECT *
+      FROM estimate_calibration_rules
+      WHERE status = 'ACTIVE'
+      ORDER BY created_at DESC
+      LIMIT 30
+    `).all();
+    const preventionRules = db.project.prepare(`
+      SELECT *
+      FROM prevention_rules
+      WHERE status = 'ACTIVE'
+        AND project_type IN (?, 'all', 'bathroom_remodel')
+      ORDER BY CASE enforcement_level WHEN 'MANDATORY' THEN 0 ELSE 1 END, updated_at DESC
+      LIMIT 30
+    `).all(projectType);
+    const costLeaks = db.project.prepare(`
+      SELECT *
+      FROM project_closing_cost_leaks
+      ORDER BY created_at DESC
+      LIMIT 80
+    `).all();
+    const defectHistory = db.project.prepare(`
+      SELECT *
+      FROM defect_reports
+      ORDER BY created_at DESC
+      LIMIT 50
+    `).all();
+    return { templates, calibrationRules, preventionRules, costLeaks, defectHistory };
+  }
+
+  function persistAiEstimateIntelligence(estimateId, intelligence, createdAt = nowIso()) {
+    db.project.prepare('DELETE FROM ai_estimate_recommendations WHERE estimate_id = ?').run(estimateId);
+    db.project.prepare('DELETE FROM ai_estimate_warnings WHERE estimate_id = ?').run(estimateId);
+    const insertRecommendation = db.project.prepare(`
+      INSERT INTO ai_estimate_recommendations (
+        id, estimate_id, recommendation_type, severity, title, description,
+        suggested_action, status, payload_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    intelligence.recommendations.forEach((item, index) => {
+      insertRecommendation.run(
+        `AIR-${estimateId}-${String(index + 1).padStart(3, '0')}`,
+        estimateId,
+        item.recommendationType || 'GENERAL',
+        item.severity || 'YELLOW',
+        item.titleKo || item.title || 'AI 견적 추천',
+        item.descriptionKo || item.description || '',
+        item.suggestedActionKo || item.suggested_action || '',
+        'PENDING',
+        toJson(item),
+        createdAt,
+        createdAt
+      );
+    });
+    const insertWarning = db.project.prepare(`
+      INSERT INTO ai_estimate_warnings (
+        id, estimate_id, warning_type, severity, title, description,
+        suggested_action, status, payload_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    intelligence.warnings.forEach((item, index) => {
+      insertWarning.run(
+        `AIW-${estimateId}-${String(index + 1).padStart(3, '0')}`,
+        estimateId,
+        item.warningType || 'MISSING_ITEM',
+        item.severity || 'YELLOW',
+        item.titleKo || item.title || '누락 위험',
+        item.descriptionKo || item.description || '',
+        item.suggestedActionKo || item.suggested_action || '',
+        'PENDING',
+        toJson(item),
+        createdAt,
+        createdAt
+      );
+    });
+    db.project.prepare(`
+      INSERT OR REPLACE INTO ai_estimate_risk_scores (
+        id, estimate_id, margin_risk, defect_risk, cost_leak_risk,
+        risk_score_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM ai_estimate_risk_scores WHERE id = ?), ?), ?)
+    `).run(
+      `AIRS-${estimateId}`,
+      estimateId,
+      intelligence.riskScore.marginRisk.level,
+      intelligence.riskScore.defectRisk.level,
+      intelligence.riskScore.costLeakRisk.level,
+      toJson(intelligence.riskScore),
+      `AIRS-${estimateId}`,
+      createdAt,
+      createdAt
+    );
+  }
+
+  function getAiEstimateIntelligence({ estimateId = null, input = {}, persist = true } = {}) {
+    const createdAt = nowIso();
+    const id = estimateId || `AI-EST-${Date.now()}`;
+    const preview = calculateBathroomEstimatePreview({ ...input, estimateId: id });
+    const context = getAiEstimateContext(String(input.constructionType || 'bathroom_remodel'));
+    const intelligence = buildEstimateIntelligence({
+      estimateId: id,
+      input,
+      estimate: preview.estimate,
+      ...context
+    });
+    if (persist) persistAiEstimateIntelligence(id, intelligence, createdAt);
+    return {
+      estimateId: id,
+      preview,
+      ...intelligence
+    };
+  }
+
+  function decideAiRecommendationAction({ estimateId, recommendationId, actionType, actor = 'CEO', reasonKo = '' }) {
+    if (!estimateId || !recommendationId || !actionType) throw new Error('estimateId, recommendationId, and actionType are required.');
+    const createdAt = nowIso();
+    const status = actionType === 'APPLY' ? 'APPLIED' : actionType === 'IGNORE' ? 'IGNORED' : 'PENDING';
+    db.project.prepare(`
+      UPDATE ai_estimate_recommendations
+      SET status = ?, updated_at = ?
+      WHERE estimate_id = ? AND id = ?
+    `).run(status, createdAt, estimateId, recommendationId);
+    db.project.prepare(`
+      UPDATE ai_estimate_warnings
+      SET status = ?, updated_at = ?
+      WHERE estimate_id = ? AND id = ?
+    `).run(status, createdAt, estimateId, recommendationId);
+    db.project.prepare(`
+      INSERT INTO ai_recommendation_actions (
+        id, estimate_id, recommendation_id, action_type, actor, reason_ko, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(`AIA-${estimateId}-${Date.now()}`, estimateId, recommendationId, actionType, actor, reasonKo || `${actionType} 처리`, createdAt);
+    insertNotification({
+      level: actionType === 'IGNORE' ? 'WARNING' : 'INFO',
+      messageKo: `AI 견적 추천 ${actionType}: ${recommendationId}`,
+      relatedProjectId: estimateId,
+      actionKo: 'AI Estimate Intelligence',
+      createdAt
+    });
+    return {
+      estimateId,
+      recommendationId,
+      actionType,
+      status,
+      actionLog: db.project.prepare('SELECT * FROM ai_recommendation_actions WHERE estimate_id = ? ORDER BY created_at DESC LIMIT 20').all(estimateId)
     };
   }
 
@@ -13829,6 +14041,10 @@ function createSqliteService({ app }) {
       projectClosingCostLeakCount: countRows(db.project, 'project_closing_cost_leaks'),
       projectClosingReportCount: countRows(db.project, 'project_closing_reports'),
       estimateCalibrationRuleCount: countRows(db.project, 'estimate_calibration_rules'),
+      aiEstimateRecommendationCount: countRows(db.project, 'ai_estimate_recommendations'),
+      aiEstimateWarningCount: countRows(db.project, 'ai_estimate_warnings'),
+      aiEstimateRiskScoreCount: countRows(db.project, 'ai_estimate_risk_scores'),
+      aiRecommendationActionCount: countRows(db.project, 'ai_recommendation_actions'),
       siteRiskLogCount: countRows(db.project, 'site_risk_logs'),
       projectCompletionReportCount: countRows(db.project, 'project_completion_reports'),
       actualCostCount: countRows(db.project, 'actual_costs'),
@@ -13873,6 +14089,8 @@ function createSqliteService({ app }) {
     calculateBathroomEstimatePreview,
     saveBathroomEstimate,
     exportBathroomEstimateDocument,
+    getAiEstimateIntelligence,
+    decideAiRecommendationAction,
     generateBathroomContract,
     exportBathroomContractPdf,
     generateBathroomSchedule,

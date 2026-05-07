@@ -19,6 +19,8 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
+  ipcMain.handle('boc:ai-estimate:intelligence', (_event, payload) => sqliteService.getAiEstimateIntelligence(payload));
+  ipcMain.handle('boc:ai-estimate:action', (_event, payload) => sqliteService.decideAiRecommendationAction(payload));
   ipcMain.handle('boc:bathroom-contract:generate', (_event, payload) => sqliteService.generateBathroomContract(payload));
   ipcMain.handle('boc:bathroom-contract:export-pdf', (_event, payload) => sqliteService.exportBathroomContractPdf(payload));
   ipcMain.handle('boc:bathroom-schedule:generate', (_event, payload) => sqliteService.generateBathroomSchedule(payload));
