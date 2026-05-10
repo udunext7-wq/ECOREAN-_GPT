@@ -67,6 +67,10 @@ declare global {
         refreshComfyUiJobStatus: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         attachVisualizationResult: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         decideVisualizationResult: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getBoardGenerationCenterData: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createDesignBoard: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        exportDesignBoardPdf: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createPortfolioCandidate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getProjectExecutionReadiness: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         transitionProjectToExecution: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; executionProject: Record<string, unknown> }>;
         getSiteOperationStatus: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

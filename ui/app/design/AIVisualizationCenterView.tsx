@@ -288,6 +288,10 @@ export function AIVisualizationCenterView() {
     setMessageKo('프롬프트가 클립보드에 복사되었습니다.');
   }
 
+  function openBoardGenerationCenter() {
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'boardGeneration' }));
+  }
+
   return (
     <div className="bathroom-wizard">
       <div className="wizard-hero">
@@ -296,6 +300,7 @@ export function AIVisualizationCenterView() {
           <h2>AI 투시도 생성</h2>
           <p>견적 + 평면도 + 무드보드 + 공간 데이터를 이미지 생성 브리프와 검토 워크플로로 연결합니다.</p>
         </div>
+        <button className="primary-action" onClick={openBoardGenerationCenter}>디자인 보드 생성</button>
       </div>
 
       <div className="wizard-summary-grid visualization-stats">

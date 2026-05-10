@@ -31,6 +31,9 @@ export function EstimateEntryPanel({ onOpen }: Props) {
         <button className="secondary-dashboard-button" onClick={() => onOpen('aiVisualization', 'click')}>
           AI 투시도 생성
         </button>
+        <button className="secondary-dashboard-button" onClick={() => onOpen('boardGeneration', 'click')}>
+          디자인 보드 생성
+        </button>
         <button className="secondary-dashboard-button" onClick={() => onOpen('closing', 'warning')}>
           Project Closing
         </button>
@@ -71,6 +74,11 @@ export function EstimateEntryPanel({ onOpen }: Props) {
           <span>AI 투시도 생성</span>
           <strong>공간 브리프 / 프롬프트 / 생성 대기열</strong>
           <em>제안 이미지 준비</em>
+        </button>
+        <button className="entry-button primary" onClick={() => onOpen('boardGeneration', 'click')}>
+          <span>디자인 보드 생성</span>
+          <strong>견적 / 평면도 / 투시도 기반 제안 보드</strong>
+          <em>PDF 제안서 출력</em>
         </button>
         <button className="entry-button disabled" disabled style={{ display: 'none' }}>
           <span>전체 리모델링</span>

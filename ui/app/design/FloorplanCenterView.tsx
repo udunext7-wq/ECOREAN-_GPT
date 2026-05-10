@@ -164,6 +164,10 @@ export function FloorplanCenterView() {
     window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'aiVisualization' }));
   }
 
+  function openBoardGenerationCenter() {
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'boardGeneration' }));
+  }
+
   return (
     <div className="bathroom-wizard">
       <div className="wizard-hero">
@@ -172,7 +176,10 @@ export function FloorplanCenterView() {
           <h2>평면도 / 아이소메트릭</h2>
           <p>견적 데이터를 공간별로 연결하고, 아이소메트릭 블록과 투시도 프롬프트로 확장합니다.</p>
         </div>
-        <button onClick={openAIVisualizationCenter}>AI 투시도 생성</button>
+        <div className="button-row">
+          <button onClick={openAIVisualizationCenter}>AI 투시도 생성</button>
+          <button onClick={openBoardGenerationCenter}>디자인 보드 생성</button>
+        </div>
       </div>
 
       <div className="wizard-layout">

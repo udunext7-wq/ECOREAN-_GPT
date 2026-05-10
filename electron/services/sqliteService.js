@@ -33,6 +33,7 @@ const { buildDefectPayload } = require('./defectService');
 const { buildCommunicationMessage, defaultCommunicationTemplates } = require('./communicationService');
 const { buildEstimateIntelligence } = require('./aiEstimateIntelligenceService');
 const { buildVisualizationPromptSet, pickPromptByType, injectPromptIntoWorkflow } = require('./visualizationService');
+const { BOARD_TEMPLATES, buildBoardLayout, exportBoardPdf, shouldRecommendPortfolioCandidate } = require('./boardGenerationService');
 const { requestManualGeneration } = require('./visualizationProviders/manualProvider');
 const { healthCheck: comfyUiHealthCheck, queuePrompt: queueComfyUiPrompt, downloadImages: downloadComfyUiImages } = require('./visualizationProviders/comfyuiProvider');
 const { requestExternalApiGeneration } = require('./visualizationProviders/externalApiProvider');
@@ -78,6 +79,9 @@ function createSqliteService({ app }) {
   const visualizationExportDir = app && app.isPackaged
     ? path.join(app.getPath('userData'), 'export', 'visualizations')
     : path.join(__dirname, '..', '..', 'export', 'visualizations');
+  const boardExportDir = app && app.isPackaged
+    ? path.join(app.getPath('userData'), 'export', 'boards')
+    : path.join(__dirname, '..', '..', 'export', 'boards');
 
   const dbPaths = {
     project: path.join(databaseDir, 'project.db'),
@@ -399,6 +403,63 @@ function createSqliteService({ app }) {
         status TEXT NOT NULL,
         message TEXT NOT NULL,
         created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS design_board_templates (
+        id TEXT PRIMARY KEY,
+        template_name TEXT NOT NULL,
+        typography_json TEXT NOT NULL,
+        spacing_json TEXT NOT NULL,
+        grid_style TEXT NOT NULL,
+        image_ratio TEXT NOT NULL,
+        section_ordering_json TEXT NOT NULL,
+        background_style TEXT NOT NULL,
+        is_active INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS design_boards (
+        id TEXT PRIMARY KEY,
+        board_type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        subtitle TEXT NOT NULL,
+        project_id TEXT,
+        estimate_id TEXT,
+        project_name TEXT NOT NULL,
+        template_id TEXT NOT NULL,
+        board_layout_json TEXT NOT NULL,
+        export_path TEXT,
+        status TEXT NOT NULL,
+        print_format TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS design_board_sections (
+        id TEXT PRIMARY KEY,
+        board_id TEXT NOT NULL,
+        section_type TEXT NOT NULL,
+        section_title TEXT NOT NULL,
+        sort_order INTEGER NOT NULL,
+        content_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS portfolio_candidates (
+        id TEXT PRIMARY KEY,
+        board_id TEXT,
+        project_id TEXT,
+        featured_project TEXT NOT NULL,
+        featured_space TEXT NOT NULL,
+        featured_image TEXT NOT NULL,
+        final_margin_rate REAL NOT NULL,
+        completion_quality TEXT NOT NULL,
+        client_claims TEXT NOT NULL,
+        defect_status TEXT NOT NULL,
+        recommendation_status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS portfolio_projects (
@@ -2610,6 +2671,7 @@ function createSqliteService({ app }) {
     seedKitchenPricingStandardV1();
     seedUniversalProjectTypeConfigs();
     seedVendorRealPriceIntegrationLayer();
+    seedDesignBoardTemplates();
 
     if (countRows(db.logs, 'notification_logs') === 0) {
       seedNotificationLogs();
@@ -5067,6 +5129,299 @@ function createSqliteService({ app }) {
       floorplanCenterData: getFloorplanCenterData({ floorplanId, estimateId }),
       emptyState: mappedBriefs.length === 0
     };
+  }
+
+  function mapDesignBoardTemplate(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      templateName: row.template_name,
+      typography: fromJson(row.typography_json, {}),
+      spacing: fromJson(row.spacing_json, {}),
+      gridStyle: row.grid_style,
+      imageRatio: row.image_ratio,
+      sectionOrdering: fromJson(row.section_ordering_json, []),
+      backgroundStyle: row.background_style,
+      isActive: Boolean(row.is_active),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  function mapDesignBoard(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      boardType: row.board_type,
+      title: row.title,
+      subtitle: row.subtitle,
+      projectId: row.project_id,
+      estimateId: row.estimate_id,
+      projectName: row.project_name,
+      templateId: row.template_id,
+      boardLayout: fromJson(row.board_layout_json, {}),
+      exportPath: row.export_path,
+      status: row.status,
+      printFormat: row.print_format,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  function mapDesignBoardSection(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      boardId: row.board_id,
+      sectionType: row.section_type,
+      sectionTitle: row.section_title,
+      sortOrder: row.sort_order,
+      content: fromJson(row.content_json, {}),
+      createdAt: row.created_at
+    };
+  }
+
+  function mapPortfolioCandidate(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      boardId: row.board_id,
+      projectId: row.project_id,
+      featuredProject: row.featured_project,
+      featuredSpace: row.featured_space,
+      featuredImage: row.featured_image,
+      finalMarginRate: row.final_margin_rate,
+      completionQuality: row.completion_quality,
+      clientClaims: row.client_claims,
+      defectStatus: row.defect_status,
+      recommendationStatus: row.recommendation_status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  function getApprovedVisualizationResults({ estimateId = null, briefId = null } = {}) {
+    if (briefId) {
+      return db.project.prepare(`
+        SELECT *
+        FROM visualization_results
+        WHERE brief_id = ? AND (status = 'APPROVED' OR result_type = 'PROPOSAL')
+        ORDER BY COALESCE(approved_at, created_at) DESC
+        LIMIT 30
+      `).all(briefId).map(mapVisualizationResult);
+    }
+    if (estimateId) {
+      return db.project.prepare(`
+        SELECT vr.*
+        FROM visualization_results vr
+        JOIN visualization_briefs vb ON vb.id = vr.brief_id
+        WHERE vb.estimate_id = ? AND (vr.status = 'APPROVED' OR vr.result_type = 'PROPOSAL')
+        ORDER BY COALESCE(vr.approved_at, vr.created_at) DESC
+        LIMIT 30
+      `).all(estimateId).map(mapVisualizationResult);
+    }
+    return db.project.prepare(`
+      SELECT *
+      FROM visualization_results
+      WHERE status = 'APPROVED' OR result_type = 'PROPOSAL'
+      ORDER BY COALESCE(approved_at, created_at) DESC
+      LIMIT 30
+    `).all().map(mapVisualizationResult);
+  }
+
+  function getDesignBoardTemplates() {
+    seedDesignBoardTemplates();
+    return db.project.prepare('SELECT * FROM design_board_templates WHERE is_active = 1 ORDER BY template_name').all().map(mapDesignBoardTemplate);
+  }
+
+  function buildEstimateSummaryFromSpaces(summaries = [], payloadSummary = {}) {
+    const totalAmount = summaries.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const totalCost = summaries.reduce((sum, item) => sum + Number(item.cost || 0), 0);
+    return {
+      totalAmount: Number(payloadSummary.totalAmount ?? totalAmount),
+      totalCost: Number(payloadSummary.totalCost ?? totalCost),
+      scheduleDays: Number(payloadSummary.scheduleDays || 0),
+      processGroups: payloadSummary.processGroups || summaries.map((item) => ({
+        processKo: item.spaceName,
+        amount: item.amount,
+        cost: item.cost,
+        margin: item.margin
+      }))
+    };
+  }
+
+  function getBoardGenerationCenterData({ boardId = null, estimateId = null, projectId = null } = {}) {
+    seedDesignBoardTemplates();
+    let boards;
+    if (boardId) boards = db.project.prepare('SELECT * FROM design_boards WHERE id = ? ORDER BY updated_at DESC').all(boardId);
+    else if (estimateId) boards = db.project.prepare('SELECT * FROM design_boards WHERE estimate_id = ? ORDER BY updated_at DESC LIMIT 30').all(estimateId);
+    else if (projectId) boards = db.project.prepare('SELECT * FROM design_boards WHERE project_id = ? ORDER BY updated_at DESC LIMIT 30').all(projectId);
+    else boards = db.project.prepare('SELECT * FROM design_boards ORDER BY updated_at DESC LIMIT 30').all();
+
+    const mappedBoards = boards.map(mapDesignBoard);
+    const activeBoard = mappedBoards[0] || null;
+    const sections = activeBoard
+      ? db.project.prepare('SELECT * FROM design_board_sections WHERE board_id = ? ORDER BY sort_order').all(activeBoard.id).map(mapDesignBoardSection)
+      : [];
+    const approvedImages = getApprovedVisualizationResults({ estimateId });
+    const portfolioCandidates = db.project.prepare('SELECT * FROM portfolio_candidates ORDER BY updated_at DESC LIMIT 30').all().map(mapPortfolioCandidate);
+    return {
+      templates: getDesignBoardTemplates(),
+      boards: mappedBoards,
+      activeBoard,
+      activeSections: sections,
+      approvedImages,
+      portfolioCandidates,
+      stats: {
+        boardCount: mappedBoards.length,
+        approvedImageCount: approvedImages.length,
+        portfolioCandidateCount: portfolioCandidates.length,
+        exportedBoardCount: mappedBoards.filter((board) => Boolean(board.exportPath)).length
+      },
+      emptyState: mappedBoards.length === 0
+    };
+  }
+
+  function createDesignBoard(payload = {}) {
+    seedDesignBoardTemplates();
+    const createdAt = nowIso();
+    const boardId = payload.boardId || `BOARD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const boardType = String(payload.boardType || 'CLIENT_PROPOSAL').toUpperCase();
+    const templateId = payload.templateId || 'TPL-PREMIUM-MINIMAL';
+    const selectedImageIds = Array.isArray(payload.selectedImageIds) ? payload.selectedImageIds : [];
+    const selectedImages = selectedImageIds.length
+      ? db.project.prepare(`SELECT * FROM visualization_results WHERE id IN (${selectedImageIds.map(() => '?').join(',')})`).all(...selectedImageIds).map(mapVisualizationResult)
+      : getApprovedVisualizationResults({ estimateId: payload.estimateId }).slice(0, 6);
+    const manualImages = (payload.manualImages || [])
+      .filter((image) => image && image.imagePath)
+      .map((image, index) => ({
+        id: image.id || `MANUAL-IMAGE-${index + 1}`,
+        imagePath: String(image.imagePath),
+        resultType: String(image.resultType || 'PERSPECTIVE').toUpperCase(),
+        status: image.status || 'APPROVED'
+      }));
+    const images = [...selectedImages, ...manualImages];
+    const floorplanRow = payload.floorplanId
+      ? db.project.prepare('SELECT * FROM floorplans WHERE id = ?').get(payload.floorplanId)
+      : db.project.prepare('SELECT * FROM floorplans ORDER BY created_at DESC LIMIT 1').get();
+    const floorplan = mapFloorplan(floorplanRow);
+    const spaces = floorplan
+      ? db.project.prepare('SELECT * FROM floorplan_spaces WHERE floorplan_id = ? ORDER BY created_at').all(floorplan.id).map(mapFloorplanSpace)
+      : [];
+    const spaceLinks = spaces.length
+      ? db.project.prepare(`SELECT * FROM space_estimate_links WHERE space_id IN (${spaces.map(() => '?').join(',')})`).all(...spaces.map((space) => space.id)).map(mapSpaceEstimateLink)
+      : [];
+    const spaceMap = new Map(spaces.map((space) => [space.id, space]));
+    const summaries = buildSpaceSummary(spaceLinks).map((summary) => ({
+      ...summary,
+      spaceName: spaceMap.get(summary.spaceId)?.spaceName || summary.spaceId
+    }));
+    const moodboardRow = payload.moodboardId
+      ? db.project.prepare('SELECT * FROM moodboard_profiles WHERE id = ?').get(payload.moodboardId)
+      : floorplan
+        ? db.project.prepare('SELECT * FROM moodboard_profiles WHERE floorplan_id = ? ORDER BY updated_at DESC LIMIT 1').get(floorplan.id)
+        : null;
+    const moodboard = moodboardRow ? {
+      style: moodboardRow.style,
+      colorTone: moodboardRow.color_tone,
+      primaryMaterials: moodboardRow.primary_materials,
+      lightingMood: moodboardRow.lighting_mood
+    } : {};
+    const estimateSummary = buildEstimateSummaryFromSpaces(summaries, payload.estimateSummary || {});
+    const title = payload.title || (boardType === 'PORTFOLIO_BOARD' ? 'ECOREAN Portfolio Board' : 'ECOREAN Interior Proposal');
+    const subtitle = payload.subtitle || (boardType === 'MATERIAL_BOARD' ? 'Material Selection Board' : 'Premium Interior Presentation');
+    const projectName = payload.projectName || floorplan?.fileName || 'ECOREAN Project';
+    const layout = buildBoardLayout({
+      boardType,
+      templateId,
+      images,
+      spaces,
+      floorplan,
+      moodboard,
+      estimateSummary,
+      projectName,
+      title,
+      subtitle,
+      materialSelections: payload.materialSelections || [],
+      printFormat: payload.printFormat || 'A3_LANDSCAPE'
+    });
+    db.project.prepare(`
+      INSERT INTO design_boards (
+        id, board_type, title, subtitle, project_id, estimate_id, project_name,
+        template_id, board_layout_json, export_path, status, print_format, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      boardId,
+      boardType,
+      title,
+      subtitle,
+      payload.projectId || null,
+      payload.estimateId || null,
+      projectName,
+      templateId,
+      toJson(layout),
+      null,
+      payload.status || 'DRAFT',
+      layout.printSettings.format,
+      createdAt,
+      createdAt
+    );
+    const insertSection = db.project.prepare(`
+      INSERT INTO design_board_sections (
+        id, board_id, section_type, section_title, sort_order, content_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    layout.sections.forEach((section) => {
+      insertSection.run(`${boardId}-${section.id}`, boardId, section.sectionType, section.titleKo, section.sortOrder, toJson(section), createdAt);
+    });
+    insertNotification({ level: 'INFO', messageKo: `디자인 보드 생성: ${title}`, relatedProjectId: payload.projectId || payload.estimateId || boardId, actionKo: '보드 생성', createdAt });
+    return { boardId, board: mapDesignBoard(db.project.prepare('SELECT * FROM design_boards WHERE id = ?').get(boardId)), layout, boardData: getBoardGenerationCenterData({ boardId }) };
+  }
+
+  function exportDesignBoardPdf(payload = {}) {
+    if (!payload.boardId) throw new Error('boardId is required');
+    const row = db.project.prepare('SELECT * FROM design_boards WHERE id = ?').get(payload.boardId);
+    if (!row) throw new Error('design board not found');
+    const board = mapDesignBoard(row);
+    const layout = board.boardLayout;
+    const exported = exportBoardPdf({ board, layout, exportDir: boardExportDir, timestamp: Date.now() });
+    const updatedAt = nowIso();
+    db.project.prepare('UPDATE design_boards SET export_path = ?, status = ?, updated_at = ? WHERE id = ?').run(exported.filePath, 'EXPORTED', updatedAt, payload.boardId);
+    insertNotification({ level: 'INFO', messageKo: `디자인 보드 PDF 출력: ${exported.fileName}`, relatedProjectId: board.projectId || board.estimateId || board.id, actionKo: 'PDF 출력', createdAt: updatedAt });
+    return { ...exported, board: mapDesignBoard(db.project.prepare('SELECT * FROM design_boards WHERE id = ?').get(payload.boardId)), boardData: getBoardGenerationCenterData({ boardId: payload.boardId }) };
+  }
+
+  function createPortfolioCandidate(payload = {}) {
+    const createdAt = nowIso();
+    const candidateId = payload.candidateId || `PORT-CAND-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const board = payload.boardId ? mapDesignBoard(db.project.prepare('SELECT * FROM design_boards WHERE id = ?').get(payload.boardId)) : null;
+    const recommended = shouldRecommendPortfolioCandidate({
+      finalMarginRate: payload.finalMarginRate,
+      hasMajorDefect: payload.hasMajorDefect,
+      hasSevereClientComplaint: payload.hasSevereClientComplaint
+    });
+    db.project.prepare(`
+      INSERT INTO portfolio_candidates (
+        id, board_id, project_id, featured_project, featured_space, featured_image,
+        final_margin_rate, completion_quality, client_claims, defect_status,
+        recommendation_status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      candidateId,
+      payload.boardId || null,
+      payload.projectId || board?.projectId || null,
+      String(payload.featuredProject || board?.projectName || 'ECOREAN Project'),
+      String(payload.featuredSpace || '대표 공간'),
+      String(payload.featuredImage || board?.boardLayout?.imagePlacements?.[0]?.imagePath || '이미지 미지정'),
+      Number(payload.finalMarginRate || 0),
+      String(payload.completionQuality || 'GOOD'),
+      String(payload.clientClaims || (payload.hasSevereClientComplaint ? 'SEVERE_CLAIM' : 'NONE')),
+      String(payload.defectStatus || (payload.hasMajorDefect ? 'MAJOR_DEFECT' : 'NONE')),
+      recommended ? 'RECOMMENDED' : 'REVIEW_REQUIRED',
+      createdAt,
+      createdAt
+    );
+    return { candidateId, recommended, candidate: mapPortfolioCandidate(db.project.prepare('SELECT * FROM portfolio_candidates WHERE id = ?').get(candidateId)), boardData: getBoardGenerationCenterData({ boardId: payload.boardId }) };
   }
 
   function getAiEstimateContext(projectType = 'bathroom_remodel') {
@@ -8389,6 +8744,31 @@ function createSqliteService({ app }) {
       createdAt,
       createdAt
     ));
+  }
+
+  function seedDesignBoardTemplates() {
+    const createdAt = nowIso();
+    const insert = db.project.prepare(`
+      INSERT OR REPLACE INTO design_board_templates (
+        id, template_name, typography_json, spacing_json, grid_style, image_ratio,
+        section_ordering_json, background_style, is_active, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    BOARD_TEMPLATES.forEach((template) => {
+      insert.run(
+        template.id,
+        template.templateName,
+        toJson(template.typography),
+        toJson(template.spacing),
+        template.gridStyle,
+        template.imageRatio,
+        toJson(template.sectionOrdering),
+        template.backgroundStyle,
+        1,
+        createdAt,
+        createdAt
+      );
+    });
   }
 
   function seedNotificationLogs() {
@@ -15486,7 +15866,12 @@ function createSqliteService({ app }) {
       comfyUiSettingsCount: countRows(db.project, 'comfyui_settings'),
       comfyUiWorkflowPresetCount: countRows(db.project, 'comfyui_workflow_presets'),
       comfyUiJobLogCount: countRows(db.project, 'comfyui_job_logs'),
+      designBoardTemplateCount: countRows(db.project, 'design_board_templates'),
+      designBoardCount: countRows(db.project, 'design_boards'),
+      designBoardSectionCount: countRows(db.project, 'design_board_sections'),
+      portfolioCandidateCount: countRows(db.project, 'portfolio_candidates'),
       visualizationExportDir,
+      boardExportDir,
       estimateExportDir,
       contractExportDir,
       constructionScheduleCount: countRows(db.project, 'construction_schedules'),
@@ -15658,6 +16043,10 @@ function createSqliteService({ app }) {
     refreshComfyUiJobStatus,
     attachVisualizationResult,
     decideVisualizationResult,
+    getBoardGenerationCenterData,
+    createDesignBoard,
+    exportDesignBoardPdf,
+    createPortfolioCandidate,
     getProjectExecutionReadiness,
     transitionProjectToExecution,
     getSiteOperationStatus,

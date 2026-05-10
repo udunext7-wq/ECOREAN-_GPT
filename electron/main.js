@@ -55,6 +55,10 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:visualization:comfyui:refresh', (_event, payload) => sqliteService.refreshComfyUiJobStatus(payload));
   ipcMain.handle('boc:visualization:result:attach', (_event, payload) => sqliteService.attachVisualizationResult(payload));
   ipcMain.handle('boc:visualization:result:decide', (_event, payload) => sqliteService.decideVisualizationResult(payload));
+  ipcMain.handle('boc:board:get', (_event, payload = {}) => sqliteService.getBoardGenerationCenterData(payload));
+  ipcMain.handle('boc:board:create', (_event, payload) => sqliteService.createDesignBoard(payload));
+  ipcMain.handle('boc:board:export-pdf', (_event, payload) => sqliteService.exportDesignBoardPdf(payload));
+  ipcMain.handle('boc:board:portfolio-candidate', (_event, payload) => sqliteService.createPortfolioCandidate(payload));
   ipcMain.handle('boc:execution:readiness', (_event, payload) => sqliteService.getProjectExecutionReadiness(payload));
   ipcMain.handle('boc:execution:transition', (_event, payload) => sqliteService.transitionProjectToExecution(payload));
   ipcMain.handle('boc:site:status', (_event, payload) => sqliteService.getSiteOperationStatus(payload));

@@ -17,6 +17,7 @@ import { FullRemodelingEstimateWizardView } from '../../app/estimate/FullRemodel
 import { KitchenEstimateWizardView } from '../../app/estimate/KitchenEstimateWizardView';
 import { NewEstimateWizard } from '../../app/estimate/NewEstimateWizard';
 import { CeoControlTowerView } from '../../app/dashboard/CeoControlTowerView';
+import { BoardGenerationCenterView } from '../../app/board/BoardGenerationCenterView';
 import { AIVisualizationCenterView } from '../../app/design/AIVisualizationCenterView';
 import { FloorplanCenterView } from '../../app/design/FloorplanCenterView';
 import { ExecutionManagementView } from '../../app/execution/ExecutionManagementView';
@@ -54,6 +55,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     ontology: '3D 온톨로지',
     floorplanCenter: '평면도 / 아이소메트릭',
     aiVisualization: 'AI 투시도 생성',
+    boardGeneration: '디자인 보드 생성',
     masterDb: 'Master DB Admin',
     estimate: 'New Estimate Wizard',
     kitchenEstimate: '주방 자동견적',
@@ -81,7 +83,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     profitAutomation: 'Profit Automation Loop'
   };
 
-  const isWideView = ['masterDb', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'profitTemplates', 'profitAutomation'].includes(view);
+  const isWideView = ['masterDb', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
 
   return (
     <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
@@ -93,7 +95,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
         <button onClick={() => onNavigate('dashboard')}>닫기</button>
       </div>
 
-      {view !== 'estimate' && view !== 'bathroomEstimate' && view !== 'kitchenEstimate' && view !== 'fullRemodelingEstimate' && view !== 'ontology' && view !== 'floorplanCenter' && view !== 'aiVisualization' ? (
+      {view !== 'estimate' && view !== 'bathroomEstimate' && view !== 'kitchenEstimate' && view !== 'fullRemodelingEstimate' && view !== 'ontology' && view !== 'floorplanCenter' && view !== 'aiVisualization' && view !== 'boardGeneration' ? (
         <div className="drawer-block">
           <strong>{project.projectNameKo}</strong>
           <p>{getProjectDecisionText(project)}</p>
@@ -103,6 +105,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'ontology' ? <Ontology3DView initialProjectId={project.projectId} /> : null}
       {view === 'floorplanCenter' ? <FloorplanCenterView /> : null}
       {view === 'aiVisualization' ? <AIVisualizationCenterView /> : null}
+      {view === 'boardGeneration' ? <BoardGenerationCenterView /> : null}
       {view === 'masterDb' ? <MasterDbAdminView /> : null}
       {view === 'caseLibrary' ? <CaseLibraryView /> : null}
       {view === 'costCapture' ? <CostCaptureDashboard /> : null}
