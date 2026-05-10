@@ -4,6 +4,7 @@ export type AIVisualizationData = {
   jobs: Array<Record<string, unknown>>;
   results: Array<Record<string, unknown>>;
   stats: Record<string, unknown>;
+  comfyUi?: Record<string, unknown>;
   floorplanCenterData: Record<string, unknown>;
   emptyState: boolean;
 };
@@ -36,6 +37,42 @@ export async function queueVisualizationJob(payload: Record<string, unknown>): P
   const bocDb = api();
   if (!bocDb.queueVisualizationJob) throw new Error('Visualization queue API is not available.');
   return bocDb.queueVisualizationJob(payload);
+}
+
+export async function getComfyUiSettingsData(): Promise<Record<string, unknown>> {
+  const bocDb = api();
+  if (!bocDb.getComfyUiSettingsData) throw new Error('ComfyUI settings API is not available.');
+  return bocDb.getComfyUiSettingsData();
+}
+
+export async function saveComfyUiSettings(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const bocDb = api();
+  if (!bocDb.saveComfyUiSettings) throw new Error('ComfyUI settings save API is not available.');
+  return bocDb.saveComfyUiSettings(payload);
+}
+
+export async function checkComfyUiHealth(): Promise<Record<string, unknown>> {
+  const bocDb = api();
+  if (!bocDb.checkComfyUiHealth) throw new Error('ComfyUI health API is not available.');
+  return bocDb.checkComfyUiHealth();
+}
+
+export async function saveComfyUiWorkflowPreset(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const bocDb = api();
+  if (!bocDb.saveComfyUiWorkflowPreset) throw new Error('ComfyUI workflow preset API is not available.');
+  return bocDb.saveComfyUiWorkflowPreset(payload);
+}
+
+export async function runComfyUiGeneration(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const bocDb = api();
+  if (!bocDb.runComfyUiGeneration) throw new Error('ComfyUI generation API is not available.');
+  return bocDb.runComfyUiGeneration(payload);
+}
+
+export async function refreshComfyUiJobStatus(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const bocDb = api();
+  if (!bocDb.refreshComfyUiJobStatus) throw new Error('ComfyUI refresh API is not available.');
+  return bocDb.refreshComfyUiJobStatus(payload);
 }
 
 export async function attachVisualizationResult(payload: Record<string, unknown>): Promise<Record<string, unknown>> {

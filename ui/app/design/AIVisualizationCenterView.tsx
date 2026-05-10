@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   attachVisualizationResult,
+  checkComfyUiHealth,
   createVisualizationBrief,
   decideVisualizationResult,
   generateVisualizationPrompts,
   getAIVisualizationCenterData,
   queueVisualizationJob,
+  refreshComfyUiJobStatus,
+  runComfyUiGeneration,
+  saveComfyUiSettings,
+  saveComfyUiWorkflowPreset,
   type AIVisualizationData
 } from '../../services/design-service/visualizationService';
 
@@ -15,6 +20,7 @@ const emptyData: AIVisualizationData = {
   jobs: [],
   results: [],
   stats: {},
+  comfyUi: {},
   floorplanCenterData: {},
   emptyState: true
 };
@@ -46,6 +52,19 @@ export function AIVisualizationCenterView() {
   const [reviewNote, setReviewNote] = useState('');
   const [messageKo, setMessageKo] = useState('먼저 공간 브리프를 생성하세요.');
   const [isBusy, setIsBusy] = useState(false);
+  const [comfySettings, setComfySettings] = useState({ host: '127.0.0.1', port: 8188, defaultWorkflowId: '', isEnabled: true });
+  const [workflowPreset, setWorkflowPreset] = useState({
+    presetName: '기본 투시도 워크플로우',
+    presetType: 'PERSPECTIVE',
+    workflowJson: '{\n  "6": { "inputs": { "text": "" }, "class_type": "CLIPTextEncode" },\n  "7": { "inputs": { "text": "" }, "class_type": "CLIPTextEncode" }\n}',
+    positivePromptNodeId: '6',
+    negativePromptNodeId: '7',
+    seedNodeId: '',
+    widthNodeId: '',
+    heightNodeId: '',
+    outputNodeId: '',
+    setDefault: true
+  });
   const [briefForm, setBriefForm] = useState({
     estimateType: 'full_remodel',
     estimateId: 'MANUAL',
@@ -63,6 +82,15 @@ export function AIVisualizationCenterView() {
     const next = await getAIVisualizationCenterData(payload);
     setData(next);
     const spaces = ((next.floorplanCenterData?.spaces || []) as Array<Record<string, unknown>>);
+    const settings = (next.comfyUi as Record<string, unknown> | undefined)?.settings as Record<string, unknown> | undefined;
+    if (settings) {
+      setComfySettings({
+        host: String(settings.host || '127.0.0.1'),
+        port: Number(settings.port || 8188),
+        defaultWorkflowId: String(settings.defaultWorkflowId || ''),
+        isEnabled: settings.isEnabled !== false
+      });
+    }
     if (!selectedSpaceId && spaces[0]?.id) setSelectedSpaceId(String(spaces[0].id));
     if (!selectedBriefId && next.briefs[0]?.id) setSelectedBriefId(String(next.briefs[0].id));
     if (!selectedJobId && next.jobs[0]?.id) setSelectedJobId(String(next.jobs[0].id));
@@ -141,6 +169,90 @@ export function AIVisualizationCenterView() {
     }
   }
 
+  async function handleSaveComfySettings() {
+    setIsBusy(true);
+    try {
+      const result = await saveComfyUiSettings(comfySettings);
+      setData((current) => ({ ...current, comfyUi: result }));
+      setMessageKo('ComfyUI 연결 설정이 저장되었습니다.');
+    } catch (error) {
+      setMessageKo(error instanceof Error ? error.message : 'ComfyUI 설정 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleCheckComfyConnection() {
+    setIsBusy(true);
+    try {
+      const result = await checkComfyUiHealth();
+      setData((current) => ({ ...current, comfyUi: result.comfyUiData as Record<string, unknown> }));
+      setMessageKo(result.ok ? 'ComfyUI 연결 성공' : 'ComfyUI가 실행 중이 아닙니다. ComfyUI를 실행한 뒤 다시 시도하세요.');
+    } catch (error) {
+      setMessageKo(error instanceof Error ? error.message : 'ComfyUI 연결 테스트 중 오류가 발생했습니다.');
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleSaveWorkflowPreset() {
+    setIsBusy(true);
+    try {
+      const result = await saveComfyUiWorkflowPreset(workflowPreset);
+      setData((current) => ({ ...current, comfyUi: result.comfyUiData as Record<string, unknown> }));
+      setComfySettings((current) => ({ ...current, defaultWorkflowId: String(result.presetId || current.defaultWorkflowId) }));
+      setMessageKo('ComfyUI 워크플로우 프리셋이 저장되었습니다.');
+    } catch (error) {
+      setMessageKo(error instanceof Error ? error.message : '워크플로우 JSON 또는 노드 ID를 확인하세요.');
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleRunComfyUi() {
+    let jobId = selectedJobId;
+    setIsBusy(true);
+    try {
+      if (!jobId) {
+        if (!selectedBriefId) throw new Error('먼저 브리프를 생성하세요.');
+        const queued = await queueVisualizationJob({
+          briefId: selectedBriefId,
+          promptType,
+          prompt: activePrompt,
+          negativePrompt,
+          provider: 'COMFYUI',
+          workflowPresetId: comfySettings.defaultWorkflowId || undefined
+        });
+        jobId = String(queued.jobId || '');
+        setSelectedJobId(jobId);
+      }
+      const result = await runComfyUiGeneration({ jobId, workflowPresetId: comfySettings.defaultWorkflowId || undefined });
+      setData(result.visualizationData as AIVisualizationData);
+      setMessageKo(result.ok ? 'ComfyUI 생성 요청이 전송되었습니다. 생성 상태를 확인하세요.' : String(result.errorMessage || 'ComfyUI가 실행 중이 아닙니다. ComfyUI를 실행한 뒤 다시 시도하세요.'));
+    } catch (error) {
+      setMessageKo(error instanceof Error ? error.message : 'ComfyUI 생성 요청 중 오류가 발생했습니다.');
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleRefreshComfyResult() {
+    if (!selectedJobId) {
+      setMessageKo('상태를 확인할 생성 작업을 선택하세요.');
+      return;
+    }
+    setIsBusy(true);
+    try {
+      const result = await refreshComfyUiJobStatus({ jobId: selectedJobId });
+      setData(result.visualizationData as AIVisualizationData);
+      setMessageKo(result.ok ? 'ComfyUI 생성 상태를 확인했습니다.' : String(result.errorMessage || '결과 확인에 실패했습니다.'));
+    } catch (error) {
+      setMessageKo(error instanceof Error ? error.message : 'ComfyUI 결과 확인 중 오류가 발생했습니다.');
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
   async function handleAttachResult() {
     if (!selectedJobId) {
       setMessageKo('이미지를 첨부할 생성 작업을 선택하세요.');
@@ -188,9 +300,11 @@ export function AIVisualizationCenterView() {
 
       <div className="wizard-summary-grid visualization-stats">
         <div><span>생성 대기</span><strong>{String(data.stats.queued || 0)}</strong></div>
+        <div><span>생성 중</span><strong>{String(data.stats.generating || 0)}</strong></div>
         <div><span>생성 완료</span><strong>{String(data.stats.completed || 0)}</strong></div>
         <div><span>승인 대기</span><strong>{String(data.stats.pendingReview || 0)}</strong></div>
         <div><span>승인됨</span><strong>{String(data.stats.approved || 0)}</strong></div>
+        <div><span>실패</span><strong>{String(data.stats.failed || 0)}</strong></div>
         <div><span>수정 필요</span><strong>{String(data.stats.revisionRequired || 0)}</strong></div>
       </div>
 
@@ -237,11 +351,59 @@ export function AIVisualizationCenterView() {
           </section>
 
           <section className="drawer-block">
+            <h3>ComfyUI 연결 설정</h3>
+            <div className="form-grid">
+              <label>서버 주소<input value={comfySettings.host} onChange={(event) => setComfySettings({ ...comfySettings, host: event.target.value })} /></label>
+              <label>포트<input type="number" value={comfySettings.port} onChange={(event) => setComfySettings({ ...comfySettings, port: Number(event.target.value) })} /></label>
+              <label>기본 워크플로우<input value={comfySettings.defaultWorkflowId} onChange={(event) => setComfySettings({ ...comfySettings, defaultWorkflowId: event.target.value })} /></label>
+              <label>연결 상태<input value={String(((data.comfyUi?.settings as Record<string, unknown> | undefined)?.lastHealthStatus) || 'NOT_CHECKED')} readOnly /></label>
+            </div>
+            <div className="button-row">
+              <button onClick={handleSaveComfySettings} disabled={isBusy}>저장</button>
+              <button onClick={handleCheckComfyConnection} disabled={isBusy}>연결 테스트</button>
+            </div>
+            <p>ComfyUI가 실행 중이 아니어도 MANUAL 프롬프트 복사와 이미지 첨부는 계속 사용할 수 있습니다.</p>
+          </section>
+
+          <section className="drawer-block">
+            <h3>워크플로우 프리셋</h3>
+            <div className="form-grid">
+              <label>프리셋 이름<input value={workflowPreset.presetName} onChange={(event) => setWorkflowPreset({ ...workflowPreset, presetName: event.target.value })} /></label>
+              <label>프리셋 유형
+                <select value={workflowPreset.presetType} onChange={(event) => setWorkflowPreset({ ...workflowPreset, presetType: event.target.value })}>
+                  <option value="PERSPECTIVE">PERSPECTIVE</option>
+                  <option value="ISOMETRIC">ISOMETRIC</option>
+                  <option value="MOODBOARD">MOODBOARD</option>
+                  <option value="DETAIL">DETAIL</option>
+                </select>
+              </label>
+              <label>Positive Prompt Node ID<input value={workflowPreset.positivePromptNodeId} onChange={(event) => setWorkflowPreset({ ...workflowPreset, positivePromptNodeId: event.target.value })} /></label>
+              <label>Negative Prompt Node ID<input value={workflowPreset.negativePromptNodeId} onChange={(event) => setWorkflowPreset({ ...workflowPreset, negativePromptNodeId: event.target.value })} /></label>
+              <label>Seed Node ID<input value={workflowPreset.seedNodeId} onChange={(event) => setWorkflowPreset({ ...workflowPreset, seedNodeId: event.target.value })} /></label>
+              <label>Width / Height Node ID<input value={`${workflowPreset.widthNodeId}/${workflowPreset.heightNodeId}`} onChange={(event) => {
+                const [widthNodeId = '', heightNodeId = ''] = event.target.value.split('/');
+                setWorkflowPreset({ ...workflowPreset, widthNodeId, heightNodeId });
+              }} /></label>
+            </div>
+            <label>Workflow JSON<textarea className="prompt-output compact" value={workflowPreset.workflowJson} onChange={(event) => setWorkflowPreset({ ...workflowPreset, workflowJson: event.target.value })} /></label>
+            <div className="button-row">
+              <button onClick={handleSaveWorkflowPreset} disabled={isBusy}>프리셋 추가 / 편집</button>
+              <button onClick={handleRunComfyUi} disabled={isBusy || !activePrompt}>ComfyUI로 생성</button>
+              <button onClick={handleRefreshComfyResult} disabled={isBusy || !selectedJobId}>생성 상태 확인</button>
+            </div>
+          </section>
+
+          <section className="drawer-block">
             <h3>생성 대기열</h3>
             {data.jobs.length ? data.jobs.map((job) => (
               <button key={String(job.id)} className={selectedJobId === String(job.id) ? 'action-row active' : 'action-row'} onClick={() => setSelectedJobId(String(job.id))}>
                 <span>{String(job.promptType)}</span>
-                <div><strong>{String(job.provider)}</strong><p>{koStatus(job.status)} / {String(job.requestedAt)}</p></div>
+                <div>
+                  <strong>Provider: {String(job.provider)}</strong>
+                  <p>{koStatus(job.status)} / {String(job.requestedAt)}</p>
+                  {job.lastError || job.errorMessage ? <p>{String(job.lastError || job.errorMessage)}</p> : null}
+                  {job.outputPath ? <p>Result file: {String(job.outputPath)}</p> : null}
+                </div>
                 <em>{String(job.id).slice(-6)}</em>
               </button>
             )) : <p>생성 대기 항목이 없습니다.</p>}
@@ -278,7 +440,7 @@ export function AIVisualizationCenterView() {
           <section className="drawer-block">
             <h3>승인 / 반려</h3>
             <p>승인된 이미지는 고객용 견적서, 제안 문서, 포트폴리오 후보, 계약 보조 자료에 연결할 수 있습니다.</p>
-            <p>실제 API 전송은 아직 없으며, 현재는 복사 가능한 MANUAL 워크플로입니다.</p>
+            <p>ComfyUI가 켜져 있으면 실제 생성 요청을 보내고, 꺼져 있으면 수동 첨부 워크플로로 안전하게 전환합니다.</p>
           </section>
           <p className="assistant-message">{messageKo}</p>
         </aside>

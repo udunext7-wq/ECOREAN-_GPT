@@ -47,6 +47,12 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:visualization:brief:create', (_event, payload) => sqliteService.createVisualizationBrief(payload));
   ipcMain.handle('boc:visualization:prompts:generate', (_event, payload) => sqliteService.generateVisualizationPrompts(payload));
   ipcMain.handle('boc:visualization:job:queue', (_event, payload) => sqliteService.queueVisualizationJob(payload));
+  ipcMain.handle('boc:visualization:comfyui:get', () => sqliteService.getComfyUiSettingsData());
+  ipcMain.handle('boc:visualization:comfyui:settings:save', (_event, payload) => sqliteService.saveComfyUiSettings(payload));
+  ipcMain.handle('boc:visualization:comfyui:health', () => sqliteService.checkComfyUiHealth());
+  ipcMain.handle('boc:visualization:comfyui:preset:save', (_event, payload) => sqliteService.saveComfyUiWorkflowPreset(payload));
+  ipcMain.handle('boc:visualization:comfyui:run', (_event, payload) => sqliteService.runComfyUiGeneration(payload));
+  ipcMain.handle('boc:visualization:comfyui:refresh', (_event, payload) => sqliteService.refreshComfyUiJobStatus(payload));
   ipcMain.handle('boc:visualization:result:attach', (_event, payload) => sqliteService.attachVisualizationResult(payload));
   ipcMain.handle('boc:visualization:result:decide', (_event, payload) => sqliteService.decideVisualizationResult(payload));
   ipcMain.handle('boc:execution:readiness', (_event, payload) => sqliteService.getProjectExecutionReadiness(payload));

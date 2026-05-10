@@ -32,9 +32,9 @@ const { buildChangeOrderPayload } = require('./changeOrderService');
 const { buildDefectPayload } = require('./defectService');
 const { buildCommunicationMessage, defaultCommunicationTemplates } = require('./communicationService');
 const { buildEstimateIntelligence } = require('./aiEstimateIntelligenceService');
-const { buildVisualizationPromptSet, pickPromptByType } = require('./visualizationService');
+const { buildVisualizationPromptSet, pickPromptByType, injectPromptIntoWorkflow } = require('./visualizationService');
 const { requestManualGeneration } = require('./visualizationProviders/manualProvider');
-const { requestComfyUiGeneration } = require('./visualizationProviders/comfyuiProvider');
+const { healthCheck: comfyUiHealthCheck, queuePrompt: queueComfyUiPrompt, downloadImages: downloadComfyUiImages } = require('./visualizationProviders/comfyuiProvider');
 const { requestExternalApiGeneration } = require('./visualizationProviders/externalApiProvider');
 
 function nowIso() {
@@ -75,6 +75,9 @@ function createSqliteService({ app }) {
   const contractExportDir = app && app.isPackaged
     ? path.join(app.getPath('userData'), 'export', 'contracts')
     : path.join(__dirname, '..', '..', 'export', 'contracts');
+  const visualizationExportDir = app && app.isPackaged
+    ? path.join(app.getPath('userData'), 'export', 'visualizations')
+    : path.join(__dirname, '..', '..', 'export', 'visualizations');
 
   const dbPaths = {
     project: path.join(databaseDir, 'project.db'),
@@ -356,6 +359,45 @@ function createSqliteService({ app }) {
         status TEXT NOT NULL,
         review_note TEXT NOT NULL,
         approved_at TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS comfyui_settings (
+        id TEXT PRIMARY KEY,
+        host TEXT NOT NULL,
+        port INTEGER NOT NULL,
+        base_url TEXT NOT NULL,
+        default_workflow_id TEXT,
+        is_enabled INTEGER NOT NULL,
+        last_health_status TEXT NOT NULL,
+        last_checked_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS comfyui_workflow_presets (
+        id TEXT PRIMARY KEY,
+        preset_name TEXT NOT NULL,
+        preset_type TEXT NOT NULL,
+        workflow_json TEXT NOT NULL,
+        positive_prompt_node_id TEXT NOT NULL,
+        negative_prompt_node_id TEXT NOT NULL,
+        seed_node_id TEXT,
+        width_node_id TEXT,
+        height_node_id TEXT,
+        output_node_id TEXT,
+        is_active INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS comfyui_job_logs (
+        id TEXT PRIMARY KEY,
+        visualization_job_id TEXT NOT NULL,
+        provider_job_id TEXT,
+        action TEXT NOT NULL,
+        status TEXT NOT NULL,
+        message TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
 
@@ -2533,6 +2575,11 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'cashflow_snapshots', 'today_actual_outflow', 'today_actual_outflow INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'cashflow_snapshots', 'seven_day_actual_inflow', 'seven_day_actual_inflow INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'cashflow_snapshots', 'seven_day_actual_outflow', 'seven_day_actual_outflow INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'visualization_jobs', 'provider_job_id', 'provider_job_id TEXT');
+    ensureColumn(db.project, 'visualization_jobs', 'workflow_preset_id', 'workflow_preset_id TEXT');
+    ensureColumn(db.project, 'visualization_jobs', 'output_path', 'output_path TEXT');
+    ensureColumn(db.project, 'visualization_jobs', 'retry_count', 'retry_count INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'visualization_jobs', 'last_error', 'last_error TEXT');
   }
 
   function countRows(database, tableName) {
@@ -4571,7 +4618,12 @@ function createSqliteService({ app }) {
       requestedAt: row.requested_at,
       startedAt: row.started_at,
       completedAt: row.completed_at,
-      errorMessage: row.error_message
+      errorMessage: row.error_message,
+      providerJobId: row.provider_job_id,
+      workflowPresetId: row.workflow_preset_id,
+      outputPath: row.output_path,
+      retryCount: row.retry_count,
+      lastError: row.last_error
     };
   }
 
@@ -4593,6 +4645,140 @@ function createSqliteService({ app }) {
 
   function getVisualizationBriefRow(briefId) {
     return db.project.prepare('SELECT * FROM visualization_briefs WHERE id = ?').get(briefId);
+  }
+
+  function mapComfyUiSettings(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      host: row.host,
+      port: row.port,
+      baseUrl: row.base_url,
+      defaultWorkflowId: row.default_workflow_id,
+      isEnabled: Boolean(row.is_enabled),
+      lastHealthStatus: row.last_health_status,
+      lastCheckedAt: row.last_checked_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  function mapComfyUiWorkflowPreset(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      presetName: row.preset_name,
+      presetType: row.preset_type,
+      workflowJson: row.workflow_json,
+      workflow: fromJson(row.workflow_json, {}),
+      positivePromptNodeId: row.positive_prompt_node_id,
+      negativePromptNodeId: row.negative_prompt_node_id,
+      seedNodeId: row.seed_node_id,
+      widthNodeId: row.width_node_id,
+      heightNodeId: row.height_node_id,
+      outputNodeId: row.output_node_id,
+      isActive: Boolean(row.is_active),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  function getComfyUiSettingsRow() {
+    let row = db.project.prepare('SELECT * FROM comfyui_settings WHERE id = ?').get('DEFAULT');
+    if (!row) {
+      const createdAt = nowIso();
+      db.project.prepare(`
+        INSERT INTO comfyui_settings (
+          id, host, port, base_url, default_workflow_id, is_enabled,
+          last_health_status, last_checked_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run('DEFAULT', '127.0.0.1', 8188, 'http://127.0.0.1:8188', null, 0, 'NOT_CHECKED', null, createdAt, createdAt);
+      row = db.project.prepare('SELECT * FROM comfyui_settings WHERE id = ?').get('DEFAULT');
+    }
+    return row;
+  }
+
+  function getComfyUiSettingsData() {
+    const settings = mapComfyUiSettings(getComfyUiSettingsRow());
+    const presets = db.project.prepare('SELECT * FROM comfyui_workflow_presets ORDER BY updated_at DESC').all().map(mapComfyUiWorkflowPreset);
+    return {
+      settings,
+      presets,
+      jobLogs: db.project.prepare('SELECT * FROM comfyui_job_logs ORDER BY created_at DESC LIMIT 30').all()
+    };
+  }
+
+  function saveComfyUiSettings(payload = {}) {
+    const current = getComfyUiSettingsRow();
+    const updatedAt = nowIso();
+    const host = String(payload.host || current.host || '127.0.0.1');
+    const port = Number(payload.port || current.port || 8188);
+    const baseUrl = String(payload.baseUrl || payload.base_url || `http://${host}:${port}`).replace(/\/$/, '');
+    db.project.prepare(`
+      UPDATE comfyui_settings
+      SET host = ?, port = ?, base_url = ?, default_workflow_id = ?, is_enabled = ?, updated_at = ?
+      WHERE id = ?
+    `).run(host, port, baseUrl, payload.defaultWorkflowId || payload.default_workflow_id || current.default_workflow_id || null, payload.isEnabled === false ? 0 : 1, updatedAt, 'DEFAULT');
+    return getComfyUiSettingsData();
+  }
+
+  function saveComfyUiWorkflowPreset(payload = {}) {
+    const createdAt = nowIso();
+    const presetId = payload.presetId || `COMFY-PRESET-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const workflowJson = typeof payload.workflowJson === 'string' ? payload.workflowJson : toJson(payload.workflow || {});
+    JSON.parse(workflowJson);
+    db.project.prepare(`
+      INSERT OR REPLACE INTO comfyui_workflow_presets (
+        id, preset_name, preset_type, workflow_json, positive_prompt_node_id,
+        negative_prompt_node_id, seed_node_id, width_node_id, height_node_id,
+        output_node_id, is_active, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      presetId,
+      String(payload.presetName || '기본 ComfyUI 워크플로우'),
+      String(payload.presetType || 'PERSPECTIVE').toUpperCase(),
+      workflowJson,
+      String(payload.positivePromptNodeId || ''),
+      String(payload.negativePromptNodeId || ''),
+      payload.seedNodeId || null,
+      payload.widthNodeId || null,
+      payload.heightNodeId || null,
+      payload.outputNodeId || null,
+      payload.isActive === false ? 0 : 1,
+      payload.createdAt || createdAt,
+      createdAt
+    );
+    if (payload.setDefault) {
+      db.project.prepare('UPDATE comfyui_settings SET default_workflow_id = ?, updated_at = ? WHERE id = ?').run(presetId, createdAt, 'DEFAULT');
+    }
+    return { presetId, preset: mapComfyUiWorkflowPreset(db.project.prepare('SELECT * FROM comfyui_workflow_presets WHERE id = ?').get(presetId)), comfyUiData: getComfyUiSettingsData() };
+  }
+
+  function getComfyUiPresetForJob(job, explicitPresetId = null) {
+    const settings = getComfyUiSettingsRow();
+    const presetId = explicitPresetId || job.workflow_preset_id || settings.default_workflow_id;
+    if (presetId) {
+      const row = db.project.prepare('SELECT * FROM comfyui_workflow_presets WHERE id = ?').get(presetId);
+      if (row) return mapComfyUiWorkflowPreset(row);
+    }
+    return mapComfyUiWorkflowPreset(db.project.prepare(`
+      SELECT *
+      FROM comfyui_workflow_presets
+      WHERE preset_type = ? AND is_active = 1
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get(job.prompt_type));
+  }
+
+  function insertComfyUiJobLog({ visualizationJobId, providerJobId = null, action, status, message }) {
+    const createdAt = nowIso();
+    const logId = `COMFY-LOG-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    db.project.prepare(`
+      INSERT INTO comfyui_job_logs (
+        id, visualization_job_id, provider_job_id, action, status, message, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(logId, visualizationJobId, providerJobId, action, status, message, createdAt);
+    return logId;
   }
 
   function createVisualizationBrief(payload = {}) {
@@ -4660,7 +4846,7 @@ function createSqliteService({ app }) {
   }
 
   function runVisualizationProvider(provider, job) {
-    if (provider === 'COMFYUI') return requestComfyUiGeneration(job);
+    if (provider === 'COMFYUI') return { provider: 'COMFYUI', status: 'READY_FOR_COMFYUI', message: 'ComfyUI generation must be executed from ComfyUI action.' };
     if (provider === 'EXTERNAL_API') return requestExternalApiGeneration(job);
     return requestManualGeneration(job);
   }
@@ -4680,11 +4866,122 @@ function createSqliteService({ app }) {
     db.project.prepare(`
       INSERT INTO visualization_jobs (
         id, brief_id, prompt_type, prompt, negative_prompt, provider, status,
-        requested_at, started_at, completed_at, error_message
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(jobId, payload.briefId, promptType, prompt, negativePrompt, provider, status, createdAt, null, null, errorMessage);
+        requested_at, started_at, completed_at, error_message, provider_job_id,
+        workflow_preset_id, output_path, retry_count, last_error
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(jobId, payload.briefId, promptType, prompt, negativePrompt, provider, status, createdAt, null, null, errorMessage, null, payload.workflowPresetId || null, null, 0, errorMessage);
     insertNotification({ level: status === 'FAILED' ? 'WARNING' : 'INFO', messageKo: `AI 이미지 생성 대기 등록: ${promptType}`, relatedProjectId: payload.briefId, actionKo: '시각화 대기열', createdAt });
     return { jobId, job: mapVisualizationJob(db.project.prepare('SELECT * FROM visualization_jobs WHERE id = ?').get(jobId)), providerResult, visualizationData: getAIVisualizationCenterData({ briefId: payload.briefId }) };
+  }
+
+  async function checkComfyUiHealth() {
+    const checkedAt = nowIso();
+    const settings = mapComfyUiSettings(getComfyUiSettingsRow());
+    const result = await comfyUiHealthCheck(settings);
+    db.project.prepare(`
+      UPDATE comfyui_settings
+      SET last_health_status = ?, last_checked_at = ?, updated_at = ?
+      WHERE id = ?
+    `).run(result.status, checkedAt, checkedAt, 'DEFAULT');
+    return { ...result, comfyUiData: getComfyUiSettingsData() };
+  }
+
+  function saveComfyUiFailedJob(jobId, message, action = 'COMFYUI_FAILED') {
+    const updatedAt = nowIso();
+    db.project.prepare(`
+      UPDATE visualization_jobs
+      SET provider = 'COMFYUI', status = 'FAILED', completed_at = ?, error_message = ?, last_error = ?,
+          retry_count = retry_count + 1
+      WHERE id = ?
+    `).run(updatedAt, message, message, jobId);
+    insertComfyUiJobLog({ visualizationJobId: jobId, action, status: 'FAILED', message });
+    return mapVisualizationJob(db.project.prepare('SELECT * FROM visualization_jobs WHERE id = ?').get(jobId));
+  }
+
+  function saveSimulatedComfyUiResult(job, presetId = null) {
+    fs.mkdirSync(visualizationExportDir, { recursive: true });
+    const completedAt = nowIso();
+    const filePath = path.join(visualizationExportDir, `visualization_${job.id}_${Date.now()}.png`);
+    const onePixelPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=', 'base64');
+    fs.writeFileSync(filePath, onePixelPng);
+    db.project.prepare(`
+      UPDATE visualization_jobs
+      SET provider = 'COMFYUI', status = 'COMPLETED', provider_job_id = ?, workflow_preset_id = ?,
+          output_path = ?, started_at = COALESCE(started_at, ?), completed_at = ?, error_message = NULL, last_error = NULL
+      WHERE id = ?
+    `).run(`SIM-${job.id}`, presetId, filePath, completedAt, completedAt, job.id);
+    const attached = attachVisualizationResult({ jobId: job.id, imagePath: filePath, resultType: job.prompt_type, status: 'PENDING_REVIEW' });
+    insertComfyUiJobLog({ visualizationJobId: job.id, providerJobId: `SIM-${job.id}`, action: 'SIMULATED_GENERATION', status: 'COMPLETED', message: filePath });
+    return { jobId: job.id, job: mapVisualizationJob(db.project.prepare('SELECT * FROM visualization_jobs WHERE id = ?').get(job.id)), result: attached.result, visualizationData: getAIVisualizationCenterData({ briefId: job.brief_id }) };
+  }
+
+  async function runComfyUiGeneration(payload = {}) {
+    const startedAt = nowIso();
+    if (!payload.jobId) throw new Error('jobId is required');
+    const job = db.project.prepare('SELECT * FROM visualization_jobs WHERE id = ?').get(payload.jobId);
+    if (!job) throw new Error('visualization job not found');
+    const preset = getComfyUiPresetForJob(job, payload.workflowPresetId);
+    if (!preset && !payload.simulateSuccess) {
+      const failed = saveComfyUiFailedJob(job.id, 'ComfyUI 워크플로우 프리셋이 없습니다.', 'MISSING_WORKFLOW_PRESET');
+      return { ok: false, errorMessage: failed.lastError, job: failed, visualizationData: getAIVisualizationCenterData({ briefId: job.brief_id }) };
+    }
+    if (payload.simulateSuccess) return saveSimulatedComfyUiResult(job, preset?.id || payload.workflowPresetId || null);
+
+    const settings = mapComfyUiSettings(getComfyUiSettingsRow());
+    const health = await comfyUiHealthCheck(settings);
+    if (!health.ok) {
+      const failed = saveComfyUiFailedJob(job.id, 'ComfyUI가 실행 중이 아닙니다. ComfyUI를 실행한 뒤 다시 시도하세요.', 'HEALTH_CHECK');
+      db.project.prepare('UPDATE comfyui_settings SET last_health_status = ?, last_checked_at = ?, updated_at = ? WHERE id = ?').run(health.status, startedAt, startedAt, 'DEFAULT');
+      return { ok: false, health, errorMessage: failed.lastError, job: failed, visualizationData: getAIVisualizationCenterData({ briefId: job.brief_id }) };
+    }
+
+    const workflow = injectPromptIntoWorkflow(preset.workflow, preset, {
+      prompt: job.prompt,
+      negativePrompt: job.negative_prompt,
+      seed: payload.seed,
+      width: payload.width,
+      height: payload.height
+    });
+    db.project.prepare(`
+      UPDATE visualization_jobs
+      SET provider = 'COMFYUI', status = 'GENERATING', workflow_preset_id = ?, started_at = ?, error_message = NULL, last_error = NULL
+      WHERE id = ?
+    `).run(preset.id, startedAt, job.id);
+    const queue = await queueComfyUiPrompt(settings, workflow, { clientId: `ecorean-${job.id}` });
+    if (queue.status === 'FAILED') {
+      const failed = saveComfyUiFailedJob(job.id, queue.errorMessage || 'ComfyUI 생성 요청 실패', 'QUEUE_PROMPT');
+      return { ok: false, providerResult: queue, errorMessage: failed.lastError, job: failed, visualizationData: getAIVisualizationCenterData({ briefId: job.brief_id }) };
+    }
+    db.project.prepare('UPDATE visualization_jobs SET provider_job_id = ?, status = ? WHERE id = ?').run(queue.providerJobId, 'GENERATING', job.id);
+    insertComfyUiJobLog({ visualizationJobId: job.id, providerJobId: queue.providerJobId, action: 'QUEUE_PROMPT', status: 'GENERATING', message: 'ComfyUI 생성 요청 완료' });
+    return { ok: true, providerResult: queue, job: mapVisualizationJob(db.project.prepare('SELECT * FROM visualization_jobs WHERE id = ?').get(job.id)), visualizationData: getAIVisualizationCenterData({ briefId: job.brief_id }) };
+  }
+
+  async function refreshComfyUiJobStatus(payload = {}) {
+    if (!payload.jobId) throw new Error('jobId is required');
+    const job = db.project.prepare('SELECT * FROM visualization_jobs WHERE id = ?').get(payload.jobId);
+    if (!job) throw new Error('visualization job not found');
+    if (!job.provider_job_id) {
+      return { ok: false, errorMessage: 'ComfyUI provider job id가 없습니다.', job: mapVisualizationJob(job), visualizationData: getAIVisualizationCenterData({ briefId: job.brief_id }) };
+    }
+    const settings = mapComfyUiSettings(getComfyUiSettingsRow());
+    const download = await downloadComfyUiImages(settings, job.provider_job_id);
+    if (download.status === 'FAILED') {
+      const failed = saveComfyUiFailedJob(job.id, download.errorMessage || 'ComfyUI 결과 확인 실패', 'DOWNLOAD_IMAGES');
+      return { ok: false, providerResult: download, errorMessage: failed.lastError, job: failed, visualizationData: getAIVisualizationCenterData({ briefId: job.brief_id }) };
+    }
+    if (download.status === 'GENERATING') {
+      insertComfyUiJobLog({ visualizationJobId: job.id, providerJobId: job.provider_job_id, action: 'POLL_HISTORY', status: 'GENERATING', message: '아직 생성 중입니다.' });
+      return { ok: true, providerResult: download, job: mapVisualizationJob(job), visualizationData: getAIVisualizationCenterData({ briefId: job.brief_id }) };
+    }
+    fs.mkdirSync(visualizationExportDir, { recursive: true });
+    const first = download.downloads[0];
+    const filePath = path.join(visualizationExportDir, `visualization_${job.id}_${Date.now()}.png`);
+    fs.writeFileSync(filePath, first.bytes);
+    db.project.prepare('UPDATE visualization_jobs SET status = ?, output_path = ?, completed_at = ?, error_message = NULL, last_error = NULL WHERE id = ?').run('COMPLETED', filePath, nowIso(), job.id);
+    const attached = attachVisualizationResult({ jobId: job.id, imagePath: filePath, resultType: job.prompt_type, status: 'PENDING_REVIEW' });
+    insertComfyUiJobLog({ visualizationJobId: job.id, providerJobId: job.provider_job_id, action: 'DOWNLOAD_IMAGES', status: 'COMPLETED', message: filePath });
+    return { ok: true, providerResult: download, result: attached.result, job: mapVisualizationJob(db.project.prepare('SELECT * FROM visualization_jobs WHERE id = ?').get(job.id)), visualizationData: getAIVisualizationCenterData({ briefId: job.brief_id }) };
   }
 
   function attachVisualizationResult(payload = {}) {
@@ -4759,11 +5056,14 @@ function createSqliteService({ app }) {
       results,
       stats: {
         queued: jobs.filter((job) => job.status === 'QUEUED').length,
+        generating: jobs.filter((job) => job.status === 'GENERATING').length,
+        failed: jobs.filter((job) => job.status === 'FAILED').length,
         completed: jobs.filter((job) => job.status === 'COMPLETED').length,
         pendingReview: results.filter((result) => result.status === 'PENDING_REVIEW').length,
         approved: results.filter((result) => result.status === 'APPROVED').length,
         revisionRequired: results.filter((result) => result.status === 'REVISION_REQUIRED').length
       },
+      comfyUi: getComfyUiSettingsData(),
       floorplanCenterData: getFloorplanCenterData({ floorplanId, estimateId }),
       emptyState: mappedBriefs.length === 0
     };
@@ -15183,6 +15483,10 @@ function createSqliteService({ app }) {
       visualizationBriefCount: countRows(db.project, 'visualization_briefs'),
       visualizationJobCount: countRows(db.project, 'visualization_jobs'),
       visualizationResultCount: countRows(db.project, 'visualization_results'),
+      comfyUiSettingsCount: countRows(db.project, 'comfyui_settings'),
+      comfyUiWorkflowPresetCount: countRows(db.project, 'comfyui_workflow_presets'),
+      comfyUiJobLogCount: countRows(db.project, 'comfyui_job_logs'),
+      visualizationExportDir,
       estimateExportDir,
       contractExportDir,
       constructionScheduleCount: countRows(db.project, 'construction_schedules'),
@@ -15346,6 +15650,12 @@ function createSqliteService({ app }) {
     createVisualizationBrief,
     generateVisualizationPrompts,
     queueVisualizationJob,
+    checkComfyUiHealth,
+    getComfyUiSettingsData,
+    saveComfyUiSettings,
+    saveComfyUiWorkflowPreset,
+    runComfyUiGeneration,
+    refreshComfyUiJobStatus,
     attachVisualizationResult,
     decideVisualizationResult,
     getProjectExecutionReadiness,

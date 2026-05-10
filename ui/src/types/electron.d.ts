@@ -59,6 +59,12 @@ declare global {
         createVisualizationBrief: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         generateVisualizationPrompts: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         queueVisualizationJob: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getComfyUiSettingsData: () => Promise<Record<string, unknown>>;
+        saveComfyUiSettings: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        checkComfyUiHealth: () => Promise<Record<string, unknown>>;
+        saveComfyUiWorkflowPreset: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        runComfyUiGeneration: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        refreshComfyUiJobStatus: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         attachVisualizationResult: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         decideVisualizationResult: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getProjectExecutionReadiness: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

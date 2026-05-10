@@ -82,7 +82,32 @@ function pickPromptByType(promptSet, promptType = 'PERSPECTIVE') {
   return promptSet.perspectivePrompt;
 }
 
+function cloneWorkflow(workflow) {
+  if (typeof workflow === 'string') return JSON.parse(workflow);
+  return JSON.parse(JSON.stringify(workflow || {}));
+}
+
+function setNodeInput(workflow, nodeId, candidates, value) {
+  if (!nodeId || value == null || value === '') return;
+  const node = workflow[String(nodeId)];
+  if (!node) return;
+  node.inputs = node.inputs || {};
+  const existingKey = candidates.find((key) => Object.prototype.hasOwnProperty.call(node.inputs, key));
+  node.inputs[existingKey || candidates[0]] = value;
+}
+
+function injectPromptIntoWorkflow(workflow, preset = {}, promptData = {}) {
+  const injected = cloneWorkflow(workflow);
+  setNodeInput(injected, preset.positivePromptNodeId || preset.positive_prompt_node_id, ['text', 'prompt', 'positive'], promptData.prompt);
+  setNodeInput(injected, preset.negativePromptNodeId || preset.negative_prompt_node_id, ['text', 'negative', 'negative_prompt'], promptData.negativePrompt);
+  setNodeInput(injected, preset.seedNodeId || preset.seed_node_id, ['seed'], promptData.seed);
+  setNodeInput(injected, preset.widthNodeId || preset.width_node_id, ['width'], promptData.width);
+  setNodeInput(injected, preset.heightNodeId || preset.height_node_id, ['height'], promptData.height);
+  return injected;
+}
+
 module.exports = {
   buildVisualizationPromptSet,
-  pickPromptByType
+  pickPromptByType,
+  injectPromptIntoWorkflow
 };
