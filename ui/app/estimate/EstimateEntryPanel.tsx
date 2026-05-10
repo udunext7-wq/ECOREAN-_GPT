@@ -28,6 +28,9 @@ export function EstimateEntryPanel({ onOpen }: Props) {
         <button className="secondary-dashboard-button" onClick={() => onOpen('floorplanCenter', 'click')}>
           평면도 / 아이소메트릭
         </button>
+        <button className="secondary-dashboard-button" onClick={() => onOpen('aiVisualization', 'click')}>
+          AI 투시도 생성
+        </button>
         <button className="secondary-dashboard-button" onClick={() => onOpen('closing', 'warning')}>
           Project Closing
         </button>
@@ -63,6 +66,11 @@ export function EstimateEntryPanel({ onOpen }: Props) {
           <span>평면도 / 아이소메트릭</span>
           <strong>공간별 견적 연결과 투시도 프롬프트</strong>
           <em>공간 기반 견적</em>
+        </button>
+        <button className="entry-button primary" onClick={() => onOpen('aiVisualization', 'click')}>
+          <span>AI 투시도 생성</span>
+          <strong>공간 브리프 / 프롬프트 / 생성 대기열</strong>
+          <em>제안 이미지 준비</em>
         </button>
         <button className="entry-button disabled" disabled style={{ display: 'none' }}>
           <span>전체 리모델링</span>

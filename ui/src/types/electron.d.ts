@@ -55,6 +55,12 @@ declare global {
         linkEstimateItemToSpace: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         saveMoodboardProfile: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         generatePerspectivePrompt: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getAIVisualizationCenterData: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createVisualizationBrief: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        generateVisualizationPrompts: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        queueVisualizationJob: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        attachVisualizationResult: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        decideVisualizationResult: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getProjectExecutionReadiness: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         transitionProjectToExecution: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; executionProject: Record<string, unknown> }>;
         getSiteOperationStatus: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

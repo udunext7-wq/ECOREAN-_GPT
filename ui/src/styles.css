@@ -2645,6 +2645,19 @@ button:hover {
   line-height: 1.5;
 }
 
+.prompt-output.compact {
+  min-height: 90px;
+}
+
+.visualization-stats {
+  margin: 18px 0;
+}
+
+.visualization-stats div {
+  border-color: rgba(56, 189, 248, 0.24);
+  background: rgba(255, 255, 255, 0.05);
+}
+
 @media (max-width: 1100px) {
   .estimate-entry-grid,
   .wizard-form-grid,

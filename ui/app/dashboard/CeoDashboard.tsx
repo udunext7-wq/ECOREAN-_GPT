@@ -73,7 +73,8 @@ export function CeoDashboard() {
       openCommunication: 'communication',
       openPaymentCenter: 'payment',
       openProjectClosing: 'closing',
-      openFloorplanCenter: 'floorplanCenter'
+      openFloorplanCenter: 'floorplanCenter',
+      openAIVisualization: 'aiVisualization'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
@@ -241,6 +242,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('bathroomEstimate', 'click')}>새 견적</button>
         <button onClick={() => openView('ontology', 'click')}>3D Ontology View</button>
         <button onClick={() => openView('floorplanCenter', 'click')}>평면도 / 아이소메트릭</button>
+        <button onClick={() => openView('aiVisualization', 'click')}>AI 투시도 생성</button>
         <button onClick={() => openView('project', 'click')}>Project Drill Down</button>
         <button onClick={() => openView('masterDb', 'click')}>Master DB Review</button>
         <button onClick={() => openView('costCapture', 'warning')}>Cost Capture</button>

@@ -43,6 +43,12 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:floorplan:space-link:create', (_event, payload) => sqliteService.linkEstimateItemToSpace(payload));
   ipcMain.handle('boc:floorplan:moodboard:save', (_event, payload) => sqliteService.saveMoodboardProfile(payload));
   ipcMain.handle('boc:floorplan:prompt:generate', (_event, payload) => sqliteService.generatePerspectivePrompt(payload));
+  ipcMain.handle('boc:visualization:get', (_event, payload = {}) => sqliteService.getAIVisualizationCenterData(payload));
+  ipcMain.handle('boc:visualization:brief:create', (_event, payload) => sqliteService.createVisualizationBrief(payload));
+  ipcMain.handle('boc:visualization:prompts:generate', (_event, payload) => sqliteService.generateVisualizationPrompts(payload));
+  ipcMain.handle('boc:visualization:job:queue', (_event, payload) => sqliteService.queueVisualizationJob(payload));
+  ipcMain.handle('boc:visualization:result:attach', (_event, payload) => sqliteService.attachVisualizationResult(payload));
+  ipcMain.handle('boc:visualization:result:decide', (_event, payload) => sqliteService.decideVisualizationResult(payload));
   ipcMain.handle('boc:execution:readiness', (_event, payload) => sqliteService.getProjectExecutionReadiness(payload));
   ipcMain.handle('boc:execution:transition', (_event, payload) => sqliteService.transitionProjectToExecution(payload));
   ipcMain.handle('boc:site:status', (_event, payload) => sqliteService.getSiteOperationStatus(payload));

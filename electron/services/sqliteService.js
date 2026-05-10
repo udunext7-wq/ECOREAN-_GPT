@@ -32,6 +32,10 @@ const { buildChangeOrderPayload } = require('./changeOrderService');
 const { buildDefectPayload } = require('./defectService');
 const { buildCommunicationMessage, defaultCommunicationTemplates } = require('./communicationService');
 const { buildEstimateIntelligence } = require('./aiEstimateIntelligenceService');
+const { buildVisualizationPromptSet, pickPromptByType } = require('./visualizationService');
+const { requestManualGeneration } = require('./visualizationProviders/manualProvider');
+const { requestComfyUiGeneration } = require('./visualizationProviders/comfyuiProvider');
+const { requestExternalApiGeneration } = require('./visualizationProviders/externalApiProvider');
 
 function nowIso() {
   return new Date().toISOString();
@@ -306,6 +310,53 @@ function createSqliteService({ app }) {
         reference_notes TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS visualization_briefs (
+        id TEXT PRIMARY KEY,
+        estimate_type TEXT NOT NULL,
+        estimate_id TEXT,
+        floorplan_id TEXT,
+        space_id TEXT,
+        project_name TEXT NOT NULL,
+        customer_name TEXT NOT NULL,
+        space_name TEXT NOT NULL,
+        space_type TEXT NOT NULL,
+        area_m2 REAL NOT NULL,
+        style TEXT NOT NULL,
+        color_tone TEXT NOT NULL,
+        material_keywords TEXT NOT NULL,
+        lighting_mood TEXT NOT NULL,
+        design_notes TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS visualization_jobs (
+        id TEXT PRIMARY KEY,
+        brief_id TEXT NOT NULL,
+        prompt_type TEXT NOT NULL,
+        prompt TEXT NOT NULL,
+        negative_prompt TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        status TEXT NOT NULL,
+        requested_at TEXT NOT NULL,
+        started_at TEXT,
+        completed_at TEXT,
+        error_message TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS visualization_results (
+        id TEXT PRIMARY KEY,
+        job_id TEXT NOT NULL,
+        brief_id TEXT NOT NULL,
+        image_path TEXT NOT NULL,
+        thumbnail_path TEXT,
+        result_type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        review_note TEXT NOT NULL,
+        approved_at TEXT,
+        created_at TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS portfolio_projects (
@@ -4481,6 +4532,240 @@ function createSqliteService({ app }) {
       prompts,
       moodboards,
       emptyState: !activeFloorplan
+    };
+  }
+
+  function mapVisualizationBrief(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      estimateType: row.estimate_type,
+      estimateId: row.estimate_id,
+      floorplanId: row.floorplan_id,
+      spaceId: row.space_id,
+      projectName: row.project_name,
+      customerName: row.customer_name,
+      spaceName: row.space_name,
+      spaceType: row.space_type,
+      areaM2: row.area_m2,
+      style: row.style,
+      colorTone: row.color_tone,
+      materialKeywords: row.material_keywords,
+      lightingMood: row.lighting_mood,
+      designNotes: row.design_notes,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  function mapVisualizationJob(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      briefId: row.brief_id,
+      promptType: row.prompt_type,
+      prompt: row.prompt,
+      negativePrompt: row.negative_prompt,
+      provider: row.provider,
+      status: row.status,
+      requestedAt: row.requested_at,
+      startedAt: row.started_at,
+      completedAt: row.completed_at,
+      errorMessage: row.error_message
+    };
+  }
+
+  function mapVisualizationResult(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      jobId: row.job_id,
+      briefId: row.brief_id,
+      imagePath: row.image_path,
+      thumbnailPath: row.thumbnail_path,
+      resultType: row.result_type,
+      status: row.status,
+      reviewNote: row.review_note,
+      approvedAt: row.approved_at,
+      createdAt: row.created_at
+    };
+  }
+
+  function getVisualizationBriefRow(briefId) {
+    return db.project.prepare('SELECT * FROM visualization_briefs WHERE id = ?').get(briefId);
+  }
+
+  function createVisualizationBrief(payload = {}) {
+    const createdAt = nowIso();
+    const briefId = payload.briefId || `VIS-BRIEF-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const space = payload.spaceId ? mapFloorplanSpace(db.project.prepare('SELECT * FROM floorplan_spaces WHERE id = ?').get(payload.spaceId)) : null;
+    const floorplanId = payload.floorplanId || space?.floorplanId || null;
+    const moodboard = payload.moodboardId
+      ? db.project.prepare('SELECT * FROM moodboard_profiles WHERE id = ?').get(payload.moodboardId)
+      : floorplanId
+        ? db.project.prepare('SELECT * FROM moodboard_profiles WHERE floorplan_id = ? ORDER BY updated_at DESC LIMIT 1').get(floorplanId)
+        : null;
+    const floorplan = floorplanId ? mapFloorplan(db.project.prepare('SELECT * FROM floorplans WHERE id = ?').get(floorplanId)) : null;
+    const designNotes = [
+      payload.designNotes || '',
+      space?.notes ? `space notes: ${space.notes}` : '',
+      floorplan?.fileName ? `floorplan file: ${floorplan.fileName}` : '',
+      payload.isometricNotes ? `isometric notes: ${payload.isometricNotes}` : ''
+    ].filter(Boolean).join('\n');
+
+    db.project.prepare(`
+      INSERT OR REPLACE INTO visualization_briefs (
+        id, estimate_type, estimate_id, floorplan_id, space_id, project_name,
+        customer_name, space_name, space_type, area_m2, style, color_tone,
+        material_keywords, lighting_mood, design_notes, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      briefId,
+      String(payload.estimateType || payload.estimate_type || 'manual'),
+      payload.estimateId || null,
+      floorplanId,
+      payload.spaceId || null,
+      String(payload.projectName || '미지정 프로젝트'),
+      String(payload.customerName || '미지정 고객'),
+      String(payload.spaceName || space?.spaceName || '공간'),
+      String(payload.spaceType || space?.spaceType || '기타'),
+      Number(payload.areaM2 || space?.areaM2 || 0),
+      String(payload.style || moodboard?.style || 'modern Korean interior'),
+      String(payload.colorTone || moodboard?.color_tone || 'warm neutral'),
+      String(payload.materialKeywords || payload.selectedMaterials || moodboard?.primary_materials || 'selected materials only'),
+      String(payload.lightingMood || moodboard?.lighting_mood || 'soft realistic lighting'),
+      designNotes,
+      createdAt,
+      createdAt
+    );
+
+    const brief = mapVisualizationBrief(getVisualizationBriefRow(briefId));
+    insertNotification({ level: 'INFO', messageKo: `AI 이미지 브리프 생성: ${brief.spaceName}`, relatedProjectId: brief.estimateId || brief.floorplanId || brief.id, actionKo: 'AI 시각화', createdAt });
+    return { briefId, brief, prompts: buildVisualizationPromptSet(brief), visualizationData: getAIVisualizationCenterData({ briefId }) };
+  }
+
+  function generateVisualizationPrompts(payload = {}) {
+    const briefRow = payload.briefId ? getVisualizationBriefRow(payload.briefId) : null;
+    const brief = mapVisualizationBrief(briefRow) || {
+      spaceName: payload.spaceName || 'interior space',
+      spaceType: payload.spaceType || 'interior',
+      areaM2: payload.areaM2 || 0,
+      style: payload.style || 'modern Korean interior',
+      colorTone: payload.colorTone || 'warm neutral',
+      materialKeywords: payload.materialKeywords || payload.selectedMaterials || 'selected materials only',
+      lightingMood: payload.lightingMood || 'soft realistic lighting',
+      designNotes: payload.designNotes || ''
+    };
+    return { brief, prompts: buildVisualizationPromptSet(brief) };
+  }
+
+  function runVisualizationProvider(provider, job) {
+    if (provider === 'COMFYUI') return requestComfyUiGeneration(job);
+    if (provider === 'EXTERNAL_API') return requestExternalApiGeneration(job);
+    return requestManualGeneration(job);
+  }
+
+  function queueVisualizationJob(payload = {}) {
+    const createdAt = nowIso();
+    if (!payload.briefId) throw new Error('briefId is required');
+    const promptType = String(payload.promptType || 'PERSPECTIVE').toUpperCase();
+    const provider = String(payload.provider || 'MANUAL').toUpperCase();
+    const promptSet = generateVisualizationPrompts({ briefId: payload.briefId }).prompts;
+    const prompt = String(payload.prompt || pickPromptByType(promptSet, promptType));
+    const negativePrompt = String(payload.negativePrompt || promptSet.negativePrompt);
+    const jobId = payload.jobId || `VIS-JOB-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const providerResult = runVisualizationProvider(provider, { jobId, promptType, prompt, negativePrompt });
+    const status = providerResult.status === 'PROVIDER_NOT_CONFIGURED' ? 'FAILED' : String(payload.status || 'QUEUED');
+    const errorMessage = providerResult.errorMessage || null;
+    db.project.prepare(`
+      INSERT INTO visualization_jobs (
+        id, brief_id, prompt_type, prompt, negative_prompt, provider, status,
+        requested_at, started_at, completed_at, error_message
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(jobId, payload.briefId, promptType, prompt, negativePrompt, provider, status, createdAt, null, null, errorMessage);
+    insertNotification({ level: status === 'FAILED' ? 'WARNING' : 'INFO', messageKo: `AI 이미지 생성 대기 등록: ${promptType}`, relatedProjectId: payload.briefId, actionKo: '시각화 대기열', createdAt });
+    return { jobId, job: mapVisualizationJob(db.project.prepare('SELECT * FROM visualization_jobs WHERE id = ?').get(jobId)), providerResult, visualizationData: getAIVisualizationCenterData({ briefId: payload.briefId }) };
+  }
+
+  function attachVisualizationResult(payload = {}) {
+    const createdAt = nowIso();
+    if (!payload.jobId) throw new Error('jobId is required');
+    const job = db.project.prepare('SELECT * FROM visualization_jobs WHERE id = ?').get(payload.jobId);
+    if (!job) throw new Error('visualization job not found');
+    const resultId = payload.resultId || `VIS-RESULT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    db.project.prepare(`
+      INSERT INTO visualization_results (
+        id, job_id, brief_id, image_path, thumbnail_path, result_type, status,
+        review_note, approved_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      resultId,
+      payload.jobId,
+      job.brief_id,
+      String(payload.imagePath || payload.image_path || 'MANUAL_IMAGE_PATH_REQUIRED'),
+      payload.thumbnailPath || null,
+      String(payload.resultType || job.prompt_type || 'PERSPECTIVE').toUpperCase(),
+      String(payload.status || 'PENDING_REVIEW'),
+      String(payload.reviewNote || ''),
+      null,
+      createdAt
+    );
+    db.project.prepare('UPDATE visualization_jobs SET status = ?, completed_at = ? WHERE id = ?').run('COMPLETED', createdAt, payload.jobId);
+    return { resultId, result: mapVisualizationResult(db.project.prepare('SELECT * FROM visualization_results WHERE id = ?').get(resultId)), visualizationData: getAIVisualizationCenterData({ briefId: job.brief_id }) };
+  }
+
+  function decideVisualizationResult(payload = {}) {
+    const decidedAt = nowIso();
+    if (!payload.resultId) throw new Error('resultId is required');
+    const action = String(payload.action || '').toUpperCase();
+    const statusMap = {
+      APPROVE: 'APPROVED',
+      REJECT: 'REJECTED',
+      REQUEST_REVISION: 'REVISION_REQUIRED',
+      SET_PROPOSAL: 'APPROVED'
+    };
+    const status = statusMap[action];
+    if (!status) throw new Error('Unsupported visualization review action');
+    const result = db.project.prepare('SELECT * FROM visualization_results WHERE id = ?').get(payload.resultId);
+    if (!result) throw new Error('visualization result not found');
+    const nextType = action === 'SET_PROPOSAL' ? 'PROPOSAL' : result.result_type;
+    db.project.prepare(`
+      UPDATE visualization_results
+      SET status = ?, review_note = ?, approved_at = ?, result_type = ?
+      WHERE id = ?
+    `).run(status, String(payload.reviewNote || ''), status === 'APPROVED' ? decidedAt : null, nextType, payload.resultId);
+    insertNotification({ level: status === 'REJECTED' ? 'WARNING' : 'INFO', messageKo: `AI 이미지 검토 처리: ${status}`, relatedProjectId: result.brief_id, actionKo: '이미지 검토', createdAt: decidedAt });
+    return { resultId: payload.resultId, result: mapVisualizationResult(db.project.prepare('SELECT * FROM visualization_results WHERE id = ?').get(payload.resultId)), visualizationData: getAIVisualizationCenterData({ briefId: result.brief_id }) };
+  }
+
+  function getAIVisualizationCenterData({ briefId = null, floorplanId = null, estimateId = null } = {}) {
+    let briefs = [];
+    if (briefId) briefs = db.project.prepare('SELECT * FROM visualization_briefs WHERE id = ? ORDER BY updated_at DESC').all(briefId);
+    else if (floorplanId) briefs = db.project.prepare('SELECT * FROM visualization_briefs WHERE floorplan_id = ? ORDER BY updated_at DESC').all(floorplanId);
+    else if (estimateId) briefs = db.project.prepare('SELECT * FROM visualization_briefs WHERE estimate_id = ? ORDER BY updated_at DESC').all(estimateId);
+    else briefs = db.project.prepare('SELECT * FROM visualization_briefs ORDER BY updated_at DESC LIMIT 30').all();
+    const mappedBriefs = briefs.map(mapVisualizationBrief);
+    const briefIds = mappedBriefs.map((brief) => brief.id);
+    const jobs = briefIds.length
+      ? db.project.prepare(`SELECT * FROM visualization_jobs WHERE brief_id IN (${briefIds.map(() => '?').join(',')}) ORDER BY requested_at DESC`).all(...briefIds).map(mapVisualizationJob)
+      : [];
+    const results = briefIds.length
+      ? db.project.prepare(`SELECT * FROM visualization_results WHERE brief_id IN (${briefIds.map(() => '?').join(',')}) ORDER BY created_at DESC`).all(...briefIds).map(mapVisualizationResult)
+      : [];
+    return {
+      briefs: mappedBriefs,
+      activeBrief: mappedBriefs[0] || null,
+      jobs,
+      results,
+      stats: {
+        queued: jobs.filter((job) => job.status === 'QUEUED').length,
+        completed: jobs.filter((job) => job.status === 'COMPLETED').length,
+        pendingReview: results.filter((result) => result.status === 'PENDING_REVIEW').length,
+        approved: results.filter((result) => result.status === 'APPROVED').length,
+        revisionRequired: results.filter((result) => result.status === 'REVISION_REQUIRED').length
+      },
+      floorplanCenterData: getFloorplanCenterData({ floorplanId, estimateId }),
+      emptyState: mappedBriefs.length === 0
     };
   }
 
@@ -14895,6 +15180,9 @@ function createSqliteService({ app }) {
       spaceEstimateLinkCount: countRows(db.project, 'space_estimate_links'),
       designPromptOutputCount: countRows(db.project, 'design_prompt_outputs'),
       moodboardProfileCount: countRows(db.project, 'moodboard_profiles'),
+      visualizationBriefCount: countRows(db.project, 'visualization_briefs'),
+      visualizationJobCount: countRows(db.project, 'visualization_jobs'),
+      visualizationResultCount: countRows(db.project, 'visualization_results'),
       estimateExportDir,
       contractExportDir,
       constructionScheduleCount: countRows(db.project, 'construction_schedules'),
@@ -15054,6 +15342,12 @@ function createSqliteService({ app }) {
     linkEstimateItemToSpace,
     saveMoodboardProfile,
     generatePerspectivePrompt,
+    getAIVisualizationCenterData,
+    createVisualizationBrief,
+    generateVisualizationPrompts,
+    queueVisualizationJob,
+    attachVisualizationResult,
+    decideVisualizationResult,
     getProjectExecutionReadiness,
     transitionProjectToExecution,
     getSiteOperationStatus,

@@ -191,6 +191,10 @@ export function BathroomEstimateWizardView() {
     window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'floorplanCenter' }));
   }
 
+  function openAIVisualizationCenter() {
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'aiVisualization' }));
+  }
+
   function executionBlockedMessage() {
     const decision = preview?.estimate.pce_decision;
     if (decision === 'BLOCK') return '수익성 검증 BLOCK 상태에서는 계약/공정표/발주서를 생성할 수 없습니다.';
@@ -543,6 +547,7 @@ export function BathroomEstimateWizardView() {
                   <button onClick={handleGenerateSchedule} disabled={isBusy || Boolean(executionBlockedMessage())}>공정표 생성</button>
                   <button onClick={handleGeneratePurchaseOrder} disabled={isBusy || Boolean(executionBlockedMessage())}>발주서 생성</button>
                   <button onClick={openFloorplanCenter} disabled={isBusy}>평면도 / 아이소메트릭</button>
+                  <button onClick={openAIVisualizationCenter} disabled={isBusy}>AI 투시도 생성</button>
                 </div>
               </section>
             </>
