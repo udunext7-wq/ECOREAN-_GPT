@@ -25,6 +25,9 @@ export function EstimateEntryPanel({ onOpen }: Props) {
         <button className="secondary-dashboard-button" onClick={() => onOpen('payment', 'warning')}>
           Payment
         </button>
+        <button className="secondary-dashboard-button" onClick={() => onOpen('floorplanCenter', 'click')}>
+          평면도 / 아이소메트릭
+        </button>
         <button className="secondary-dashboard-button" onClick={() => onOpen('closing', 'warning')}>
           Project Closing
         </button>
@@ -55,6 +58,11 @@ export function EstimateEntryPanel({ onOpen }: Props) {
           <span>전체 리모델링</span>
           <strong>욕실 / 주방 / 바닥 / 도배 / 전기 통합 산출</strong>
           <em>전체 공사 견적 생성</em>
+        </button>
+        <button className="entry-button primary" onClick={() => onOpen('floorplanCenter', 'click')}>
+          <span>평면도 / 아이소메트릭</span>
+          <strong>공간별 견적 연결과 투시도 프롬프트</strong>
+          <em>공간 기반 견적</em>
         </button>
         <button className="entry-button disabled" disabled style={{ display: 'none' }}>
           <span>전체 리모델링</span>

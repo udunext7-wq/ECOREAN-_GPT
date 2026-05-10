@@ -2546,6 +2546,105 @@ button:hover {
   font-weight: 900;
 }
 
+.floorplan-preview-image {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  margin-top: 14px;
+  object-fit: contain;
+  border: 1px solid rgba(125, 166, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.floorplan-placeholder {
+  min-height: 180px;
+  margin-top: 14px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(125, 166, 255, 0.32);
+  border-radius: 8px;
+  color: rgba(237, 244, 255, 0.72);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.isometric-canvas {
+  position: relative;
+  min-height: 360px;
+  overflow: auto;
+  border: 1px solid rgba(125, 166, 255, 0.24);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(56, 189, 248, 0.14), transparent 28%),
+    linear-gradient(135deg, rgba(8, 14, 25, 0.92), rgba(18, 27, 42, 0.76));
+}
+
+.isometric-canvas > p {
+  margin: 0;
+  padding: 32px;
+  color: rgba(237, 244, 255, 0.72);
+  font-weight: 800;
+}
+
+.iso-block {
+  position: absolute;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 12px;
+  transform: skewY(-12deg);
+  border: 1px solid rgba(125, 166, 255, 0.36);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(57, 76, 110, 0.92), rgba(22, 33, 52, 0.92));
+  box-shadow: 10px 14px 24px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: #edf4ff;
+}
+
+.iso-block::after {
+  content: "";
+  position: absolute;
+  right: -13px;
+  top: 8px;
+  width: 12px;
+  height: calc(100% - 6px);
+  transform: skewY(38deg);
+  border-radius: 0 5px 5px 0;
+  background: rgba(49, 67, 96, 0.78);
+}
+
+.iso-block strong,
+.iso-block span,
+.iso-block em {
+  position: relative;
+  z-index: 1;
+  transform: skewY(12deg);
+}
+
+.iso-block span,
+.iso-block em {
+  color: rgba(237, 244, 255, 0.72);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.prompt-output {
+  width: 100%;
+  min-height: 180px;
+  margin-top: 12px;
+  resize: vertical;
+  border: 1px solid rgba(125, 166, 255, 0.24);
+  border-radius: 8px;
+  padding: 12px;
+  color: #edf4ff;
+  background: rgba(3, 7, 18, 0.42);
+  font-family: inherit;
+  line-height: 1.5;
+}
+
 @media (max-width: 1100px) {
   .estimate-entry-grid,
   .wizard-form-grid,

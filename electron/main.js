@@ -37,6 +37,12 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:full-remodeling-contract:generate', (_event, payload) => sqliteService.generateFullRemodelingContract(payload));
   ipcMain.handle('boc:full-remodeling-schedule:generate', (_event, payload) => sqliteService.generateFullRemodelingSchedule(payload));
   ipcMain.handle('boc:full-remodeling-purchase-order:generate', (_event, payload) => sqliteService.generateFullRemodelingPurchaseOrder(payload));
+  ipcMain.handle('boc:floorplan:get', (_event, payload = {}) => sqliteService.getFloorplanCenterData(payload));
+  ipcMain.handle('boc:floorplan:save', (_event, payload) => sqliteService.saveFloorplanMetadata(payload));
+  ipcMain.handle('boc:floorplan:space:create', (_event, payload) => sqliteService.createFloorplanSpace(payload));
+  ipcMain.handle('boc:floorplan:space-link:create', (_event, payload) => sqliteService.linkEstimateItemToSpace(payload));
+  ipcMain.handle('boc:floorplan:moodboard:save', (_event, payload) => sqliteService.saveMoodboardProfile(payload));
+  ipcMain.handle('boc:floorplan:prompt:generate', (_event, payload) => sqliteService.generatePerspectivePrompt(payload));
   ipcMain.handle('boc:execution:readiness', (_event, payload) => sqliteService.getProjectExecutionReadiness(payload));
   ipcMain.handle('boc:execution:transition', (_event, payload) => sqliteService.transitionProjectToExecution(payload));
   ipcMain.handle('boc:site:status', (_event, payload) => sqliteService.getSiteOperationStatus(payload));

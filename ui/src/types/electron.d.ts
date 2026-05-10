@@ -49,6 +49,12 @@ declare global {
         generateFullRemodelingContract: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         generateFullRemodelingSchedule: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         generateFullRemodelingPurchaseOrder: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getFloorplanCenterData: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        saveFloorplanMetadata: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createFloorplanSpace: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        linkEstimateItemToSpace: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        saveMoodboardProfile: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        generatePerspectivePrompt: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getProjectExecutionReadiness: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         transitionProjectToExecution: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; executionProject: Record<string, unknown> }>;
         getSiteOperationStatus: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

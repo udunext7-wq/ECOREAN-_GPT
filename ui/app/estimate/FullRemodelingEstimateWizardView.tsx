@@ -193,6 +193,10 @@ export function FullRemodelingEstimateWizardView() {
     window.setTimeout(() => window.print(), 80);
   }
 
+  function openFloorplanCenter() {
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'floorplanCenter' }));
+  }
+
   async function handleGenerateContract() {
     setIsBusy(true);
     try {
@@ -376,6 +380,7 @@ export function FullRemodelingEstimateWizardView() {
                     <button onClick={handleGenerateContract} disabled={isBusy || blocked}>계약서 생성</button>
                     <button onClick={handleGenerateSchedule} disabled={isBusy || blocked}>공정표 생성</button>
                     <button onClick={handleGeneratePurchaseOrder} disabled={isBusy || blocked}>발주서 생성</button>
+                    <button onClick={openFloorplanCenter} disabled={isBusy}>평면도 / 아이소메트릭</button>
                   </div>
                   {blocked ? <p className="assistant-message">수익성 검증 {preview.estimate.pce_decision} 상태에서는 계약/공정표/발주서를 생성할 수 없습니다.</p> : null}
                 </>

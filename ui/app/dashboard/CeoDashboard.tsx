@@ -38,6 +38,19 @@ export function CeoDashboard() {
     approval.syncApprovals(dashboard.data);
   }, [dashboard.data.approvals]);
 
+  useEffect(() => {
+    function handleNavigate(event: Event) {
+      const customEvent = event as CustomEvent<ViewKey>;
+      if (customEvent.detail) {
+        sound.playTone('click');
+        dashboard.setActiveView(customEvent.detail);
+      }
+    }
+
+    window.addEventListener('ecorean:navigate', handleNavigate);
+    return () => window.removeEventListener('ecorean:navigate', handleNavigate);
+  }, []);
+
   function handleAction(action: string) {
     const map: Record<string, ViewKey> = {
       openBlockingAlerts: 'risks',
@@ -59,7 +72,8 @@ export function CeoDashboard() {
       openCeoControlTower: 'ceoControlTower',
       openCommunication: 'communication',
       openPaymentCenter: 'payment',
-      openProjectClosing: 'closing'
+      openProjectClosing: 'closing',
+      openFloorplanCenter: 'floorplanCenter'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
@@ -226,6 +240,7 @@ export function CeoDashboard() {
       <div className="floating-actions">
         <button onClick={() => openView('bathroomEstimate', 'click')}>새 견적</button>
         <button onClick={() => openView('ontology', 'click')}>3D Ontology View</button>
+        <button onClick={() => openView('floorplanCenter', 'click')}>평면도 / 아이소메트릭</button>
         <button onClick={() => openView('project', 'click')}>Project Drill Down</button>
         <button onClick={() => openView('masterDb', 'click')}>Master DB Review</button>
         <button onClick={() => openView('costCapture', 'warning')}>Cost Capture</button>

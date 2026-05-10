@@ -249,6 +249,65 @@ function createSqliteService({ app }) {
         margin_rate REAL NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS floorplans (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT,
+        project_id TEXT,
+        file_name TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        file_type TEXT NOT NULL,
+        width INTEGER,
+        height INTEGER,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS floorplan_spaces (
+        id TEXT PRIMARY KEY,
+        floorplan_id TEXT NOT NULL,
+        space_name TEXT NOT NULL,
+        space_type TEXT NOT NULL,
+        area_m2 REAL NOT NULL,
+        notes TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS space_estimate_links (
+        id TEXT PRIMARY KEY,
+        space_id TEXT NOT NULL,
+        estimate_type TEXT NOT NULL,
+        estimate_id TEXT NOT NULL,
+        estimate_item_id TEXT,
+        item_name TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        cost INTEGER NOT NULL,
+        margin INTEGER NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS design_prompt_outputs (
+        id TEXT PRIMARY KEY,
+        floorplan_id TEXT,
+        space_id TEXT,
+        estimate_id TEXT,
+        prompt_type TEXT NOT NULL,
+        prompt_text TEXT NOT NULL,
+        source_payload_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS moodboard_profiles (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT,
+        floorplan_id TEXT,
+        style TEXT NOT NULL,
+        color_tone TEXT NOT NULL,
+        primary_materials TEXT NOT NULL,
+        lighting_mood TEXT NOT NULL,
+        reference_notes TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS portfolio_projects (
         portfolio_project_id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL UNIQUE,
@@ -4195,6 +4254,234 @@ function createSqliteService({ app }) {
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
     return { purchaseOrderId, purchaseOrder };
+  }
+
+  function mapFloorplan(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      estimateId: row.estimate_id,
+      projectId: row.project_id,
+      fileName: row.file_name,
+      filePath: row.file_path,
+      fileType: row.file_type,
+      width: row.width,
+      height: row.height,
+      createdAt: row.created_at
+    };
+  }
+
+  function mapFloorplanSpace(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      floorplanId: row.floorplan_id,
+      spaceName: row.space_name,
+      spaceType: row.space_type,
+      areaM2: row.area_m2,
+      notes: row.notes,
+      createdAt: row.created_at
+    };
+  }
+
+  function mapSpaceEstimateLink(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      spaceId: row.space_id,
+      estimateType: row.estimate_type,
+      estimateId: row.estimate_id,
+      estimateItemId: row.estimate_item_id,
+      itemName: row.item_name,
+      amount: row.amount,
+      cost: row.cost,
+      margin: row.margin,
+      createdAt: row.created_at
+    };
+  }
+
+  function buildSpaceSummary(links) {
+    const groups = new Map();
+    links.forEach((link) => {
+      const current = groups.get(link.spaceId) || { spaceId: link.spaceId, amount: 0, cost: 0, margin: 0, marginRate: 0, linkCount: 0 };
+      current.amount += Number(link.amount || 0);
+      current.cost += Number(link.cost || 0);
+      current.margin += Number(link.margin || 0);
+      current.linkCount += 1;
+      current.marginRate = current.amount > 0 ? Number((current.margin / current.amount).toFixed(4)) : 0;
+      groups.set(link.spaceId, current);
+    });
+    return Array.from(groups.values());
+  }
+
+  function buildIsometricPreviewData(spaces, summaries) {
+    const summaryMap = new Map(summaries.map((item) => [item.spaceId, item]));
+    return {
+      mode: 'BLOCK_PLACEHOLDER',
+      blocks: spaces.map((space, index) => {
+        const columns = 4;
+        const width = Math.max(70, Math.sqrt(Number(space.areaM2 || 1)) * 24);
+        const depth = Math.max(50, Math.sqrt(Number(space.areaM2 || 1)) * 18);
+        const x = (index % columns) * 150;
+        const y = Math.floor(index / columns) * 110;
+        const summary = summaryMap.get(space.id) || { amount: 0, cost: 0, margin: 0 };
+        return {
+          id: space.id,
+          labelKo: space.spaceName,
+          spaceType: space.spaceType,
+          areaM2: space.areaM2,
+          x,
+          y,
+          width,
+          depth,
+          height: 24,
+          amount: summary.amount,
+          cost: summary.cost,
+          margin: summary.margin
+        };
+      })
+    };
+  }
+
+  function saveFloorplanMetadata(payload = {}) {
+    const createdAt = nowIso();
+    const floorplanId = payload.floorplanId || `FLP-${Date.now()}`;
+    const fileName = String(payload.fileName || payload.file_name || 'UNKNOWN_FILE');
+    const filePath = String(payload.filePath || payload.file_path || fileName);
+    const fileType = String(payload.fileType || payload.file_type || path.extname(fileName).replace('.', '').toUpperCase() || 'UNKNOWN').toUpperCase();
+    db.project.prepare(`
+      INSERT OR REPLACE INTO floorplans (
+        id, estimate_id, project_id, file_name, file_path, file_type, width, height, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      floorplanId,
+      payload.estimateId || null,
+      payload.projectId || null,
+      fileName,
+      filePath,
+      fileType,
+      Number(payload.width || 0),
+      Number(payload.height || 0),
+      createdAt
+    );
+    insertNotification({ level: 'INFO', messageKo: `평면도 메타데이터 저장: ${fileName}`, relatedProjectId: payload.projectId || payload.estimateId || floorplanId, actionKo: '평면도 저장', createdAt });
+    return { floorplanId, floorplan: mapFloorplan(db.project.prepare('SELECT * FROM floorplans WHERE id = ?').get(floorplanId)), floorplanCenterData: getFloorplanCenterData({ floorplanId }) };
+  }
+
+  function createFloorplanSpace(payload = {}) {
+    const createdAt = nowIso();
+    if (!payload.floorplanId) throw new Error('floorplanId is required');
+    const spaceId = payload.spaceId || `SPACE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    db.project.prepare(`
+      INSERT INTO floorplan_spaces (
+        id, floorplan_id, space_name, space_type, area_m2, notes, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(spaceId, payload.floorplanId, String(payload.spaceName || '공간'), String(payload.spaceType || '기타'), Number(payload.areaM2 || 0), String(payload.notes || ''), createdAt);
+    return { spaceId, space: mapFloorplanSpace(db.project.prepare('SELECT * FROM floorplan_spaces WHERE id = ?').get(spaceId)), floorplanCenterData: getFloorplanCenterData({ floorplanId: payload.floorplanId }) };
+  }
+
+  function linkEstimateItemToSpace(payload = {}) {
+    const createdAt = nowIso();
+    if (!payload.spaceId) throw new Error('spaceId is required');
+    const linkId = payload.linkId || `SEL-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    db.project.prepare(`
+      INSERT INTO space_estimate_links (
+        id, space_id, estimate_type, estimate_id, estimate_item_id, item_name,
+        amount, cost, margin, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      linkId,
+      payload.spaceId,
+      String(payload.estimateType || 'manual'),
+      String(payload.estimateId || 'UNKNOWN_ESTIMATE'),
+      payload.estimateItemId || null,
+      String(payload.itemName || '견적 항목'),
+      Math.round(Number(payload.amount || 0)),
+      Math.round(Number(payload.cost || 0)),
+      Math.round(Number(payload.margin || 0)),
+      createdAt
+    );
+    const space = db.project.prepare('SELECT * FROM floorplan_spaces WHERE id = ?').get(payload.spaceId);
+    return { linkId, link: mapSpaceEstimateLink(db.project.prepare('SELECT * FROM space_estimate_links WHERE id = ?').get(linkId)), floorplanCenterData: getFloorplanCenterData({ floorplanId: space?.floorplan_id }) };
+  }
+
+  function saveMoodboardProfile(payload = {}) {
+    const createdAt = nowIso();
+    const moodboardId = payload.moodboardId || `MOOD-${Date.now()}`;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO moodboard_profiles (
+        id, estimate_id, floorplan_id, style, color_tone, primary_materials,
+        lighting_mood, reference_notes, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      moodboardId,
+      payload.estimateId || null,
+      payload.floorplanId || null,
+      String(payload.style || 'modern'),
+      String(payload.colorTone || 'warm neutral'),
+      String(payload.primaryMaterials || 'wood, tile, paint'),
+      String(payload.lightingMood || 'soft indirect lighting'),
+      String(payload.referenceNotes || ''),
+      createdAt,
+      createdAt
+    );
+    return { moodboardId, moodboard: db.project.prepare('SELECT * FROM moodboard_profiles WHERE id = ?').get(moodboardId), floorplanCenterData: getFloorplanCenterData({ floorplanId: payload.floorplanId, estimateId: payload.estimateId }) };
+  }
+
+  function generatePerspectivePrompt(payload = {}) {
+    const createdAt = nowIso();
+    const promptId = payload.promptId || `DPO-${Date.now()}`;
+    const space = payload.spaceId ? mapFloorplanSpace(db.project.prepare('SELECT * FROM floorplan_spaces WHERE id = ?').get(payload.spaceId)) : null;
+    const moodboard = payload.moodboardId ? db.project.prepare('SELECT * FROM moodboard_profiles WHERE id = ?').get(payload.moodboardId) : null;
+    const promptType = String(payload.promptType || 'PERSPECTIVE');
+    const style = payload.style || moodboard?.style || 'modern Korean interior';
+    const colorTone = payload.colorTone || moodboard?.color_tone || 'warm neutral';
+    const materials = payload.primaryMaterials || moodboard?.primary_materials || 'wood, tile, painted wall';
+    const lighting = payload.lightingMood || moodboard?.lighting_mood || 'soft indirect lighting';
+    const promptText = [
+      `${promptType} render prompt for ${space?.spaceName || 'interior space'}`,
+      `space type: ${space?.spaceType || 'interior'}, area: ${space?.areaM2 || 'unknown'} m2`,
+      `style: ${style}`,
+      `color tone: ${colorTone}`,
+      `primary materials: ${materials}`,
+      `lighting mood: ${lighting}`,
+      `use clean architectural visualization, realistic proportions, Korean apartment remodeling context`,
+      `exclude people, text, watermark, distorted geometry`
+    ].join('\n');
+    db.project.prepare(`
+      INSERT INTO design_prompt_outputs (
+        id, floorplan_id, space_id, estimate_id, prompt_type, prompt_text, source_payload_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(promptId, payload.floorplanId || space?.floorplanId || null, payload.spaceId || null, payload.estimateId || null, promptType, promptText, toJson({ ...payload, moodboard }), createdAt);
+    return { promptId, promptText, floorplanCenterData: getFloorplanCenterData({ floorplanId: payload.floorplanId || space?.floorplanId, estimateId: payload.estimateId }) };
+  }
+
+  function getFloorplanCenterData({ floorplanId = null, estimateId = null, projectId = null } = {}) {
+    let floorplans = [];
+    if (floorplanId) floorplans = db.project.prepare('SELECT * FROM floorplans WHERE id = ? ORDER BY created_at DESC').all(floorplanId);
+    else if (estimateId) floorplans = db.project.prepare('SELECT * FROM floorplans WHERE estimate_id = ? ORDER BY created_at DESC').all(estimateId);
+    else if (projectId) floorplans = db.project.prepare('SELECT * FROM floorplans WHERE project_id = ? ORDER BY created_at DESC').all(projectId);
+    else floorplans = db.project.prepare('SELECT * FROM floorplans ORDER BY created_at DESC LIMIT 20').all();
+
+    const activeFloorplan = mapFloorplan(floorplans[0]);
+    const spaces = activeFloorplan ? db.project.prepare('SELECT * FROM floorplan_spaces WHERE floorplan_id = ? ORDER BY created_at ASC').all(activeFloorplan.id).map(mapFloorplanSpace) : [];
+    const links = spaces.length
+      ? db.project.prepare(`SELECT * FROM space_estimate_links WHERE space_id IN (${spaces.map(() => '?').join(',')}) ORDER BY created_at ASC`).all(...spaces.map((space) => space.id)).map(mapSpaceEstimateLink)
+      : [];
+    const summaries = buildSpaceSummary(links).map((summary) => ({ ...summary, space: spaces.find((space) => space.id === summary.spaceId) || null }));
+    const prompts = activeFloorplan ? db.project.prepare('SELECT * FROM design_prompt_outputs WHERE floorplan_id = ? ORDER BY created_at DESC LIMIT 20').all(activeFloorplan.id) : [];
+    const moodboards = activeFloorplan ? db.project.prepare('SELECT * FROM moodboard_profiles WHERE floorplan_id = ? ORDER BY updated_at DESC LIMIT 10').all(activeFloorplan.id) : [];
+    return {
+      floorplans: floorplans.map(mapFloorplan),
+      activeFloorplan,
+      spaces,
+      links,
+      summaries,
+      isometricPreview: buildIsometricPreviewData(spaces, summaries),
+      prompts,
+      moodboards,
+      emptyState: !activeFloorplan
+    };
   }
 
   function getAiEstimateContext(projectType = 'bathroom_remodel') {
@@ -14603,6 +14890,11 @@ function createSqliteService({ app }) {
       kitchenEstimateItemCount: countRows(db.project, 'kitchen_estimate_items'),
       fullRemodelingEstimateCount: countRows(db.project, 'full_remodeling_estimates'),
       fullRemodelingEstimateItemCount: countRows(db.project, 'full_remodeling_estimate_items'),
+      floorplanCount: countRows(db.project, 'floorplans'),
+      floorplanSpaceCount: countRows(db.project, 'floorplan_spaces'),
+      spaceEstimateLinkCount: countRows(db.project, 'space_estimate_links'),
+      designPromptOutputCount: countRows(db.project, 'design_prompt_outputs'),
+      moodboardProfileCount: countRows(db.project, 'moodboard_profiles'),
       estimateExportDir,
       contractExportDir,
       constructionScheduleCount: countRows(db.project, 'construction_schedules'),
@@ -14756,6 +15048,12 @@ function createSqliteService({ app }) {
     generateFullRemodelingContract,
     generateFullRemodelingSchedule,
     generateFullRemodelingPurchaseOrder,
+    getFloorplanCenterData,
+    saveFloorplanMetadata,
+    createFloorplanSpace,
+    linkEstimateItemToSpace,
+    saveMoodboardProfile,
+    generatePerspectivePrompt,
     getProjectExecutionReadiness,
     transitionProjectToExecution,
     getSiteOperationStatus,
