@@ -52,7 +52,7 @@ function buildPdfLines(model, type) {
   const lines = [];
   if (type === 'customer') {
     lines.push('ECOREAN');
-    lines.push('Bathroom Remodeling Estimate');
+    lines.push(estimate.documentTitle || 'Bathroom Remodeling Estimate');
     lines.push(`Estimate ID: ${estimate.id}`);
     lines.push(`Customer: ${estimate.customerName}`);
     lines.push(`Site: ${estimate.siteName}`);

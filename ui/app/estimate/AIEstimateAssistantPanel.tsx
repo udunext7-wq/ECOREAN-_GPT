@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { BathroomEstimateInput, BathroomEstimatePreview } from '../../services/bathroom-estimate-service/bathroomEstimateService';
+import type { BathroomEstimatePreview } from '../../services/bathroom-estimate-service/bathroomEstimateService';
 import {
   decideAiRecommendation,
   loadAiEstimateIntelligence,
@@ -7,8 +7,8 @@ import {
 } from '../../services/estimate-service/aiEstimateIntelligenceService';
 
 type Props = {
-  input: BathroomEstimateInput;
-  preview: BathroomEstimatePreview | null;
+  input: Record<string, unknown> & { options?: Record<string, unknown>; constructionType?: string };
+  preview: BathroomEstimatePreview | Record<string, unknown> | null;
 };
 
 function riskKo(level: unknown) {
@@ -58,7 +58,23 @@ export function AIEstimateAssistantPanel({ input, preview }: Props) {
 
   useEffect(() => {
     refresh(false);
-  }, [input.constructionMethod, input.waterproofMethod, input.tileWallType, input.tileFloorType, input.fixtureGrade, input.bathroomAreaM2, input.options.showerBooth, input.options.zenda, input.options.bathtub]);
+  }, [
+    input.constructionMethod,
+    input.waterproofMethod,
+    input.tileWallType,
+    input.tileFloorType,
+    input.fixtureGrade,
+    input.bathroomAreaM2,
+    input.kitchenType,
+    input.countertopType,
+    input.kitchenLengthMm,
+    input.options?.showerBooth,
+    input.options?.zenda,
+    input.options?.bathtub,
+    input.options?.hoodReplace,
+    input.options?.indirectLighting,
+    input.options?.electricalUpgrade
+  ]);
 
   async function act(id: string, actionType: 'APPLY' | 'IGNORE' | 'DETAIL') {
     if (!data?.estimateId) return;

@@ -1,4 +1,4 @@
-import type { BathroomEstimateInput, BathroomEstimatePreview } from '../bathroom-estimate-service/bathroomEstimateService';
+import type { BathroomEstimatePreview } from '../bathroom-estimate-service/bathroomEstimateService';
 
 export type AIEstimateIntelligence = {
   estimateId: string;
@@ -25,7 +25,7 @@ function api() {
 }
 
 export async function loadAiEstimateIntelligence(
-  input: BathroomEstimateInput,
+  input: Record<string, unknown>,
   estimateId?: string,
   persist = true
 ): Promise<AIEstimateIntelligence> {

@@ -6,6 +6,20 @@ const {
   buildCustomerEstimateView,
   buildInternalCostView
 } = require('./bathroomEstimateService');
+const {
+  calculateKitchenEstimate,
+  buildCustomerKitchenEstimateView,
+  buildInternalKitchenCostView,
+  buildKitchenScheduleFromEstimate,
+  buildKitchenPurchaseOrderFromEstimate
+} = require('./kitchenEstimateService');
+const {
+  calculateFullRemodelingEstimate,
+  buildCustomerFullEstimateView,
+  buildInternalFullCostView,
+  buildFullScheduleFromEstimate,
+  buildFullPurchaseOrderFromEstimate
+} = require('./fullRemodelingEstimateService');
 const { exportEstimateDocument } = require('./estimateExportService');
 const { buildContractFromEstimate, exportContractPdf } = require('./contractService');
 const { buildScheduleFromEstimate } = require('./scheduleService');
@@ -132,6 +146,93 @@ function createSqliteService({ app }) {
       );
 
       CREATE TABLE IF NOT EXISTS bathroom_estimate_items (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        item_name TEXT NOT NULL,
+        quantity REAL NOT NULL,
+        unit TEXT NOT NULL,
+        customer_unit_price INTEGER NOT NULL,
+        customer_total INTEGER NOT NULL,
+        material_cost INTEGER NOT NULL,
+        labor_cost INTEGER NOT NULL,
+        subcontract_cost INTEGER NOT NULL,
+        internal_total INTEGER NOT NULL,
+        margin INTEGER NOT NULL,
+        margin_rate REAL NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS kitchen_estimates (
+        id TEXT PRIMARY KEY,
+        customer_name TEXT NOT NULL,
+        site_name TEXT NOT NULL,
+        kitchen_type TEXT NOT NULL,
+        kitchen_length_mm INTEGER NOT NULL,
+        ceiling_height_mm INTEGER NOT NULL,
+        demolition_included INTEGER NOT NULL,
+        expansion_included INTEGER NOT NULL,
+        upper_cabinet_length_mm INTEGER NOT NULL,
+        lower_cabinet_length_mm INTEGER NOT NULL,
+        tall_cabinet INTEGER NOT NULL,
+        pantry INTEGER NOT NULL,
+        island INTEGER NOT NULL,
+        door_finish TEXT NOT NULL,
+        countertop_type TEXT NOT NULL,
+        handle_type TEXT NOT NULL,
+        options_json TEXT NOT NULL,
+        revenue INTEGER NOT NULL,
+        total_cost INTEGER NOT NULL,
+        expected_margin INTEGER NOT NULL,
+        expected_margin_rate REAL NOT NULL,
+        pce_decision TEXT NOT NULL,
+        schedule_days INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS kitchen_estimate_items (
+        id TEXT PRIMARY KEY,
+        estimate_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        item_name TEXT NOT NULL,
+        quantity REAL NOT NULL,
+        unit TEXT NOT NULL,
+        customer_unit_price INTEGER NOT NULL,
+        customer_total INTEGER NOT NULL,
+        material_cost INTEGER NOT NULL,
+        labor_cost INTEGER NOT NULL,
+        subcontract_cost INTEGER NOT NULL,
+        internal_total INTEGER NOT NULL,
+        margin INTEGER NOT NULL,
+        margin_rate REAL NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS full_remodeling_estimates (
+        id TEXT PRIMARY KEY,
+        customer_name TEXT NOT NULL,
+        site_name TEXT NOT NULL,
+        housing_type TEXT NOT NULL,
+        area_m2 REAL NOT NULL,
+        area_pyeong REAL NOT NULL,
+        room_count INTEGER NOT NULL,
+        bathroom_count INTEGER NOT NULL,
+        kitchen_type TEXT NOT NULL,
+        balcony_count INTEGER NOT NULL,
+        construction_scope TEXT NOT NULL,
+        selected_processes_json TEXT NOT NULL,
+        process_options_json TEXT NOT NULL,
+        demolition_json TEXT NOT NULL,
+        revenue INTEGER NOT NULL,
+        total_cost INTEGER NOT NULL,
+        expected_margin INTEGER NOT NULL,
+        expected_margin_rate REAL NOT NULL,
+        pce_decision TEXT NOT NULL,
+        schedule_days INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS full_remodeling_estimate_items (
         id TEXT PRIMARY KEY,
         estimate_id TEXT NOT NULL,
         category TEXT NOT NULL,
@@ -3557,6 +3658,545 @@ function createSqliteService({ app }) {
     };
   }
 
+  function calculateKitchenEstimatePreview(payload = {}) {
+    const estimate = calculateKitchenEstimate(payload);
+    const estimateId = payload.estimateId || `KIT-PREVIEW-${Date.now()}`;
+    const pce = runProfitControlEngine({
+      estimateId,
+      revenue: estimate.revenue,
+      totalCost: estimate.total_cost,
+      vendorRisk: payload.vendorRisk || 0,
+      laborVariance: payload.laborVariance || 0,
+      scheduleRisk: payload.scheduleRisk || 0,
+      defectRisk: payload.defectRisk || 0
+    });
+    const labels = { BLOCK: '위험', MODIFY: '수정 필요', GO: '진행 가능', SCALE: '고마진 복제 대상' };
+    const pceEstimate = { ...estimate, pce_decision: pce.decision, pce_label_ko: labels[pce.decision] || estimate.pce_label_ko };
+    return {
+      estimate: pceEstimate,
+      pce,
+      customerView: buildCustomerKitchenEstimateView(pceEstimate),
+      internalView: buildInternalKitchenCostView(pceEstimate)
+    };
+  }
+
+  function saveKitchenEstimate(payload = {}) {
+    const createdAt = nowIso();
+    const estimateId = payload.estimateId || `KIT-EST-${Date.now()}`;
+    const calculated = calculateKitchenEstimate(payload);
+    const pce = runProfitControlEngine({
+      estimateId,
+      revenue: calculated.revenue,
+      totalCost: calculated.total_cost,
+      vendorRisk: payload.vendorRisk || 0,
+      laborVariance: payload.laborVariance || 0,
+      scheduleRisk: payload.scheduleRisk || 0,
+      defectRisk: payload.defectRisk || 0,
+      createdAt
+    });
+    if (pce.decision === 'BLOCK' && !payload.adminOverrideReason) {
+      throw new Error('PCE BLOCK: 25% 미만 마진 견적은 저장할 수 없습니다. 관리자 예외 승인 사유가 필요합니다.');
+    }
+    db.project.prepare(`
+      INSERT OR REPLACE INTO kitchen_estimates (
+        id, customer_name, site_name, kitchen_type, kitchen_length_mm, ceiling_height_mm,
+        demolition_included, expansion_included, upper_cabinet_length_mm, lower_cabinet_length_mm,
+        tall_cabinet, pantry, island, door_finish, countertop_type, handle_type,
+        options_json, revenue, total_cost, expected_margin, expected_margin_rate,
+        pce_decision, schedule_days, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      estimateId,
+      calculated.input.customerName || 'UNKNOWN',
+      calculated.input.siteName || 'UNKNOWN',
+      calculated.input.kitchenType,
+      calculated.input.kitchenLengthMm,
+      calculated.input.ceilingHeightMm,
+      calculated.input.demolitionIncluded ? 1 : 0,
+      calculated.input.expansionIncluded ? 1 : 0,
+      calculated.input.upperCabinetLengthMm,
+      calculated.input.lowerCabinetLengthMm,
+      calculated.input.tallCabinet ? 1 : 0,
+      calculated.input.pantry ? 1 : 0,
+      calculated.input.island ? 1 : 0,
+      calculated.input.doorFinish,
+      calculated.input.countertopType,
+      calculated.input.handleType,
+      toJson(calculated.input.options),
+      calculated.revenue,
+      calculated.total_cost,
+      calculated.expected_margin,
+      calculated.expected_margin_rate,
+      pce.decision,
+      calculated.schedule_days,
+      createdAt,
+      createdAt
+    );
+    db.project.prepare('DELETE FROM kitchen_estimate_items WHERE estimate_id = ?').run(estimateId);
+    const insertItem = db.project.prepare(`
+      INSERT INTO kitchen_estimate_items (
+        id, estimate_id, category, item_name, quantity, unit, customer_unit_price,
+        customer_total, material_cost, labor_cost, subcontract_cost, internal_total, margin, margin_rate
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    calculated.line_items.forEach((item, index) => {
+      insertItem.run(
+        `${estimateId}-ITEM-${String(index + 1).padStart(3, '0')}`,
+        estimateId,
+        item.category,
+        item.itemName,
+        item.quantity,
+        item.unit,
+        item.customerUnitPrice,
+        item.customerTotal,
+        item.materialCost,
+        item.laborCost,
+        item.subcontractCost,
+        item.internalTotal,
+        item.margin,
+        item.marginRate
+      );
+    });
+    insertNotification({
+      level: pce.decision === 'BLOCK' ? 'RED' : pce.decision === 'MODIFY' ? 'WARNING' : 'INFO',
+      messageKo: `주방 견적 저장: ${estimateId} / PCE ${pce.decision} / 마진율 ${(calculated.expected_margin_rate * 100).toFixed(1)}%`,
+      relatedProjectId: estimateId,
+      actionKo: '주방 견적 저장',
+      createdAt
+    });
+    return {
+      estimateId,
+      pce,
+      estimate: { ...calculated, id: estimateId, pce_decision: pce.decision },
+      customerView: buildCustomerKitchenEstimateView(calculated),
+      internalView: buildInternalKitchenCostView({ ...calculated, pce_decision: pce.decision }),
+      dashboardData: getDashboardData()
+    };
+  }
+
+  function getStoredKitchenEstimateModel(estimateId) {
+    if (!estimateId) throw new Error('estimateId is required');
+    const row = db.project.prepare('SELECT * FROM kitchen_estimates WHERE id = ?').get(estimateId);
+    if (!row) throw new Error(`Kitchen estimate not found: ${estimateId}`);
+    const items = db.project.prepare('SELECT * FROM kitchen_estimate_items WHERE estimate_id = ? ORDER BY id').all(estimateId);
+    const estimate = {
+      id: row.id,
+      documentTitle: 'Kitchen Remodeling Estimate',
+      customerName: row.customer_name,
+      siteName: row.site_name,
+      kitchenType: row.kitchen_type,
+      kitchenLengthMm: row.kitchen_length_mm,
+      ceilingHeightMm: row.ceiling_height_mm,
+      options: fromJson(row.options_json, {}),
+      revenue: row.revenue,
+      totalCost: row.total_cost,
+      expectedMargin: row.expected_margin,
+      expectedMarginRate: row.expected_margin_rate,
+      pceDecision: row.pce_decision,
+      pce_decision: row.pce_decision,
+      scheduleDays: row.schedule_days,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+    return {
+      estimate,
+      items: items.map((item) => ({
+        id: item.id,
+        category: item.category,
+        itemName: item.item_name,
+        quantity: item.quantity,
+        unit: item.unit,
+        customerUnitPrice: item.customer_unit_price,
+        customerTotal: item.customer_total,
+        materialCost: item.material_cost,
+        laborCost: item.labor_cost,
+        subcontractCost: item.subcontract_cost,
+        internalTotal: item.internal_total,
+        margin: item.margin,
+        marginRate: item.margin_rate
+      }))
+    };
+  }
+
+  function exportKitchenEstimateDocument({ estimateId, documentType = 'customer', format = 'pdf' }) {
+    const createdAt = nowIso();
+    const model = getStoredKitchenEstimateModel(estimateId);
+    const result = exportEstimateDocument({ model, type: documentType, format, outputDir: estimateExportDir });
+    insertNotification({ level: 'INFO', messageKo: `주방 견적 출력 생성: ${result.fileName}`, relatedProjectId: estimateId, actionKo: format === 'xlsx' ? 'Excel Export' : 'PDF Export', createdAt });
+    return result;
+  }
+
+  function generateKitchenContract({ estimateId, startDate = null }) {
+    const createdAt = nowIso();
+    const model = getStoredKitchenEstimateModel(estimateId);
+    const contract = buildContractFromEstimate({ ...model, startDate });
+    contract.projectName = '주방 리모델링 공사';
+    contract.scopeSummaryKo = Array.from(new Set(model.items.map((item) => item.category))).join(', ');
+    const contractId = contract.contractNumber;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO contracts (
+        contract_id, client_id, project_id, lead_id, contract_status, contract_amount,
+        deposit_rate, interim_rate, balance_rate, scope_summary_ko, exclusions_ko,
+        change_order_terms_ko, defect_warranty_terms_ko, approval_required, approved_by,
+        approved_at, created_at, updated_at, estimate_id, contract_number, customer_name,
+        site_name, project_name, deposit_amount, progress_payment_amount, balance_amount,
+        start_date, end_date, duration_days, payment_terms, warranty_terms,
+        cancellation_terms, special_terms, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      contractId, `CLIENT-${estimateId}`, estimateId, null, contract.status, contract.contractAmount,
+      0.3, 0.4, 0.3, contract.scopeSummaryKo, contract.specialTerms,
+      '추가공사는 별도 승인 후 반영합니다.', contract.warrantyTerms, 1, null,
+      null, createdAt, createdAt, estimateId, contract.contractNumber, contract.customerName,
+      contract.siteName, contract.projectName, contract.depositAmount, contract.progressPaymentAmount, contract.balanceAmount,
+      contract.startDate, contract.endDate, contract.durationDays, contract.paymentTerms, contract.warrantyTerms,
+      contract.cancellationTerms, contract.specialTerms, contract.status
+    );
+    syncCustomerPaymentScheduleFromContract(contractId, createdAt);
+    syncCashflowSnapshot(createdAt);
+    return { contractId, contract };
+  }
+
+  function generateKitchenSchedule({ estimateId, contractId = null, startDate = null }) {
+    const createdAt = nowIso();
+    const model = getStoredKitchenEstimateModel(estimateId);
+    const source = db.project.prepare('SELECT * FROM kitchen_estimates WHERE id = ?').get(estimateId);
+    const estimate = {
+      ...model.estimate,
+      id: estimateId,
+      input: {
+        demolitionIncluded: Boolean(source.demolition_included),
+        expansionIncluded: Boolean(source.expansion_included),
+        kitchenType: source.kitchen_type,
+        countertopType: source.countertop_type,
+        options: fromJson(source.options_json, {})
+      },
+      line_items: model.items,
+      pce_decision: source.pce_decision
+    };
+    const schedule = buildKitchenScheduleFromEstimate({ estimate, contractId, startDate });
+    const scheduleId = `SCH-${estimateId}`;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO construction_schedules (
+        id, estimate_id, contract_id, schedule_name, start_date, end_date,
+        duration_days, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(scheduleId, estimateId, contractId, schedule.scheduleName, schedule.startDate, schedule.endDate, schedule.durationDays, schedule.status, createdAt, createdAt);
+    db.project.prepare('DELETE FROM construction_schedule_items WHERE schedule_id = ?').run(scheduleId);
+    const insertItem = db.project.prepare(`
+      INSERT INTO construction_schedule_items (
+        id, schedule_id, process_name, start_date, end_date, duration_days,
+        dependency, assignee, status, sort_order
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    schedule.items.forEach((item) => insertItem.run(`${scheduleId}-${String(item.sortOrder).padStart(2, '0')}`, scheduleId, item.processName, item.startDate, item.endDate, item.durationDays, item.dependency || '', item.assignee, item.status, item.sortOrder));
+    return { scheduleId, schedule };
+  }
+
+  function generateKitchenPurchaseOrder({ estimateId, contractId = null, requiredDate = null }) {
+    const createdAt = nowIso();
+    const model = getStoredKitchenEstimateModel(estimateId);
+    const row = db.project.prepare('SELECT * FROM kitchen_estimates WHERE id = ?').get(estimateId);
+    const estimate = { ...model.estimate, id: estimateId, input: { options: fromJson(row.options_json, {}) }, line_items: model.items, pce_decision: row.pce_decision };
+    const purchaseOrder = buildKitchenPurchaseOrderFromEstimate({ estimate, contractId, requiredDate });
+    const purchaseOrderId = purchaseOrder.orderNumber;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO purchase_orders (
+        purchase_order_id, execution_project_id, project_id, order_status, unknown_price_warning,
+        payload_json, created_at, estimate_id, contract_id, order_number, supplier_name,
+        total_amount, status, required_date, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(purchaseOrderId, `EXEC-PENDING-${estimateId}`, estimateId, purchaseOrder.status, 1, toJson({ source: 'KITCHEN_ESTIMATE', itemCount: purchaseOrder.items.length }), createdAt, estimateId, contractId, purchaseOrder.orderNumber, purchaseOrder.supplierName, purchaseOrder.totalAmount, purchaseOrder.status, purchaseOrder.requiredDate, createdAt);
+    db.project.prepare('DELETE FROM purchase_order_items WHERE purchase_order_id = ?').run(purchaseOrderId);
+    const insertItem = db.project.prepare(`
+      INSERT INTO purchase_order_items (
+        id, purchase_order_id, item_name, specification, quantity, unit,
+        expected_unit_price, expected_total, supplier_name, order_status,
+        required_date, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    purchaseOrder.items.forEach((item, index) => insertItem.run(`${purchaseOrderId}-ITEM-${String(index + 1).padStart(3, '0')}`, purchaseOrderId, item.itemName, item.specification, item.quantity, item.unit, item.expectedUnitPrice, item.expectedTotal, item.supplierName, item.orderStatus, item.requiredDate, item.notes));
+    syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
+    syncCashflowSnapshot(createdAt);
+    return { purchaseOrderId, purchaseOrder };
+  }
+
+  function calculateFullRemodelingEstimatePreview(payload = {}) {
+    const estimate = calculateFullRemodelingEstimate(payload);
+    const estimateId = payload.estimateId || `FULL-PREVIEW-${Date.now()}`;
+    const pce = runProfitControlEngine({
+      estimateId,
+      revenue: estimate.revenue,
+      totalCost: estimate.total_cost,
+      vendorRisk: payload.vendorRisk || 0,
+      laborVariance: payload.laborVariance || 0,
+      scheduleRisk: payload.scheduleRisk || 0,
+      defectRisk: payload.defectRisk || 0
+    });
+    const labels = { BLOCK: '차단', MODIFY: '수정 필요', GO: '진행 가능', SCALE: '고마진 복제 대상' };
+    const pceEstimate = { ...estimate, pce_decision: pce.decision, pce_label_ko: labels[pce.decision] || estimate.pce_label_ko };
+    return {
+      estimate: pceEstimate,
+      pce,
+      customerView: buildCustomerFullEstimateView(pceEstimate),
+      internalView: buildInternalFullCostView(pceEstimate)
+    };
+  }
+
+  function saveFullRemodelingEstimate(payload = {}) {
+    const createdAt = nowIso();
+    const estimateId = payload.estimateId || `FULL-EST-${Date.now()}`;
+    const calculated = calculateFullRemodelingEstimate(payload);
+    const pce = runProfitControlEngine({
+      estimateId,
+      revenue: calculated.revenue,
+      totalCost: calculated.total_cost,
+      vendorRisk: payload.vendorRisk || 0,
+      laborVariance: payload.laborVariance || 0,
+      scheduleRisk: payload.scheduleRisk || 0,
+      defectRisk: payload.defectRisk || 0,
+      createdAt
+    });
+    if (pce.decision === 'BLOCK' && !payload.adminOverrideReason) {
+      throw new Error('PCE BLOCK: 25% 미만 마진 전체 리모델링 견적은 저장할 수 없습니다. 관리자 예외 승인 사유가 필요합니다.');
+    }
+    db.project.prepare(`
+      INSERT OR REPLACE INTO full_remodeling_estimates (
+        id, customer_name, site_name, housing_type, area_m2, area_pyeong,
+        room_count, bathroom_count, kitchen_type, balcony_count, construction_scope,
+        selected_processes_json, process_options_json, demolition_json,
+        revenue, total_cost, expected_margin, expected_margin_rate,
+        pce_decision, schedule_days, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      estimateId,
+      calculated.input.customerName || 'UNKNOWN',
+      calculated.input.siteName || 'UNKNOWN',
+      calculated.input.housingType,
+      calculated.input.areaM2,
+      calculated.input.areaPyeong,
+      calculated.input.roomCount,
+      calculated.input.bathroomCount,
+      calculated.input.kitchenType,
+      calculated.input.balconyCount,
+      calculated.input.constructionScope,
+      toJson(calculated.input.selectedProcesses),
+      toJson(calculated.input.options),
+      toJson(calculated.input.demolition),
+      calculated.revenue,
+      calculated.total_cost,
+      calculated.expected_margin,
+      calculated.expected_margin_rate,
+      pce.decision,
+      calculated.schedule_days,
+      createdAt,
+      createdAt
+    );
+    db.project.prepare('DELETE FROM full_remodeling_estimate_items WHERE estimate_id = ?').run(estimateId);
+    const insertItem = db.project.prepare(`
+      INSERT INTO full_remodeling_estimate_items (
+        id, estimate_id, category, item_name, quantity, unit, customer_unit_price,
+        customer_total, material_cost, labor_cost, subcontract_cost, internal_total, margin, margin_rate
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    calculated.line_items.forEach((item, index) => {
+      insertItem.run(
+        `${estimateId}-ITEM-${String(index + 1).padStart(3, '0')}`,
+        estimateId,
+        item.category,
+        item.itemName,
+        item.quantity,
+        item.unit,
+        item.customerUnitPrice,
+        item.customerTotal,
+        item.materialCost,
+        item.laborCost,
+        item.subcontractCost,
+        item.internalTotal,
+        item.margin,
+        item.marginRate
+      );
+    });
+    insertNotification({
+      level: pce.decision === 'BLOCK' ? 'RED' : pce.decision === 'MODIFY' ? 'WARNING' : 'INFO',
+      messageKo: `전체 리모델링 견적 저장: ${estimateId} / PCE ${pce.decision} / 마진율 ${(calculated.expected_margin_rate * 100).toFixed(1)}%`,
+      relatedProjectId: estimateId,
+      actionKo: '전체 리모델링 견적 저장',
+      createdAt
+    });
+    return {
+      estimateId,
+      pce,
+      estimate: { ...calculated, id: estimateId, pce_decision: pce.decision },
+      customerView: buildCustomerFullEstimateView(calculated),
+      internalView: buildInternalFullCostView({ ...calculated, pce_decision: pce.decision }),
+      dashboardData: getDashboardData()
+    };
+  }
+
+  function getStoredFullRemodelingEstimateModel(estimateId) {
+    if (!estimateId) throw new Error('estimateId is required');
+    const row = db.project.prepare('SELECT * FROM full_remodeling_estimates WHERE id = ?').get(estimateId);
+    if (!row) throw new Error(`Full remodeling estimate not found: ${estimateId}`);
+    const items = db.project.prepare('SELECT * FROM full_remodeling_estimate_items WHERE estimate_id = ? ORDER BY id').all(estimateId);
+    const estimate = {
+      id: row.id,
+      documentTitle: 'Full Remodeling Estimate',
+      customerName: row.customer_name,
+      siteName: row.site_name,
+      housingType: row.housing_type,
+      areaM2: row.area_m2,
+      areaPyeong: row.area_pyeong,
+      roomCount: row.room_count,
+      bathroomCount: row.bathroom_count,
+      kitchenType: row.kitchen_type,
+      balconyCount: row.balcony_count,
+      constructionScope: row.construction_scope,
+      selectedProcesses: fromJson(row.selected_processes_json, {}),
+      options: fromJson(row.process_options_json, {}),
+      demolition: fromJson(row.demolition_json, {}),
+      revenue: row.revenue,
+      totalCost: row.total_cost,
+      expectedMargin: row.expected_margin,
+      expectedMarginRate: row.expected_margin_rate,
+      pceDecision: row.pce_decision,
+      pce_decision: row.pce_decision,
+      scheduleDays: row.schedule_days,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+    return {
+      estimate,
+      items: items.map((item) => ({
+        id: item.id,
+        category: item.category,
+        itemName: item.item_name,
+        quantity: item.quantity,
+        unit: item.unit,
+        customerUnitPrice: item.customer_unit_price,
+        customerTotal: item.customer_total,
+        materialCost: item.material_cost,
+        laborCost: item.labor_cost,
+        subcontractCost: item.subcontract_cost,
+        internalTotal: item.internal_total,
+        margin: item.margin,
+        marginRate: item.margin_rate
+      }))
+    };
+  }
+
+  function exportFullRemodelingEstimateDocument({ estimateId, documentType = 'customer', format = 'pdf' }) {
+    const createdAt = nowIso();
+    const model = getStoredFullRemodelingEstimateModel(estimateId);
+    const result = exportEstimateDocument({ model, type: documentType, format, outputDir: estimateExportDir });
+    insertNotification({ level: 'INFO', messageKo: `전체 리모델링 견적 출력 생성: ${result.fileName}`, relatedProjectId: estimateId, actionKo: format === 'xlsx' ? 'Excel Export' : 'PDF Export', createdAt });
+    return result;
+  }
+
+  function generateFullRemodelingContract({ estimateId, startDate = null }) {
+    const createdAt = nowIso();
+    const model = getStoredFullRemodelingEstimateModel(estimateId);
+    const contract = buildContractFromEstimate({ ...model, startDate });
+    contract.projectName = '전체 리모델링 공사';
+    contract.scopeSummaryKo = Array.from(new Set(model.items.map((item) => item.category))).join(', ');
+    const contractId = contract.contractNumber;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO contracts (
+        contract_id, client_id, project_id, lead_id, contract_status, contract_amount,
+        deposit_rate, interim_rate, balance_rate, scope_summary_ko, exclusions_ko,
+        change_order_terms_ko, defect_warranty_terms_ko, approval_required, approved_by,
+        approved_at, created_at, updated_at, estimate_id, contract_number, customer_name,
+        site_name, project_name, deposit_amount, progress_payment_amount, balance_amount,
+        start_date, end_date, duration_days, payment_terms, warranty_terms,
+        cancellation_terms, special_terms, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      contractId, `CLIENT-${estimateId}`, estimateId, null, contract.status, contract.contractAmount,
+      0.3, 0.4, 0.3, contract.scopeSummaryKo, contract.specialTerms,
+      '추가공사는 별도 승인 후 반영합니다.', contract.warrantyTerms, 1, null,
+      null, createdAt, createdAt, estimateId, contract.contractNumber, contract.customerName,
+      contract.siteName, contract.projectName, contract.depositAmount, contract.progressPaymentAmount, contract.balanceAmount,
+      contract.startDate, contract.endDate, contract.durationDays, contract.paymentTerms, contract.warrantyTerms,
+      contract.cancellationTerms, contract.specialTerms, contract.status
+    );
+    syncCustomerPaymentScheduleFromContract(contractId, createdAt);
+    syncCashflowSnapshot(createdAt);
+    return { contractId, contract };
+  }
+
+  function generateFullRemodelingSchedule({ estimateId, contractId = null, startDate = null }) {
+    const createdAt = nowIso();
+    const model = getStoredFullRemodelingEstimateModel(estimateId);
+    const row = db.project.prepare('SELECT * FROM full_remodeling_estimates WHERE id = ?').get(estimateId);
+    const estimate = {
+      ...model.estimate,
+      id: estimateId,
+      input: {
+        selectedProcesses: fromJson(row.selected_processes_json, {}),
+        options: fromJson(row.process_options_json, {}),
+        demolition: fromJson(row.demolition_json, {})
+      },
+      process_summary: (() => {
+        const groups = new Map();
+        for (const item of model.items) {
+          const current = groups.get(item.category) || { category: item.category, customerTotal: 0, internalTotal: 0, margin: 0 };
+          current.customerTotal += item.customerTotal;
+          current.internalTotal += item.internalTotal;
+          current.margin += item.margin;
+          groups.set(item.category, current);
+        }
+        return Array.from(groups.values());
+      })(),
+      line_items: model.items,
+      pce_decision: row.pce_decision
+    };
+    const schedule = buildFullScheduleFromEstimate({ estimate, contractId, startDate });
+    const scheduleId = `SCH-${estimateId}`;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO construction_schedules (
+        id, estimate_id, contract_id, schedule_name, start_date, end_date,
+        duration_days, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(scheduleId, estimateId, contractId, schedule.scheduleName, schedule.startDate, schedule.endDate, schedule.durationDays, schedule.status, createdAt, createdAt);
+    db.project.prepare('DELETE FROM construction_schedule_items WHERE schedule_id = ?').run(scheduleId);
+    const insertItem = db.project.prepare(`
+      INSERT INTO construction_schedule_items (
+        id, schedule_id, process_name, start_date, end_date, duration_days,
+        dependency, assignee, status, sort_order
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    schedule.items.forEach((item) => insertItem.run(`${scheduleId}-${String(item.sortOrder).padStart(2, '0')}`, scheduleId, item.processName, item.startDate, item.endDate, item.durationDays, item.dependency || '', item.assignee, item.status, item.sortOrder));
+    return { scheduleId, schedule };
+  }
+
+  function generateFullRemodelingPurchaseOrder({ estimateId, contractId = null, requiredDate = null }) {
+    const createdAt = nowIso();
+    const model = getStoredFullRemodelingEstimateModel(estimateId);
+    const row = db.project.prepare('SELECT * FROM full_remodeling_estimates WHERE id = ?').get(estimateId);
+    const estimate = { ...model.estimate, id: estimateId, line_items: model.items, pce_decision: row.pce_decision };
+    const purchaseOrder = buildFullPurchaseOrderFromEstimate({ estimate, contractId, requiredDate });
+    const purchaseOrderId = purchaseOrder.orderNumber;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO purchase_orders (
+        purchase_order_id, execution_project_id, project_id, order_status, unknown_price_warning,
+        payload_json, created_at, estimate_id, contract_id, order_number, supplier_name,
+        total_amount, status, required_date, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(purchaseOrderId, `EXEC-PENDING-${estimateId}`, estimateId, purchaseOrder.status, 1, toJson({ source: 'FULL_REMODELING_ESTIMATE', itemCount: purchaseOrder.items.length }), createdAt, estimateId, contractId, purchaseOrder.orderNumber, purchaseOrder.supplierName, purchaseOrder.totalAmount, purchaseOrder.status, purchaseOrder.requiredDate, createdAt);
+    db.project.prepare('DELETE FROM purchase_order_items WHERE purchase_order_id = ?').run(purchaseOrderId);
+    const insertItem = db.project.prepare(`
+      INSERT INTO purchase_order_items (
+        id, purchase_order_id, item_name, specification, quantity, unit,
+        expected_unit_price, expected_total, supplier_name, order_status,
+        required_date, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    purchaseOrder.items.forEach((item, index) => insertItem.run(`${purchaseOrderId}-ITEM-${String(index + 1).padStart(3, '0')}`, purchaseOrderId, item.itemName, item.specification, item.quantity, item.unit, item.expectedUnitPrice, item.expectedTotal, item.supplierName, item.orderStatus, item.requiredDate, item.notes));
+    syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
+    syncCashflowSnapshot(createdAt);
+    return { purchaseOrderId, purchaseOrder };
+  }
+
   function getAiEstimateContext(projectType = 'bathroom_remodel') {
     const templates = db.project.prepare(`
       SELECT *
@@ -3668,8 +4308,13 @@ function createSqliteService({ app }) {
   function getAiEstimateIntelligence({ estimateId = null, input = {}, persist = true } = {}) {
     const createdAt = nowIso();
     const id = estimateId || `AI-EST-${Date.now()}`;
-    const preview = calculateBathroomEstimatePreview({ ...input, estimateId: id });
-    const context = getAiEstimateContext(String(input.constructionType || 'bathroom_remodel'));
+    const projectType = String(input.constructionType || 'bathroom_remodel');
+    const preview = projectType === 'full_remodel'
+      ? calculateFullRemodelingEstimatePreview({ ...input, estimateId: id })
+      : projectType === 'kitchen_remodel'
+        ? calculateKitchenEstimatePreview({ ...input, estimateId: id })
+        : calculateBathroomEstimatePreview({ ...input, estimateId: id });
+    const context = getAiEstimateContext(projectType);
     const intelligence = buildEstimateIntelligence({
       estimateId: id,
       input,
@@ -13954,6 +14599,10 @@ function createSqliteService({ app }) {
       estimateDraftCount: countRows(db.project, 'estimate_drafts'),
       bathroomEstimateCount: countRows(db.project, 'bathroom_estimates'),
       bathroomEstimateItemCount: countRows(db.project, 'bathroom_estimate_items'),
+      kitchenEstimateCount: countRows(db.project, 'kitchen_estimates'),
+      kitchenEstimateItemCount: countRows(db.project, 'kitchen_estimate_items'),
+      fullRemodelingEstimateCount: countRows(db.project, 'full_remodeling_estimates'),
+      fullRemodelingEstimateItemCount: countRows(db.project, 'full_remodeling_estimate_items'),
       estimateExportDir,
       contractExportDir,
       constructionScheduleCount: countRows(db.project, 'construction_schedules'),
@@ -14089,12 +14738,24 @@ function createSqliteService({ app }) {
     calculateBathroomEstimatePreview,
     saveBathroomEstimate,
     exportBathroomEstimateDocument,
+    calculateKitchenEstimatePreview,
+    saveKitchenEstimate,
+    exportKitchenEstimateDocument,
+    calculateFullRemodelingEstimatePreview,
+    saveFullRemodelingEstimate,
+    exportFullRemodelingEstimateDocument,
     getAiEstimateIntelligence,
     decideAiRecommendationAction,
     generateBathroomContract,
     exportBathroomContractPdf,
     generateBathroomSchedule,
     generateBathroomPurchaseOrder,
+    generateKitchenContract,
+    generateKitchenSchedule,
+    generateKitchenPurchaseOrder,
+    generateFullRemodelingContract,
+    generateFullRemodelingSchedule,
+    generateFullRemodelingPurchaseOrder,
     getProjectExecutionReadiness,
     transitionProjectToExecution,
     getSiteOperationStatus,

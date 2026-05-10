@@ -41,12 +41,22 @@ export function EstimateEntryPanel({ onOpen }: Props) {
           <strong>고객가 / 원가 / 마진 자동 산출</strong>
           <em>사용 가능</em>
         </button>
-        <button className="entry-button disabled" disabled>
+        <button className="entry-button primary" onClick={() => onOpen('kitchenEstimate', 'confirm')}>
+          <span>주방 리모델링</span>
+          <strong>가구 / 상판 / 설비 / 전기 자동 산출</strong>
+          <em>바로 견적 생성</em>
+        </button>
+        <button className="entry-button disabled" disabled style={{ display: 'none' }}>
           <span>주방 리모델링</span>
           <strong>준비 중</strong>
           <em>다음 확장</em>
         </button>
-        <button className="entry-button disabled" disabled>
+        <button className="entry-button primary" onClick={() => onOpen('fullRemodelingEstimate', 'confirm')}>
+          <span>전체 리모델링</span>
+          <strong>욕실 / 주방 / 바닥 / 도배 / 전기 통합 산출</strong>
+          <em>전체 공사 견적 생성</em>
+        </button>
+        <button className="entry-button disabled" disabled style={{ display: 'none' }}>
           <span>전체 리모델링</span>
           <strong>준비 중</strong>
           <em>공정 통합 예정</em>

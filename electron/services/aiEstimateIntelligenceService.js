@@ -33,6 +33,62 @@ function hasLineItem(estimate, matcher) {
 
 function buildMissingItemWarnings({ input, estimate }) {
   const warnings = [];
+  if (String(input.constructionType || '') === 'full_remodel') {
+    const selected = input.selectedProcesses || {};
+    const options = input.options || {};
+    const demolition = input.demolition || {};
+    if ((demolition.fullDemolition || demolition.bathroomDemolition || demolition.kitchenDemolition || demolition.floorDemolition) && !hasLineItem(estimate, (_category, name) => name.includes('폐기물'))) {
+      warnings.push({ severity: 'RED', titleKo: '철거 포함인데 폐기물 비용 누락 위험', descriptionKo: '전체 리모델링은 철거량이 커서 폐기물 처리비 누락 시 마진이 크게 무너집니다.', suggestedActionKo: '폐기물 처리 항목을 필수 포함으로 유지하세요.' });
+    }
+    if (selected.bathroom && !hasLineItem(estimate, (_category, name) => name.includes('방수'))) {
+      warnings.push({ severity: 'RED', titleKo: '욕실 공정 선택인데 방수 누락 위험', descriptionKo: '욕실 리모델링에는 방수 검수와 필요 부위 보강 판단이 필요합니다.', suggestedActionKo: '방수 또는 방수 상태 확인 항목을 추가하세요.' });
+    }
+    if ((selected.bathroom || selected.flooring) && !hasLineItem(estimate, (_category, name) => name.includes('부자재') || name.includes('줄눈') || name.includes('걸레받이'))) {
+      warnings.push({ severity: 'ORANGE', titleKo: '타일/바닥 공정 부자재 누락 위험', descriptionKo: '줄눈, 접착재, 걸레받이, 보양재는 실제 원가 누수의 반복 항목입니다.', suggestedActionKo: '공정별 부자재 패키지를 확인하세요.' });
+    }
+    const heavyLighting = Boolean(options.lighting?.downlight || options.lighting?.indirect || options.lighting?.lineLight || selected.lighting);
+    if (heavyLighting && !options.electrical?.upgrade) {
+      warnings.push({ severity: 'ORANGE', titleKo: '조명/콘센트 과다 선택 대비 전기 증설 미확인', descriptionKo: '다운라이트, 라인조명, 콘센트 증가는 분전반/회로 여유 확인이 필요합니다.', suggestedActionKo: '전기 증설 또는 회로 점검 항목을 확인하세요.' });
+    }
+    if (selected.carpentry && !(selected.painting || selected.film)) {
+      warnings.push({ severity: 'YELLOW', titleKo: '목공 후속 마감 누락 가능성', descriptionKo: '목공 후에는 도장, 필름, 도배 연결 마감이 발생하는 경우가 많습니다.', suggestedActionKo: '목공 후속 마감 공정을 상담 중 확인하세요.' });
+    }
+    if (selected.windows && !hasLineItem(estimate, (_category, name) => name.includes('실리콘') || name.includes('단열'))) {
+      warnings.push({ severity: 'ORANGE', titleKo: '창호 교체 시 실리콘/단열 누락 위험', descriptionKo: '창호 공정은 실리콘, 우레탄, 결로 보강 누락 시 하자 리스크가 큽니다.', suggestedActionKo: '실리콘/단열 보강 항목을 포함하세요.' });
+    }
+    if (selected.flooring && !hasLineItem(estimate, (_category, name) => name.includes('걸레받이'))) {
+      warnings.push({ severity: 'ORANGE', titleKo: '바닥 교체 시 걸레받이 누락 위험', descriptionKo: '바닥재 교체 후 걸레받이와 몰딩 연결 마감이 필요합니다.', suggestedActionKo: '걸레받이/부자재 항목을 유지하세요.' });
+    }
+    if (selected.kitchen && !(options.kitchen?.sinkBowl || hasLineItem(estimate, (_category, name) => name.includes('배관')))) {
+      warnings.push({ severity: 'RED', titleKo: '주방 공정 선택인데 전기/배관 누락 위험', descriptionKo: '주방은 싱크볼, 수전, 후드, 쿡탑에 따라 배관과 전기 확인이 필요합니다.', suggestedActionKo: '주방 설비/전기 항목을 포함하세요.' });
+    }
+    if (!hasLineItem(estimate, (_category, name) => name.includes('현장관리'))) {
+      warnings.push({ severity: 'RED', titleKo: '전체 공사인데 현장관리비 누락 위험', descriptionKo: '전체 리모델링은 일정 조율, 검수, 협력업체 관리 비용이 반드시 발생합니다.', suggestedActionKo: '검수/현장관리비 항목을 필수 포함하세요.' });
+    }
+    return warnings;
+  }
+  if (String(input.constructionType || '') === 'kitchen_remodel') {
+    const options = input.options || {};
+    if (options.hoodReplace && !options.electricalUpgrade) {
+      warnings.push({ severity: 'ORANGE', titleKo: '후드 교체 시 전기 공정 확인 필요', descriptionKo: '후드 교체는 전원 위치, 배기 라인, 스위치 연결 확인이 필요합니다.', suggestedActionKo: '전기 증설 또는 전기 점검 항목을 확인하세요.' });
+    }
+    if ((input.island || input.kitchenType === 'island') && !options.electricalUpgrade) {
+      warnings.push({ severity: 'RED', titleKo: '아일랜드 선택 시 바닥 전기 누락 위험', descriptionKo: '아일랜드에는 콘센트, 쿡탑, 간접조명 배선이 바닥에서 올라올 수 있습니다.', suggestedActionKo: '바닥 전기 배선 및 전기 증설 여부를 확인하세요.' });
+    }
+    if (input.countertopType === 'ceramic') {
+      warnings.push({ severity: 'ORANGE', titleKo: '세라믹 상판 보강 확인 필요', descriptionKo: '세라믹 상판은 하지 보강과 운반/양중 리스크가 큽니다.', suggestedActionKo: '상판 보강, 운반비, 파손 책임 범위를 확인하세요.' });
+    }
+    if (input.demolitionIncluded && !hasLineItem(estimate, (_category, name) => name.includes('폐기') || name.includes('먭린'))) {
+      warnings.push({ severity: 'RED', titleKo: '철거 포함인데 폐기물 비용 누락 위험', descriptionKo: '주방 철거에는 기존 싱크대, 상판, 타일 폐기 비용이 따라옵니다.', suggestedActionKo: '폐기물 처리 항목을 필수 포함하세요.' });
+    }
+    if (options.sinkBowlReplace && !hasLineItem(estimate, (_category, name) => name.includes('배관') || name.includes('트랩'))) {
+      warnings.push({ severity: 'RED', titleKo: '싱크볼 교체 시 배관/트랩 누락 위험', descriptionKo: '싱크볼 교체는 배수 트랩과 급수 연결 확인이 필요합니다.', suggestedActionKo: '배관 연결/트랩 항목을 포함하세요.' });
+    }
+    if (options.indirectLighting && !options.electricalUpgrade) {
+      warnings.push({ severity: 'ORANGE', titleKo: '간접조명 선택 시 전기 공정 확인 필요', descriptionKo: '간접조명은 전원, 스위치, 안정기 위치 확인이 필요합니다.', suggestedActionKo: '전기 공정 또는 전기 점검 항목을 확인하세요.' });
+    }
+    return warnings;
+  }
   const constructionMethod = String(input.constructionMethod || '');
   const options = input.options || {};
 
@@ -150,6 +206,22 @@ function predictDefectRisk({ input }) {
     checklist.push('방수 시공 확인', '방수 양생 확인', '담수 테스트 확인');
     prevention.push('방수 검수 PASS 전 타일 착수 차단');
   }
+  if (String(input.constructionType || '') === 'kitchen_remodel') {
+    if (input.options?.sinkBowlReplace || input.options?.faucetReplace) {
+      score += 18;
+      checklist.push('싱크볼 배수 확인', '수전 누수 확인', '트랩 연결 확인');
+      prevention.push('싱크볼/수전 설치 후 누수 테스트');
+    }
+    if (input.options?.hoodReplace || input.options?.cooktopReplace) {
+      score += 12;
+      checklist.push('후드 작동 확인', '쿡탑 전원/가스 연결 확인');
+      prevention.push('후드/쿡탑 설치 후 작동 테스트');
+    }
+    if (input.countertopType === 'ceramic') {
+      score += 12;
+      checklist.push('상판 수평 확인', '세라믹 상판 파손 확인');
+    }
+  }
   if (input.tileWallType || input.tileFloorType) {
     score += 18;
     checklist.push('타일 들뜸 확인', '수평/구배 확인', '줄눈 간격 확인');
@@ -183,6 +255,56 @@ function predictCostLeakRisk({ costLeaks, calibrationRules }) {
 }
 
 function suggestSchedule(input) {
+  if (String(input.constructionType || '') === 'full_remodel') {
+    let minDays = 18;
+    let maxDays = 28;
+    const reasons = ['전체 리모델링 기본 공기 18~28일'];
+    if (numberOr(input.areaPyeong, 0) >= 30) {
+      minDays += 4;
+      maxDays += 7;
+      reasons.push('30평 이상은 공정 간 대기와 자재 반입량이 증가합니다.');
+    }
+    if (input.demolition?.fullDemolition) {
+      minDays += 2;
+      maxDays += 3;
+      reasons.push('전체 철거와 폐기물 반출 기간을 반영했습니다.');
+    }
+    if (input.selectedProcesses?.windows) {
+      minDays += 2;
+      maxDays += 4;
+      reasons.push('창호 공정은 실측, 제작, 입고 리드타임 관리가 필요합니다.');
+    }
+    if (input.selectedProcesses?.carpentry) {
+      minDays += 2;
+      maxDays += 4;
+      reasons.push('목공 공정은 후속 도장/필름/도배와 연결됩니다.');
+    }
+    return { minDays, maxDays, displayKo: `${minDays}~${maxDays}일`, reasons, riskProcesses: ['철거', '욕실 방수', '주방 제작', '목공', '전기/조명', '창호', '준공검수'] };
+  }
+  if (String(input.constructionType || '') === 'kitchen_remodel') {
+    let minDays = 4;
+    let maxDays = 6;
+    const reasons = ['주방 단독 기본 공기 4~6일'];
+    if (input.demolitionIncluded) {
+      minDays += 1;
+      maxDays += 1;
+      reasons.push('철거와 폐기물 반출이 포함되어 공기가 증가합니다.');
+    }
+    if (input.expansionIncluded) {
+      minDays += 2;
+      maxDays += 2;
+      reasons.push('확장부 정리/보강이 포함되어 공기가 증가합니다.');
+    }
+    if (input.kitchenType === 'u_shape' || input.kitchenType === 'island' || input.island) {
+      maxDays += 1;
+      reasons.push('ㄷ자형/아일랜드형은 가구 조립과 전기 검수가 증가합니다.');
+    }
+    if (input.countertopType === 'ceramic') {
+      maxDays += 1;
+      reasons.push('세라믹 상판은 제작/운반/설치 리스크가 큽니다.');
+    }
+    return { minDays, maxDays, displayKo: `${minDays}~${maxDays}일`, reasons, riskProcesses: ['철거', '전기', '가구 설치', '상판 설치', '설비 연결'] };
+  }
   let minDays = 3;
   let maxDays = 5;
   const reasons = ['욕실 단독 기본 공기 3~5일'];
@@ -221,14 +343,18 @@ function buildEstimateIntelligence({ estimateId, input = {}, estimate = {}, temp
     recommendationType: 'PROCESS',
     severity: 'ORANGE',
     titleKo: '방수/타일/실리콘 검수 흐름 추천',
-    descriptionKo: '욕실 공정은 방수 검수 PASS 후 타일 착수, 타일 중간 검수 후 도기/샤워부스 착수 순서로 관리하는 것이 안전합니다.',
+    descriptionKo: String(input.constructionType || '') === 'kitchen_remodel'
+      ? '주방 공정은 철거, 설비/전기 확인, 가구 설치, 상판 설치, 마감/검수 순서로 관리하는 것이 안전합니다.'
+      : '욕실 공정은 방수 검수 PASS 후 타일 착수, 타일 중간 검수 후 도기/샤워부스 착수 순서로 관리하는 것이 안전합니다.',
     suggestedActionKo: '검수 체크리스트를 공정표와 함께 생성하세요.'
   });
   recommendations.push({
     recommendationType: 'MATERIAL',
     severity: 'YELLOW',
-    titleKo: '타일 부자재 패키지 확인',
-    descriptionKo: '압착시멘트, 타일본드, 줄눈재, 스페이서, 실리콘은 누락되기 쉬운 비용입니다.',
+    titleKo: String(input.constructionType || '') === 'kitchen_remodel' ? '주방 부자재/하드웨어 확인' : '타일 부자재 패키지 확인',
+    descriptionKo: String(input.constructionType || '') === 'kitchen_remodel'
+      ? '손잡이, 레일, 경첩, 실리콘, 배관 트랩, 전기 부속은 누락되기 쉬운 비용입니다.'
+      : '압착시멘트, 타일본드, 줄눈재, 스페이서, 실리콘은 누락되기 쉬운 비용입니다.',
     suggestedActionKo: '부자재 패키지를 내부 원가표에서 분리 확인하세요.'
   });
   if (template) {
@@ -279,8 +405,12 @@ function buildEstimateIntelligence({ estimateId, input = {}, estimate = {}, temp
     suggestedSchedule: schedule,
     suggestedTemplate: template,
     appliedCalibrationRules: calibrationRules,
-    recommendedProcesses: ['철거', '폐기물', '방수 검수', '타일', '줄눈', '실리콘', '도기 설치', '준공청소'],
-    recommendedMaterials: ['타일', '타일 부자재', '방수재', '줄눈재', '실리콘', '도기류', '환풍기'],
+    recommendedProcesses: String(input.constructionType || '') === 'kitchen_remodel'
+      ? ['철거', '폐기물', '설비/배관', '전기', '가구 설치', '상판 설치', '마감', '청소/검수']
+      : ['철거', '폐기물', '방수 검수', '타일', '줄눈', '실리콘', '도기 설치', '준공청소'],
+    recommendedMaterials: String(input.constructionType || '') === 'kitchen_remodel'
+      ? ['상부장', '하부장', '상판', '싱크볼', '수전', '후드', '하드웨어', '실리콘']
+      : ['타일', '타일 부자재', '방수재', '줄눈재', '실리콘', '도기류', '환풍기'],
     generatedAt: new Date().toISOString()
   };
 }
