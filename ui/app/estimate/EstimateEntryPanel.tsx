@@ -1,176 +1,118 @@
 import type { ViewKey } from '../../src/types/dashboard';
 
+type Tone = 'click' | 'confirm' | 'warning';
+
 type Props = {
-  onOpen: (view: ViewKey, tone?: 'click' | 'confirm' | 'warning') => void;
+  onOpen: (view: ViewKey, tone?: Tone) => void;
 };
 
+type EntryAction = {
+  title: string;
+  headline: string;
+  note: string;
+  view: ViewKey;
+  tone?: Tone;
+  primary?: boolean;
+};
+
+const primaryActions: EntryAction[] = [
+  {
+    title: '새 견적 만들기',
+    headline: '욕실 리모델링부터 바로 시작',
+    note: '견적 생성',
+    view: 'bathroomEstimate',
+    tone: 'confirm',
+    primary: true
+  },
+  {
+    title: '욕실 리모델링',
+    headline: '타일 / 도기 / 방수 / 옵션 자동 산출',
+    note: '사용 가능',
+    view: 'bathroomEstimate',
+    tone: 'confirm',
+    primary: true
+  },
+  {
+    title: '주방 리모델링',
+    headline: '가구 / 상판 / 설비 / 전기 자동 산출',
+    note: '사용 가능',
+    view: 'kitchenEstimate',
+    tone: 'confirm',
+    primary: true
+  },
+  {
+    title: '전체 리모델링',
+    headline: '공정별 견적 / 원가 / 마진 통합 산출',
+    note: '사용 가능',
+    view: 'fullRemodelingEstimate',
+    tone: 'confirm',
+    primary: true
+  },
+  {
+    title: '저장된 견적 불러오기',
+    headline: '저장된 견적과 프로젝트를 다시 확인',
+    note: '프로젝트 목록',
+    view: 'project'
+  },
+  {
+    title: '고객용 견적서 출력',
+    headline: '고객 제출용 PDF / Excel / 인쇄',
+    note: '출력 준비',
+    view: 'bathroomEstimate'
+  },
+  {
+    title: '내부 원가표 보기',
+    headline: '원가 / 마진 / PCE 결과 확인',
+    note: '내부 검토',
+    view: 'bathroomEstimate'
+  }
+];
+
+const secondaryActions: EntryAction[] = [
+  { title: 'CEO Control Tower', headline: '오늘의 위험과 승인 대기', note: '운영 통제', view: 'ceoControlTower', tone: 'warning' },
+  { title: '현장 실행 관리', headline: '공사일보 / 출역 / 자재입고 / 검수', note: '현장 관리', view: 'executionManagement' },
+  { title: '결제/현금흐름', headline: '입금 / 지급 / 연체 / 7일 현금흐름', note: '자금 관리', view: 'payment', tone: 'warning' },
+  { title: '커뮤니케이션 센터', headline: '고객 / 협력업체 메시지 생성', note: '발송 기록', view: 'communication' },
+  { title: '프로젝트 마감', headline: '실제 원가 / 마진 / 원가 누수 분석', note: '마감 검토', view: 'closing' },
+  { title: '평면도 / 아이소메트릭', headline: '공간 구역과 견적 연결', note: '공간 관리', view: 'floorplanCenter' },
+  { title: 'AI 투시도 생성', headline: '프롬프트 / ComfyUI / 이미지 검토', note: '시각화', view: 'aiVisualization' },
+  { title: '디자인 보드 생성', headline: '고객 제안서 / 포트폴리오 보드', note: '보드 출력', view: 'boardGeneration' }
+];
+
 export function EstimateEntryPanel({ onOpen }: Props) {
+  const renderButton = (action: EntryAction) => (
+    <button
+      key={action.title}
+      className={`entry-button${action.primary ? ' primary' : ''}`}
+      onClick={() => onOpen(action.view, action.tone ?? 'click')}
+    >
+      <span>{action.title}</span>
+      <strong>{action.headline}</strong>
+      <em>{action.note}</em>
+    </button>
+  );
+
   return (
     <section className="estimate-entry-panel">
       <div className="estimate-entry-heading">
         <div>
           <span className="eyebrow">MAIN ENTRY</span>
           <h1>자동견적 시작</h1>
-          <p>BOC는 여기서 견적을 만들고, 수익성 검증 후 실행으로 넘깁니다.</p>
+          <p>BOC는 견적 생성이 첫 화면입니다. 견적을 만들고, 수익성 검증 후 계약과 실행으로 넘깁니다.</p>
         </div>
-        <button className="secondary-dashboard-button" onClick={() => onOpen('dashboard', 'click')}>
-          CEO Dashboard
-        </button>
-        <button className="secondary-dashboard-button" onClick={() => onOpen('ceoControlTower', 'warning')}>
-          CEO Control Tower
-        </button>
-        <button className="secondary-dashboard-button" onClick={() => onOpen('communication', 'click')}>
-          Communication
-        </button>
-        <button className="secondary-dashboard-button" onClick={() => onOpen('payment', 'warning')}>
-          Payment
-        </button>
-        <button className="secondary-dashboard-button" onClick={() => onOpen('floorplanCenter', 'click')}>
-          평면도 / 아이소메트릭
-        </button>
-        <button className="secondary-dashboard-button" onClick={() => onOpen('aiVisualization', 'click')}>
-          AI 투시도 생성
-        </button>
-        <button className="secondary-dashboard-button" onClick={() => onOpen('boardGeneration', 'click')}>
-          디자인 보드 생성
-        </button>
-        <button className="secondary-dashboard-button" onClick={() => onOpen('closing', 'warning')}>
-          Project Closing
-        </button>
       </div>
 
-      <div className="estimate-entry-grid">
-        <button className="entry-button primary" onClick={() => onOpen('bathroomEstimate', 'confirm')}>
-          <span>새 견적 만들기</span>
-          <strong>욕실 단독 리모델링</strong>
-          <em>바로 견적 생성</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('bathroomEstimate', 'click')}>
-          <span>욕실 리모델링</span>
-          <strong>고객가 / 원가 / 마진 자동 산출</strong>
-          <em>사용 가능</em>
-        </button>
-        <button className="entry-button primary" onClick={() => onOpen('kitchenEstimate', 'confirm')}>
-          <span>주방 리모델링</span>
-          <strong>가구 / 상판 / 설비 / 전기 자동 산출</strong>
-          <em>바로 견적 생성</em>
-        </button>
-        <button className="entry-button disabled" disabled style={{ display: 'none' }}>
-          <span>주방 리모델링</span>
-          <strong>준비 중</strong>
-          <em>다음 확장</em>
-        </button>
-        <button className="entry-button primary" onClick={() => onOpen('fullRemodelingEstimate', 'confirm')}>
-          <span>전체 리모델링</span>
-          <strong>욕실 / 주방 / 바닥 / 도배 / 전기 통합 산출</strong>
-          <em>전체 공사 견적 생성</em>
-        </button>
-        <button className="entry-button primary" onClick={() => onOpen('floorplanCenter', 'click')}>
-          <span>평면도 / 아이소메트릭</span>
-          <strong>공간별 견적 연결과 투시도 프롬프트</strong>
-          <em>공간 기반 견적</em>
-        </button>
-        <button className="entry-button primary" onClick={() => onOpen('aiVisualization', 'click')}>
-          <span>AI 투시도 생성</span>
-          <strong>공간 브리프 / 프롬프트 / 생성 대기열</strong>
-          <em>제안 이미지 준비</em>
-        </button>
-        <button className="entry-button primary" onClick={() => onOpen('boardGeneration', 'click')}>
-          <span>디자인 보드 생성</span>
-          <strong>견적 / 평면도 / 투시도 기반 제안 보드</strong>
-          <em>PDF 제안서 출력</em>
-        </button>
-        <button className="entry-button disabled" disabled style={{ display: 'none' }}>
-          <span>전체 리모델링</span>
-          <strong>준비 중</strong>
-          <em>공정 통합 예정</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('project', 'click')}>
-          <span>저장된 견적 불러오기</span>
-          <strong>프로젝트 상세</strong>
-          <em>불러오기</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('bathroomEstimate', 'click')}>
-          <span>고객용 견적서 출력</span>
-          <strong>고객 표시 금액만 보기</strong>
-          <em>출력 준비</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('bathroomEstimate', 'click')}>
-          <span>내부 원가표 보기</span>
-          <strong>원가 / 마진 / PCE 확인</strong>
-          <em>내부용</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('contractDocuments', 'click')}>
-          <span>계약 문서</span>
-          <strong>견적 승인 후 계약서 생성</strong>
-          <em>실행 준비</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('constructionSchedule', 'click')}>
-          <span>공정표</span>
-          <strong>철거부터 인도까지 자동 생성</strong>
-          <em>일정 관리</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('purchaseOrders', 'click')}>
-          <span>발주 관리</span>
-          <strong>자재 발주 목록 자동 생성</strong>
-          <em>구매 준비</em>
-        </button>
-        <button className="entry-button primary" onClick={() => onOpen('executionManagement', 'confirm')}>
-          <span>현장 실행 관리</span>
-          <strong>공사일보 / 출역 / 입고 / 검수</strong>
-          <em>시공 통제</em>
-        </button>
-        <button className="entry-button primary" onClick={() => onOpen('ceoControlTower', 'warning')}>
-          <span>CEO Control Tower</span>
-          <strong>오늘 위험 / 승인 / 현금흐름</strong>
-          <em>대표 판단</em>
-        </button>
-        <button className="entry-button primary" onClick={() => onOpen('communication', 'click')}>
-          <span>커뮤니케이션 센터</span>
-          <strong>고객 안내 / 발주 메시지 / 결제 요청</strong>
-          <em>복사 발송</em>
-        </button>
-        <button className="entry-button primary" onClick={() => onOpen('payment', 'warning')}>
-          <span>결제 / 현금흐름</span>
-          <strong>계약금 / 중도금 / 잔금 / 지급 승인</strong>
-          <em>돈 흐름 통제</em>
-        </button>
-        <button className="entry-button primary" onClick={() => onOpen('closing', 'warning')}>
-          <span>프로젝트 마감</span>
-          <strong>실제 수익 / 실제 원가 / 최종 마진 확정</strong>
-          <em>마감 학습</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('executionManagement', 'click')}>
-          <span>공사일보</span>
-          <strong>금일 공정 기록</strong>
-          <em>현장 기록</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('executionManagement', 'click')}>
-          <span>출역일보</span>
-          <strong>품수 / 노무비 기록</strong>
-          <em>원가 연결</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('executionManagement', 'click')}>
-          <span>자재입고</span>
-          <strong>발주 대비 입고 확인</strong>
-          <em>부족 경고</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('executionManagement', 'warning')}>
-          <span>검수 체크리스트</span>
-          <strong>FAIL 시 후속 공정 차단</strong>
-          <em>RED ALERT</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('executionManagement', 'warning')}>
-          <span>추가공사 승인</span>
-          <strong>PCE 기반 저마진 차단</strong>
-          <em>승인 필요</em>
-        </button>
-        <button className="entry-button" onClick={() => onOpen('executionManagement', 'warning')}>
-          <span>하자관리</span>
-          <strong>Root Cause / 예방 룰 연결</strong>
-          <em>학습 반영</em>
-        </button>
+      <div className="estimate-entry-grid">{primaryActions.map(renderButton)}</div>
+
+      <div className="estimate-entry-heading secondary-heading">
+        <div>
+          <span className="eyebrow">OPERATIONS</span>
+          <h2>운영 관리</h2>
+          <p>견적 이후의 승인, 현장, 결제, 시각화, 보드 출력은 여기서 관리합니다.</p>
+        </div>
       </div>
+
+      <div className="estimate-entry-grid secondary-grid">{secondaryActions.map(renderButton)}</div>
     </section>
   );
 }

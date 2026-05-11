@@ -82,6 +82,25 @@ function createSqliteService({ app }) {
   const boardExportDir = app && app.isPackaged
     ? path.join(app.getPath('userData'), 'export', 'boards')
     : path.join(__dirname, '..', '..', 'export', 'boards');
+  const scheduleExportDir = app && app.isPackaged
+    ? path.join(app.getPath('userData'), 'export', 'schedules')
+    : path.join(__dirname, '..', '..', 'export', 'schedules');
+  const purchaseOrderExportDir = app && app.isPackaged
+    ? path.join(app.getPath('userData'), 'export', 'purchase-orders')
+    : path.join(__dirname, '..', '..', 'export', 'purchase-orders');
+  const reportExportDir = app && app.isPackaged
+    ? path.join(app.getPath('userData'), 'export', 'reports')
+    : path.join(__dirname, '..', '..', 'export', 'reports');
+
+  [
+    estimateExportDir,
+    contractExportDir,
+    scheduleExportDir,
+    purchaseOrderExportDir,
+    visualizationExportDir,
+    boardExportDir,
+    reportExportDir
+  ].forEach((exportDir) => fs.mkdirSync(exportDir, { recursive: true }));
 
   const dbPaths = {
     project: path.join(databaseDir, 'project.db'),
@@ -15882,6 +15901,9 @@ function createSqliteService({ app }) {
       boardExportDir,
       estimateExportDir,
       contractExportDir,
+      scheduleExportDir,
+      purchaseOrderExportDir,
+      reportExportDir,
       constructionScheduleCount: countRows(db.project, 'construction_schedules'),
       constructionScheduleItemCount: countRows(db.project, 'construction_schedule_items'),
       purchaseOrderItemCount: countRows(db.project, 'purchase_order_items'),
