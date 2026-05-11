@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { CeoDashboard } from '../app/dashboard/CeoDashboard';
 import './styles.css';
 import './print.css';
+import './board-print.css';
 
 createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

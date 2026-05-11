@@ -28,7 +28,22 @@ const boardTypes = [
 
 const printFormats = [
   ['A3_LANDSCAPE', 'A3 가로'],
+  ['A4_LANDSCAPE', 'A4 가로'],
   ['A4_PORTRAIT', 'A4 세로']
+];
+
+const exportModes = [
+  ['CLIENT_PROPOSAL', '고객 제안서 PDF'],
+  ['PORTFOLIO_BOARD', '포트폴리오 PDF'],
+  ['MATERIAL_BOARD', '자재 보드 PDF'],
+  ['SPACE_BOARD', '공간별 보드 PDF']
+];
+
+const imageFitModes = [
+  ['AUTO', '이미지 맞춤'],
+  ['PRESERVE', '비율 유지'],
+  ['COVER', '꽉 채우기'],
+  ['CONTAIN', '여백 포함']
 ];
 
 const money = (value: unknown) => `${Math.round(Number(value || 0)).toLocaleString('ko-KR')}원`;
@@ -46,7 +61,9 @@ export function BoardGenerationCenterView() {
     projectName: '고객 상담 프로젝트',
     projectId: '',
     estimateId: '',
+    exportMode: 'CLIENT_PROPOSAL',
     printFormat: 'A3_LANDSCAPE',
+    imageFitMode: 'CONTAIN',
     manualImagePath: '',
     finalMarginRate: '0.35',
     hasMajorDefect: false,
@@ -94,7 +111,9 @@ export function BoardGenerationCenterView() {
       projectName: form.projectName,
       projectId: form.projectId || undefined,
       estimateId: form.estimateId || undefined,
+      exportMode: form.exportMode,
       printFormat: form.printFormat,
+      imageFitMode: form.imageFitMode,
       selectedImageIds,
       manualImages,
       estimateSummary: {
@@ -112,7 +131,7 @@ export function BoardGenerationCenterView() {
       setMessage('먼저 보드를 생성하세요.');
       return;
     }
-    const result = await exportDesignBoardPdf({ boardId: activeBoard.id });
+    const result = await exportDesignBoardPdf({ boardId: activeBoard.id, exportMode: form.exportMode });
     setData((result as Record<string, any>).boardData as BoardData);
     setMessage(`PDF 출력 완료: ${(result as Record<string, any>).filePath}`);
   };
@@ -203,6 +222,12 @@ export function BoardGenerationCenterView() {
               </select>
             </label>
             <label>
+              PDF 모드
+              <select value={form.exportMode} onChange={(event) => setForm({ ...form, exportMode: event.target.value })}>
+                {exportModes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+            <label>
               템플릿
               <select value={form.templateId} onChange={(event) => setForm({ ...form, templateId: event.target.value })}>
                 {templates.map((template) => <option key={template.id} value={template.id}>{template.templateName}</option>)}
@@ -224,6 +249,12 @@ export function BoardGenerationCenterView() {
               출력 설정
               <select value={form.printFormat} onChange={(event) => setForm({ ...form, printFormat: event.target.value })}>
                 {printFormats.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+            <label>
+              이미지 처리
+              <select value={form.imageFitMode} onChange={(event) => setForm({ ...form, imageFitMode: event.target.value })}>
+                {imageFitModes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
             <label>
@@ -308,7 +339,8 @@ export function BoardGenerationCenterView() {
             <>
               <p><strong>{activeBoard.title}</strong></p>
               <p>{activeBoard.subtitle}</p>
-              <p className="muted">상태: {activeBoard.status} / 출력: {activeBoard.printFormat}</p>
+              <p className="muted">상태: {activeBoard.status} / 출력: {activeBoard.printFormat} / 모드: {activeBoard.boardLayout?.exportModeKo || activeBoard.boardLayout?.exportMode}</p>
+              <p className="muted">이미지 처리: {activeBoard.boardLayout?.imageSettings?.fitModeKo || '-'} / 안전 여백: {activeBoard.boardLayout?.printSettings?.safeMarginMm || '-'}mm</p>
               <div className="tag-row">
                 {activeSections.map((section) => <span className="status-pill" key={section.id}>{section.sectionTitle}</span>)}
               </div>

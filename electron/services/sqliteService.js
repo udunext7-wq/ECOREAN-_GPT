@@ -5289,9 +5289,12 @@ function createSqliteService({ app }) {
     const boardType = String(payload.boardType || 'CLIENT_PROPOSAL').toUpperCase();
     const templateId = payload.templateId || 'TPL-PREMIUM-MINIMAL';
     const selectedImageIds = Array.isArray(payload.selectedImageIds) ? payload.selectedImageIds : [];
+    const autoUseApprovedImages = payload.useApprovedImages !== false;
     const selectedImages = selectedImageIds.length
       ? db.project.prepare(`SELECT * FROM visualization_results WHERE id IN (${selectedImageIds.map(() => '?').join(',')})`).all(...selectedImageIds).map(mapVisualizationResult)
-      : getApprovedVisualizationResults({ estimateId: payload.estimateId }).slice(0, 6);
+      : autoUseApprovedImages
+        ? getApprovedVisualizationResults({ estimateId: payload.estimateId }).slice(0, 6)
+        : [];
     const manualImages = (payload.manualImages || [])
       .filter((image) => image && image.imagePath)
       .map((image, index) => ({
@@ -5333,16 +5336,21 @@ function createSqliteService({ app }) {
     const projectName = payload.projectName || floorplan?.fileName || 'ECOREAN Project';
     const layout = buildBoardLayout({
       boardType,
+      exportMode: payload.exportMode || boardType,
       templateId,
       images,
       spaces,
       floorplan,
       moodboard,
       estimateSummary,
+      areaM2: payload.areaM2,
+      spaceTypeKo: payload.spaceTypeKo,
       projectName,
       title,
       subtitle,
       materialSelections: payload.materialSelections || [],
+      constructionScope: payload.constructionScope || [],
+      imageFitMode: payload.imageFitMode || 'CONTAIN',
       printFormat: payload.printFormat || 'A3_LANDSCAPE'
     });
     db.project.prepare(`
@@ -5384,7 +5392,7 @@ function createSqliteService({ app }) {
     if (!row) throw new Error('design board not found');
     const board = mapDesignBoard(row);
     const layout = board.boardLayout;
-    const exported = exportBoardPdf({ board, layout, exportDir: boardExportDir, timestamp: Date.now() });
+    const exported = exportBoardPdf({ board, layout, exportDir: boardExportDir, timestamp: Date.now(), exportMode: payload.exportMode });
     const updatedAt = nowIso();
     db.project.prepare('UPDATE design_boards SET export_path = ?, status = ?, updated_at = ? WHERE id = ?').run(exported.filePath, 'EXPORTED', updatedAt, payload.boardId);
     insertNotification({ level: 'INFO', messageKo: `디자인 보드 PDF 출력: ${exported.fileName}`, relatedProjectId: board.projectId || board.estimateId || board.id, actionKo: 'PDF 출력', createdAt: updatedAt });
