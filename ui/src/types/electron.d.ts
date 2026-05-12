@@ -96,6 +96,11 @@ declare global {
         getVendorPriceAdminData: () => Promise<Record<string, unknown>>;
         createVendorPriceCatalogEntry: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         decideVendorPriceApproval: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getVendorPriceIntelligenceData: () => Promise<Record<string, unknown>>;
+        saveMaterialPriceHistory: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        importMaterialPriceHistoryCsv: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        decideVendorPriceRecommendation: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getVendorSelectionRecommendation: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getPermissionAdminData: () => Promise<Record<string, unknown>>;
         getPortfolioDashboardData: () => Promise<Record<string, unknown>>;
         getCrewDashboardData: () => Promise<Record<string, unknown>>;

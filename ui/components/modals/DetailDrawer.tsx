@@ -33,6 +33,7 @@ import { PurchaseOrderView } from '../../app/purchase/PurchaseOrderView';
 import { ConstructionScheduleView } from '../../app/schedule/ConstructionScheduleView';
 import { SettingsView } from '../../app/settings/SettingsView';
 import { VendorPriceAdminView } from '../../app/vendor/VendorPriceAdminView';
+import { VendorPriceIntelligenceCenterView } from '../../app/vendor/VendorPriceIntelligenceCenterView';
 import { getProjectDecisionText } from '../../state/project-store/useProjectStore';
 
 type Props = {
@@ -75,6 +76,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     costCapture: '실제 원가 입력',
     marginSafety: '마진 안전',
     vendorPrice: '거래처 단가 관리',
+    vendorIntelligence: '협력업체 단가 지능화',
     portfolio: '포트폴리오 관리',
     crew: '인력 관리',
     finance: '회사 재무',
@@ -85,7 +87,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     profitAutomation: '수익 자동화'
   };
 
-  const isWideView = ['masterDb', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
+  const isWideView = ['masterDb', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
 
   return (
     <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
@@ -113,6 +115,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'costCapture' ? <CostCaptureDashboard /> : null}
       {view === 'marginSafety' ? <MarginSafetyDashboard /> : null}
       {view === 'vendorPrice' ? <VendorPriceAdminView /> : null}
+      {view === 'vendorIntelligence' ? <VendorPriceIntelligenceCenterView /> : null}
       {view === 'portfolio' ? <PortfolioDashboardView /> : null}
       {view === 'crew' ? <CrewDashboardView /> : null}
       {view === 'finance' ? <CompanyFinanceDashboard /> : null}

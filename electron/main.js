@@ -84,6 +84,11 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:vendor-price:get', () => sqliteService.getVendorPriceAdminData());
   ipcMain.handle('boc:vendor-price:create', (_event, payload) => sqliteService.createVendorPriceCatalogEntry(payload));
   ipcMain.handle('boc:vendor-price:decide', (_event, payload) => sqliteService.decideVendorPriceApproval(payload));
+  ipcMain.handle('boc:vendor-intelligence:get', () => sqliteService.getVendorPriceIntelligenceData());
+  ipcMain.handle('boc:vendor-intelligence:history:save', (_event, payload) => sqliteService.saveMaterialPriceHistory(payload));
+  ipcMain.handle('boc:vendor-intelligence:csv-import', (_event, payload) => sqliteService.importMaterialPriceHistoryCsv(payload));
+  ipcMain.handle('boc:vendor-intelligence:recommendation:decide', (_event, payload) => sqliteService.decideVendorPriceRecommendation(payload));
+  ipcMain.handle('boc:vendor-intelligence:vendor:recommend', (_event, payload) => sqliteService.getVendorSelectionRecommendation(payload));
   ipcMain.handle('boc:permissions:get', () => sqliteService.getPermissionAdminData());
   ipcMain.handle('boc:portfolio:get', () => sqliteService.getPortfolioDashboardData());
   ipcMain.handle('boc:crew:get', () => sqliteService.getCrewDashboardData());

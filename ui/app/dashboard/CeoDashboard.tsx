@@ -61,6 +61,7 @@ export function CeoDashboard() {
       openCostCapture: 'costCapture',
       openMarginSafety: 'marginSafety',
       openVendorPriceAdmin: 'vendorPrice',
+      openVendorPriceIntelligence: 'vendorIntelligence',
       openPortfolio: 'portfolio',
       openCrew: 'crew',
       openFinance: 'finance',
@@ -237,6 +238,14 @@ export function CeoDashboard() {
               <button onClick={() => openView('calibration', 'warning')}>보정 센터 열기</button>
             </div>
           </SectionCard>
+          <SectionCard title="Vendor Intelligence" eyebrow="PRICE AND RELIABILITY">
+            <div className="profit-tile">
+              <span>협력업체 단가 지능화</span>
+              <strong>{String(dashboard.data.vendorPriceIntelligenceSummary.pendingRecommendationCount || 0)}건 견적 반영 대기</strong>
+              <p>단가 상승 경고 {String(dashboard.data.vendorPriceIntelligenceSummary.openAlertCount || 0)}건 / 위험 업체 {String(dashboard.data.vendorPriceIntelligenceSummary.riskyVendorCount || 0)}곳</p>
+              <button onClick={() => openView('vendorIntelligence', 'warning')}>단가 지능화 열기</button>
+            </div>
+          </SectionCard>
         </aside>
       </div>
 
@@ -258,6 +267,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('costCapture', 'warning')}>Cost Capture</button>
         <button onClick={() => openView('marginSafety', 'warning')}>Margin Safety</button>
         <button onClick={() => openView('vendorPrice', 'click')}>Vendor Price</button>
+        <button onClick={() => openView('vendorIntelligence', 'warning')}>Vendor Intelligence</button>
         <button onClick={() => openView('portfolio', 'click')}>Portfolio</button>
         <button onClick={() => openView('crew', 'click')}>Crew</button>
         <button onClick={() => openView('finance', 'warning')}>Finance</button>

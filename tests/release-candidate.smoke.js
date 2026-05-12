@@ -51,6 +51,10 @@ const releaseChecks = [
     script: 'project-calibration.smoke.js'
   },
   {
+    label: '협력업체 단가 지능화',
+    script: 'vendor-price-intelligence.smoke.js'
+  },
+  {
     label: 'AI 투시도 프롬프트',
     script: 'ai-visualization-generation.smoke.js'
   },

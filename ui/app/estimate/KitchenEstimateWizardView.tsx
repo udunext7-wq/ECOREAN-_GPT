@@ -436,6 +436,7 @@ export function KitchenEstimateWizardView() {
                     <button onClick={handleGeneratePurchaseOrder} disabled={isBusy || blocked}>발주서 생성</button>
                     <button onClick={openFloorplanCenter} disabled={isBusy}>평면도 / 아이소메트릭</button>
                     <button onClick={openAIVisualizationCenter} disabled={isBusy}>AI 투시도 생성</button>
+                    <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'vendorIntelligence' }))} disabled={isBusy}>협력업체 단가 지능화</button>
                   </div>
                   {blocked ? <p className="assistant-message">수익성 검증 {preview.estimate.pce_decision} 상태에서는 계약/공정표/발주서를 생성할 수 없습니다.</p> : null}
                 </>

@@ -41,6 +41,16 @@ const {
   buildCalibrationRule,
   buildRiskPattern
 } = require('./projectCalibrationService');
+const {
+  calculateVarianceRate,
+  resolvePriceRiskLevel,
+  calculateVendorReliabilityScore,
+  compareVendorPrices,
+  buildPriceAlert,
+  buildEstimatePriceRecommendation,
+  recommendVendor,
+  parseVendorPriceCsv
+} = require('./vendorPriceIntelligenceService');
 const { requestManualGeneration } = require('./visualizationProviders/manualProvider');
 const { healthCheck: comfyUiHealthCheck, queuePrompt: queueComfyUiPrompt, downloadImages: downloadComfyUiImages } = require('./visualizationProviders/comfyuiProvider');
 const { requestExternalApiGeneration } = require('./visualizationProviders/externalApiProvider');
@@ -2531,6 +2541,69 @@ function createSqliteService({ app }) {
         rollback_available INTEGER NOT NULL,
         created_by TEXT NOT NULL,
         created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS material_price_history (
+        id TEXT PRIMARY KEY,
+        material_category TEXT NOT NULL,
+        material_name TEXT NOT NULL,
+        specification TEXT NOT NULL,
+        brand TEXT NOT NULL,
+        vendor_id TEXT,
+        vendor_name TEXT NOT NULL,
+        quoted_unit_price INTEGER NOT NULL,
+        actual_unit_price INTEGER NOT NULL,
+        unit TEXT NOT NULL,
+        source_type TEXT NOT NULL,
+        related_purchase_order_id TEXT,
+        recorded_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS vendor_reliability_scores (
+        id TEXT PRIMARY KEY,
+        vendor_id TEXT NOT NULL,
+        vendor_name TEXT NOT NULL,
+        on_time_rate REAL NOT NULL,
+        shortage_count INTEGER NOT NULL,
+        defect_count INTEGER NOT NULL,
+        price_variance_rate REAL NOT NULL,
+        payment_issue_count INTEGER NOT NULL,
+        repeat_usage_count INTEGER NOT NULL,
+        manual_rating REAL NOT NULL,
+        vendor_score REAL NOT NULL,
+        reliability_level TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS vendor_price_alerts (
+        id TEXT PRIMARY KEY,
+        alert_type TEXT NOT NULL,
+        material_name TEXT NOT NULL,
+        vendor_name TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        previous_price INTEGER NOT NULL,
+        current_price INTEGER NOT NULL,
+        variance_rate REAL NOT NULL,
+        reason TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS vendor_price_recommendations (
+        id TEXT PRIMARY KEY,
+        recommendation_type TEXT NOT NULL,
+        target_estimate_type TEXT NOT NULL,
+        target_process TEXT NOT NULL,
+        material_name TEXT NOT NULL,
+        vendor_name TEXT NOT NULL,
+        adjustment_type TEXT NOT NULL,
+        adjustment_value REAL NOT NULL,
+        reason TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        approved_at TEXT,
+        approved_by TEXT
       );
 
       CREATE TABLE IF NOT EXISTS margin_safety_rules (
@@ -9820,6 +9893,7 @@ function createSqliteService({ app }) {
       immediateActions: buildImmediateActions(),
       profitSummary,
       calibrationSummary: getCalibrationSummary(),
+      vendorPriceIntelligenceSummary: getVendorPriceIntelligenceSummary(),
       profitAlerts,
       profitTemplates,
       estimateVsActualTop,
@@ -14352,6 +14426,411 @@ function createSqliteService({ app }) {
     return { adminData: getVendorPriceAdminData(), dashboardData: getDashboardData() };
   }
 
+  function saveMaterialPriceHistory({
+    materialCategory = 'material',
+    materialName,
+    specification = 'UNKNOWN',
+    brand = 'UNKNOWN',
+    vendorId = 'MANUAL_VENDOR',
+    vendorName,
+    quotedUnitPrice = 0,
+    actualUnitPrice = 0,
+    unit = 'EA',
+    sourceType = 'MANUAL',
+    relatedPurchaseOrderId = null,
+    recordedAt = nowIso()
+  }) {
+    if (!materialName || !vendorName) {
+      throw new Error('Material price history requires materialName and vendorName.');
+    }
+    const createdAt = nowIso();
+    const currentPrice = toInteger(actualUnitPrice || quotedUnitPrice);
+    const previous = db.master.prepare(`
+      SELECT *
+      FROM material_price_history
+      WHERE material_name = ? AND specification = ? AND vendor_name = ?
+      ORDER BY recorded_at DESC, created_at DESC
+      LIMIT 1
+    `).get(materialName, specification, vendorName);
+
+    const id = `MPH-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    db.master.prepare(`
+      INSERT INTO material_price_history (
+        id, material_category, material_name, specification, brand,
+        vendor_id, vendor_name, quoted_unit_price, actual_unit_price, unit,
+        source_type, related_purchase_order_id, recorded_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      materialCategory,
+      materialName,
+      specification,
+      brand,
+      vendorId,
+      vendorName,
+      toInteger(quotedUnitPrice),
+      currentPrice,
+      unit,
+      sourceType,
+      relatedPurchaseOrderId,
+      recordedAt,
+      createdAt
+    );
+
+    let alert = null;
+    const previousPrice = Number(previous?.actual_unit_price || previous?.quoted_unit_price || 0);
+    const varianceRate = calculateVarianceRate(previousPrice, currentPrice);
+    if (previousPrice > 0 && Math.abs(varianceRate) >= 0.08) {
+      alert = createVendorPriceAlert(buildPriceAlert({
+        alertType: varianceRate > 0 ? 'PRICE_INCREASE' : 'PRICE_DECREASE',
+        materialName,
+        vendorName,
+        previousPrice,
+        currentPrice,
+        reason: `${materialName} ${vendorName} 단가가 이전 대비 ${(varianceRate * 100).toFixed(1)}% 변동되었습니다.`
+      }), createdAt);
+      createVendorPriceRecommendation(buildEstimatePriceRecommendation({
+        recommendationType: 'PRICE_CHANGE_BUFFER',
+        targetEstimateType: inferEstimateTypeFromMaterial(materialCategory, materialName),
+        targetProcess: materialCategory,
+        materialName,
+        vendorName,
+        varianceRate
+      }), createdAt);
+    }
+
+    const quoteActualVariance = calculateVarianceRate(toInteger(quotedUnitPrice), currentPrice);
+    if (toInteger(quotedUnitPrice) > 0 && Math.abs(quoteActualVariance) >= 0.08) {
+      createVendorPriceAlert(buildPriceAlert({
+        alertType: 'QUOTE_ACTUAL_VARIANCE',
+        materialName,
+        vendorName,
+        previousPrice: toInteger(quotedUnitPrice),
+        currentPrice,
+        reason: `${materialName} 견적 단가와 실제 매입 단가 차이가 ${(quoteActualVariance * 100).toFixed(1)}%입니다.`
+      }), createdAt);
+    }
+
+    recomputeVendorReliabilityScore(vendorId, vendorName, createdAt);
+    return { priceHistoryId: id, alert, intelligenceData: getVendorPriceIntelligenceData() };
+  }
+
+  function createVendorPriceAlert(alert, createdAt = nowIso()) {
+    const id = `VPA-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    db.master.prepare(`
+      INSERT INTO vendor_price_alerts (
+        id, alert_type, material_name, vendor_name, severity, previous_price,
+        current_price, variance_rate, reason, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      alert.alertType,
+      alert.materialName,
+      alert.vendorName,
+      alert.severity,
+      toInteger(alert.previousPrice),
+      toInteger(alert.currentPrice),
+      Number(alert.varianceRate || 0),
+      alert.reason,
+      'OPEN',
+      createdAt
+    );
+    return db.master.prepare('SELECT * FROM vendor_price_alerts WHERE id = ?').get(id);
+  }
+
+  function createVendorPriceRecommendation(recommendation, createdAt = nowIso()) {
+    const id = `VPR-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    db.master.prepare(`
+      INSERT INTO vendor_price_recommendations (
+        id, recommendation_type, target_estimate_type, target_process,
+        material_name, vendor_name, adjustment_type, adjustment_value,
+        reason, status, created_at, approved_at, approved_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      recommendation.recommendationType,
+      recommendation.targetEstimateType,
+      recommendation.targetProcess,
+      recommendation.materialName,
+      recommendation.vendorName,
+      recommendation.adjustmentType,
+      Number(recommendation.adjustmentValue || 0),
+      recommendation.reason,
+      'PENDING_APPROVAL',
+      createdAt,
+      null,
+      null
+    );
+    return db.master.prepare('SELECT * FROM vendor_price_recommendations WHERE id = ?').get(id);
+  }
+
+  function decideVendorPriceRecommendation({ recommendationId, decision, actor = 'CEO', reasonKo = '' }) {
+    const normalized = String(decision || '').toUpperCase();
+    if (!['APPROVED', 'REJECTED', 'APPLIED'].includes(normalized)) {
+      throw new Error('Vendor price recommendation decision must be APPROVED, REJECTED, or APPLIED.');
+    }
+    const row = db.master.prepare('SELECT * FROM vendor_price_recommendations WHERE id = ?').get(recommendationId);
+    if (!row) throw new Error(`Vendor price recommendation not found: ${recommendationId}`);
+    const createdAt = nowIso();
+    db.master.prepare(`
+      UPDATE vendor_price_recommendations
+      SET status = ?, approved_at = CASE WHEN ? IN ('APPROVED', 'APPLIED') THEN ? ELSE approved_at END,
+          approved_by = CASE WHEN ? IN ('APPROVED', 'APPLIED') THEN ? ELSE approved_by END
+      WHERE id = ?
+    `).run(normalized, normalized, createdAt, normalized, actor, recommendationId);
+    if (['APPROVED', 'APPLIED'].includes(normalized)) {
+      db.project.prepare(`
+        INSERT OR REPLACE INTO estimate_calibration_rules (
+          id, source_project_id, source_category, rule_type, adjustment_target,
+          adjustment_value, reason, status, created_at, estimate_type, process_type,
+          condition_json, adjustment_type, confidence_score, source_project_ids,
+          auto_generated, requires_approval, approved_at, approved_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM estimate_calibration_rules WHERE id = ?), ?),
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        `VENDOR-${row.id}`,
+        'VENDOR_PRICE_INTELLIGENCE',
+        row.material_name,
+        row.adjustment_type,
+        row.target_process,
+        Number(row.adjustment_value || 0),
+        row.reason,
+        'APPROVED',
+        `VENDOR-${row.id}`,
+        createdAt,
+        row.target_estimate_type,
+        row.target_process,
+        toJson({ materialName: row.material_name, vendorName: row.vendor_name, source: 'vendor_price_recommendation' }),
+        row.adjustment_type,
+        0.78,
+        toJson(['VENDOR_PRICE_INTELLIGENCE']),
+        1,
+        0,
+        createdAt,
+        actor
+      );
+    }
+    recordAction({
+      actionType: `VENDOR_PRICE_RECOMMENDATION_${normalized}`,
+      actor,
+      projectId: 'GLOBAL',
+      reasonKo: reasonKo || `${row.material_name} 단가 추천 ${normalized}`,
+      payload: { recommendationId, beforeStatus: row.status, afterStatus: normalized }
+    });
+    return { recommendation: db.master.prepare('SELECT * FROM vendor_price_recommendations WHERE id = ?').get(recommendationId), intelligenceData: getVendorPriceIntelligenceData(), dashboardData: getDashboardData() };
+  }
+
+  function importMaterialPriceHistoryCsv({ csvText = '' }) {
+    const rows = parseVendorPriceCsv(csvText);
+    const results = rows.map((row) => saveMaterialPriceHistory({
+      materialName: row.materialName,
+      specification: row.specification || 'UNKNOWN',
+      brand: row.brand || 'UNKNOWN',
+      vendorName: row.vendorName,
+      quotedUnitPrice: row.quotedUnitPrice,
+      actualUnitPrice: row.actualUnitPrice,
+      unit: row.unit || 'EA',
+      sourceType: 'IMPORT',
+      recordedAt: row.recordedAt || nowIso()
+    }).priceHistoryId);
+    return { importedCount: results.length, priceHistoryIds: results, intelligenceData: getVendorPriceIntelligenceData() };
+  }
+
+  function recomputeVendorReliabilityScore(vendorId = 'MANUAL_VENDOR', vendorName = 'UNKNOWN', updatedAt = nowIso()) {
+    const history = db.master.prepare('SELECT * FROM material_price_history WHERE vendor_name = ?').all(vendorName);
+    const alerts = db.master.prepare('SELECT * FROM vendor_price_alerts WHERE vendor_name = ?').all(vendorName);
+    const repeatUsageCount = history.length;
+    const priceVarianceRate = history.length > 1
+      ? Math.max(...history.map((row, index) => {
+        const previous = history[index + 1];
+        return previous ? Math.abs(calculateVarianceRate(previous.actual_unit_price || previous.quoted_unit_price, row.actual_unit_price || row.quoted_unit_price)) : 0;
+      }))
+      : 0;
+    const shortageCount = alerts.filter((row) => String(row.alert_type).includes('SHORTAGE')).length;
+    const defectCount = alerts.filter((row) => String(row.alert_type).includes('DEFECT')).length;
+    const paymentIssueCount = alerts.filter((row) => String(row.alert_type).includes('PAYMENT')).length;
+    const score = calculateVendorReliabilityScore({
+      onTimeRate: 1,
+      shortageCount,
+      defectCount,
+      priceVarianceRate,
+      paymentIssueCount,
+      repeatUsageCount,
+      manualRating: 80
+    });
+    const id = `VRS-${vendorId}-${vendorName}`.replace(/[^A-Za-z0-9_-]/g, '-');
+    db.master.prepare(`
+      INSERT OR REPLACE INTO vendor_reliability_scores (
+        id, vendor_id, vendor_name, on_time_rate, shortage_count, defect_count,
+        price_variance_rate, payment_issue_count, repeat_usage_count,
+        manual_rating, vendor_score, reliability_level, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      vendorId,
+      vendorName,
+      1,
+      shortageCount,
+      defectCount,
+      priceVarianceRate,
+      paymentIssueCount,
+      repeatUsageCount,
+      80,
+      score.vendorScore,
+      score.reliabilityLevel,
+      updatedAt
+    );
+    return db.master.prepare('SELECT * FROM vendor_reliability_scores WHERE id = ?').get(id);
+  }
+
+  function inferEstimateTypeFromMaterial(category, materialName) {
+    const text = `${category} ${materialName}`.toLowerCase();
+    if (text.includes('kitchen') || text.includes('sink') || text.includes('counter') || text.includes('주방') || text.includes('상판')) return 'kitchen_remodel';
+    if (text.includes('full') || text.includes('floor') || text.includes('wallpaper') || text.includes('전체')) return 'full_remodel';
+    return 'bathroom_remodel';
+  }
+
+  function getApprovedVendorPriceRecommendations(estimateType = null) {
+    return db.master.prepare(`
+      SELECT *
+      FROM vendor_price_recommendations
+      WHERE status IN ('APPROVED', 'APPLIED')
+        AND (? IS NULL OR target_estimate_type = ?)
+      ORDER BY adjustment_value DESC, created_at DESC
+    `).all(estimateType, estimateType);
+  }
+
+  function applyApprovedVendorPriceRecommendationsToEstimate(estimate, estimateType = 'bathroom_remodel') {
+    const recommendations = getApprovedVendorPriceRecommendations(estimateType);
+    if (!recommendations.length) {
+      return { estimate, vendorPriceIntelligence: { applied: false, appliedRecommendationCount: 0, adjustmentAmount: 0, recommendations: [] } };
+    }
+    const baseTotalCost = Number(estimate.total_cost ?? estimate.totalCost ?? 0);
+    const totalRate = Math.min(0.35, recommendations.reduce((sum, row) => sum + Math.max(0, Number(row.adjustment_value || 0)), 0));
+    const adjustmentAmount = Math.round(baseTotalCost * totalRate);
+    const adjustedTotalCost = baseTotalCost + adjustmentAmount;
+    const revenue = Number(estimate.revenue || 0);
+    const expectedMargin = revenue - adjustedTotalCost;
+    const expectedMarginRate = revenue > 0 ? expectedMargin / revenue : 0;
+    const mapped = recommendations.map((row) => ({
+      id: row.id,
+      materialName: row.material_name,
+      vendorName: row.vendor_name,
+      adjustmentType: row.adjustment_type,
+      adjustmentValue: row.adjustment_value,
+      reasonKo: row.reason
+    }));
+    return {
+      estimate: {
+        ...estimate,
+        total_cost: adjustedTotalCost,
+        totalCost: adjustedTotalCost,
+        expected_margin: expectedMargin,
+        expectedMargin,
+        expected_margin_rate: expectedMarginRate,
+        expectedMarginRate,
+        vendor_price_intelligence_applied: true,
+        vendor_price_adjustment_amount: adjustmentAmount,
+        vendor_price_recommendations: mapped
+      },
+      vendorPriceIntelligence: {
+        applied: true,
+        appliedRecommendationCount: recommendations.length,
+        adjustmentAmount,
+        adjustmentRate: totalRate,
+        recommendations: mapped,
+        displayMessageKo: '승인된 협력업체 단가/신뢰도 추천이 견적 원가 방어선에 반영되었습니다.'
+      }
+    };
+  }
+
+  function getVendorPriceComparisonRows() {
+    const grouped = new Map();
+    const rows = db.master.prepare('SELECT * FROM material_price_history ORDER BY recorded_at DESC, created_at DESC').all();
+    rows.forEach((row) => {
+      const key = `${row.material_name}||${row.specification}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(row);
+    });
+    return Array.from(grouped.entries()).map(([key, groupRows]) => {
+      const [materialName, specification] = key.split('||');
+      const comparison = compareVendorPrices(groupRows);
+      return {
+        materialName,
+        specification,
+        lowestPrice: comparison.lowestPrice,
+        averagePrice: comparison.averagePrice,
+        latestPrice: comparison.latestPrice,
+        previousPrice: comparison.previousPrice,
+        varianceRate: comparison.varianceRate,
+        riskLevel: comparison.riskLevel,
+        recommendedVendor: comparison.recommendedVendor
+      };
+    });
+  }
+
+  function getVendorSelectionRecommendation({ materialName = '', specification = '' } = {}) {
+    const rows = db.master.prepare(`
+      SELECT h.*, s.vendor_score, s.reliability_level
+      FROM material_price_history h
+      LEFT JOIN vendor_reliability_scores s ON s.vendor_name = h.vendor_name
+      WHERE (? = '' OR h.material_name = ?)
+        AND (? = '' OR h.specification = ?)
+      ORDER BY h.recorded_at DESC, h.created_at DESC
+    `).all(materialName, materialName, specification, specification);
+    return recommendVendor(rows.map((row) => ({
+      vendorId: row.vendor_id,
+      vendorName: row.vendor_name,
+      actualUnitPrice: row.actual_unit_price,
+      quotedUnitPrice: row.quoted_unit_price,
+      vendorScore: row.vendor_score,
+      leadTimeDays: 3,
+      defectCount: 0,
+      shortageCount: 0
+    })));
+  }
+
+  function getVendorPriceIntelligenceSummary() {
+    const alertRows = db.master.prepare("SELECT severity, COUNT(*) AS count FROM vendor_price_alerts WHERE status = 'OPEN' GROUP BY severity").all();
+    const pendingRecommendations = Number(db.master.prepare("SELECT COUNT(*) AS count FROM vendor_price_recommendations WHERE status = 'PENDING_APPROVAL'").get().count || 0);
+    const riskyVendors = Number(db.master.prepare("SELECT COUNT(*) AS count FROM vendor_reliability_scores WHERE reliability_level IN ('주의', '위험')").get().count || 0);
+    const historyCount = Number(db.master.prepare('SELECT COUNT(*) AS count FROM material_price_history').get().count || 0);
+    const topIncreases = db.master.prepare(`
+      SELECT material_name, vendor_name, previous_price, current_price, variance_rate, severity, reason
+      FROM vendor_price_alerts
+      WHERE status = 'OPEN' AND variance_rate > 0
+      ORDER BY variance_rate DESC, created_at DESC
+      LIMIT 5
+    `).all();
+    return {
+      openAlertCount: alertRows.reduce((sum, row) => sum + Number(row.count || 0), 0),
+      criticalAlertCount: Number(alertRows.find((row) => row.severity === 'CRITICAL')?.count || 0),
+      highAlertCount: Number(alertRows.find((row) => row.severity === 'HIGH')?.count || 0),
+      riskyVendorCount: riskyVendors,
+      pendingRecommendationCount: pendingRecommendations,
+      priceHistoryCount: historyCount,
+      topPriceIncreases: topIncreases,
+      displayStatusKo: historyCount > 0 ? '협력업체 단가 지능화 작동 중' : '단가 이력 입력 대기'
+    };
+  }
+
+  function getVendorPriceIntelligenceData() {
+    const priceHistory = db.master.prepare('SELECT * FROM material_price_history ORDER BY recorded_at DESC, created_at DESC LIMIT 200').all();
+    const reliabilityScores = db.master.prepare('SELECT * FROM vendor_reliability_scores ORDER BY vendor_score DESC, updated_at DESC LIMIT 100').all();
+    const alerts = db.master.prepare("SELECT * FROM vendor_price_alerts ORDER BY CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END, created_at DESC LIMIT 100").all();
+    const recommendations = db.master.prepare("SELECT * FROM vendor_price_recommendations ORDER BY CASE status WHEN 'PENDING_APPROVAL' THEN 0 WHEN 'APPROVED' THEN 1 ELSE 2 END, created_at DESC LIMIT 100").all();
+    return {
+      summary: getVendorPriceIntelligenceSummary(),
+      priceHistory,
+      comparisons: getVendorPriceComparisonRows(),
+      reliabilityScores,
+      alerts,
+      recommendations,
+      vendorSelection: getVendorSelectionRecommendation(),
+      emptyState: priceHistory.length === 0 && alerts.length === 0 && recommendations.length === 0
+    };
+  }
+
   function saveActualCostEntry({
     requirementId,
     amount = 0,
@@ -16360,7 +16839,11 @@ function createSqliteService({ app }) {
       vendorPriceCatalogCount: countRows(db.master, 'vendor_price_catalog'),
       vendorPriceApprovalLogCount: countRows(db.master, 'vendor_price_approval_logs'),
       vendorPriceEvidenceCount: countRows(db.master, 'vendor_price_evidence'),
-      vendorPriceRollbackSnapshotCount: countRows(db.master, 'vendor_price_rollback_snapshots')
+      vendorPriceRollbackSnapshotCount: countRows(db.master, 'vendor_price_rollback_snapshots'),
+      materialPriceHistoryCount: countRows(db.master, 'material_price_history'),
+      vendorReliabilityScoreCount: countRows(db.master, 'vendor_reliability_scores'),
+      vendorPriceAlertCount: countRows(db.master, 'vendor_price_alerts'),
+      vendorPriceRecommendationCount: countRows(db.master, 'vendor_price_recommendations')
     };
   }
 
@@ -16442,6 +16925,11 @@ function createSqliteService({ app }) {
     getVendorPriceAdminData,
     createVendorPriceCatalogEntry,
     decideVendorPriceApproval,
+    getVendorPriceIntelligenceData,
+    saveMaterialPriceHistory,
+    importMaterialPriceHistoryCsv,
+    decideVendorPriceRecommendation,
+    getVendorSelectionRecommendation,
     runAutomationScheduler,
     getPermissionAdminData,
     assertUserPermission,

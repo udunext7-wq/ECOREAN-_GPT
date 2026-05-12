@@ -548,6 +548,7 @@ export function BathroomEstimateWizardView() {
                   <button onClick={handleGeneratePurchaseOrder} disabled={isBusy || Boolean(executionBlockedMessage())}>발주서 생성</button>
                   <button onClick={openFloorplanCenter} disabled={isBusy}>평면도 / 아이소메트릭</button>
                   <button onClick={openAIVisualizationCenter} disabled={isBusy}>AI 투시도 생성</button>
+                  <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'vendorIntelligence' }))} disabled={isBusy}>협력업체 단가 지능화</button>
                 </div>
               </section>
             </>

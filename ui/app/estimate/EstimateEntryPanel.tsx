@@ -75,6 +75,7 @@ const secondaryActions: EntryAction[] = [
   { title: '커뮤니케이션 센터', headline: '고객 / 협력업체 메시지 생성', note: '발송 기록', view: 'communication' },
   { title: '프로젝트 마감', headline: '실제 원가 / 마진 / 원가 누수 분석', note: '마감 검토', view: 'closing' },
   { title: '실제 프로젝트 보정', headline: '완료 데이터로 다음 견적 보정', note: '학습 승인', view: 'calibration', tone: 'warning' },
+  { title: '협력업체 단가 지능화', headline: '실제 매입가와 업체 신뢰도로 다음 견적 보정', note: '단가 학습', view: 'vendorIntelligence', tone: 'warning' },
   { title: '평면도 / 아이소메트릭', headline: '공간 구역과 견적 연결', note: '공간 관리', view: 'floorplanCenter' },
   { title: 'AI 투시도 생성', headline: '프롬프트 / ComfyUI / 이미지 검토', note: '시각화', view: 'aiVisualization' },
   { title: '디자인 보드 생성', headline: '고객 제안서 / 포트폴리오 보드', note: '보드 출력', view: 'boardGeneration' }
