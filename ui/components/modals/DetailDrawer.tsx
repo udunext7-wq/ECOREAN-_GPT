@@ -22,7 +22,7 @@ import { BoardGenerationCenterView } from '../../app/board/BoardGenerationCenter
 import { AIVisualizationCenterView } from '../../app/design/AIVisualizationCenterView';
 import { FloorplanCenterView } from '../../app/design/FloorplanCenterView';
 import { ExecutionManagementView } from '../../app/execution/ExecutionManagementView';
-import { MasterDbAdminView } from '../../app/master-db/MasterDbAdminView';
+import { MasterDataCenterView } from '../../app/master/MasterDataCenterView';
 import { Ontology3DView } from '../../app/ontology/Ontology3DView';
 import { PaymentCenterView } from '../../app/payment/PaymentCenterView';
 import { PortfolioDashboardView } from '../../app/portfolio/PortfolioDashboardView';
@@ -58,7 +58,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     floorplanCenter: '평면도 / 아이소메트릭',
     aiVisualization: 'AI 투시도 생성',
     boardGeneration: '디자인 보드 생성',
-    masterDb: 'Master DB 관리',
+    masterDb: '기준 데이터 관리',
     estimate: '새 견적 만들기',
     kitchenEstimate: '주방 리모델링',
     fullRemodelingEstimate: '전체 리모델링',
@@ -110,7 +110,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'floorplanCenter' ? <FloorplanCenterView /> : null}
       {view === 'aiVisualization' ? <AIVisualizationCenterView /> : null}
       {view === 'boardGeneration' ? <BoardGenerationCenterView /> : null}
-      {view === 'masterDb' ? <MasterDbAdminView /> : null}
+      {view === 'masterDb' ? <MasterDataCenterView /> : null}
       {view === 'caseLibrary' ? <CaseLibraryView /> : null}
       {view === 'costCapture' ? <CostCaptureDashboard /> : null}
       {view === 'marginSafety' ? <MarginSafetyDashboard /> : null}

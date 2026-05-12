@@ -89,6 +89,11 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:vendor-intelligence:csv-import', (_event, payload) => sqliteService.importMaterialPriceHistoryCsv(payload));
   ipcMain.handle('boc:vendor-intelligence:recommendation:decide', (_event, payload) => sqliteService.decideVendorPriceRecommendation(payload));
   ipcMain.handle('boc:vendor-intelligence:vendor:recommend', (_event, payload) => sqliteService.getVendorSelectionRecommendation(payload));
+  ipcMain.handle('boc:master-data:get', (_event, payload = {}) => sqliteService.getMasterDataCenterData(payload));
+  ipcMain.handle('boc:master-data:create', (_event, payload) => sqliteService.createMasterDataItem(payload));
+  ipcMain.handle('boc:master-data:validate', (_event, payload = {}) => sqliteService.runMasterDataValidation(payload));
+  ipcMain.handle('boc:master-data:import-csv', (_event, payload) => sqliteService.importMasterDataCsv(payload));
+  ipcMain.handle('boc:master-data:export-csv', (_event, payload) => sqliteService.exportMasterDataCsv(payload));
   ipcMain.handle('boc:permissions:get', () => sqliteService.getPermissionAdminData());
   ipcMain.handle('boc:portfolio:get', () => sqliteService.getPortfolioDashboardData());
   ipcMain.handle('boc:crew:get', () => sqliteService.getCrewDashboardData());

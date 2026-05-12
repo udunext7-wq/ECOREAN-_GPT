@@ -51,6 +51,13 @@ const {
   recommendVendor,
   parseVendorPriceCsv
 } = require('./vendorPriceIntelligenceService');
+const {
+  normalizeActive,
+  toInteger: masterToInteger,
+  validateMasterDataSets,
+  parseMasterCsv,
+  buildCsv
+} = require('./masterDataService');
 const { requestManualGeneration } = require('./visualizationProviders/manualProvider');
 const { healthCheck: comfyUiHealthCheck, queuePrompt: queueComfyUiPrompt, downloadImages: downloadComfyUiImages } = require('./visualizationProviders/comfyuiProvider');
 const { requestExternalApiGeneration } = require('./visualizationProviders/externalApiProvider');
@@ -2606,6 +2613,106 @@ function createSqliteService({ app }) {
         approved_by TEXT
       );
 
+      CREATE TABLE IF NOT EXISTS process_master (
+        id TEXT PRIMARY KEY,
+        major_category TEXT NOT NULL,
+        middle_category TEXT NOT NULL,
+        minor_category TEXT NOT NULL,
+        process_name TEXT NOT NULL,
+        default_unit TEXT NOT NULL,
+        default_labor_qty REAL NOT NULL,
+        predecessor_process TEXT NOT NULL,
+        successor_process TEXT NOT NULL,
+        risk_level TEXT NOT NULL,
+        inspection_required INTEGER NOT NULL,
+        is_active INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS material_master (
+        id TEXT PRIMARY KEY,
+        material_category TEXT NOT NULL,
+        material_name TEXT NOT NULL,
+        specification TEXT NOT NULL,
+        brand TEXT NOT NULL,
+        unit TEXT NOT NULL,
+        default_unit_price INTEGER NOT NULL,
+        latest_unit_price INTEGER NOT NULL,
+        recommended_vendor TEXT NOT NULL,
+        applied_process TEXT NOT NULL,
+        is_active INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS vendor_master (
+        id TEXT PRIMARY KEY,
+        vendor_name TEXT NOT NULL,
+        vendor_type TEXT NOT NULL,
+        process_scope TEXT NOT NULL,
+        contact TEXT NOT NULL,
+        region TEXT NOT NULL,
+        default_payment_terms TEXT NOT NULL,
+        reliability_score REAL NOT NULL,
+        is_active INTEGER NOT NULL,
+        notes TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS labor_master (
+        id TEXT PRIMARY KEY,
+        role TEXT NOT NULL,
+        process TEXT NOT NULL,
+        default_daily_wage INTEGER NOT NULL,
+        default_productivity REAL NOT NULL,
+        skill_level TEXT NOT NULL,
+        is_active INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS equipment_master (
+        id TEXT PRIMARY KEY,
+        equipment_name TEXT NOT NULL,
+        equipment_type TEXT NOT NULL,
+        unit TEXT NOT NULL,
+        default_unit_price INTEGER NOT NULL,
+        applied_process TEXT NOT NULL,
+        is_active INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS standard_estimate_items (
+        id TEXT PRIMARY KEY,
+        item_name TEXT NOT NULL,
+        process TEXT NOT NULL,
+        default_unit TEXT NOT NULL,
+        default_customer_unit_price INTEGER NOT NULL,
+        default_material_cost INTEGER NOT NULL,
+        default_labor_cost INTEGER NOT NULL,
+        default_subcontract_cost INTEGER NOT NULL,
+        default_margin_rate REAL NOT NULL,
+        estimate_type TEXT NOT NULL,
+        is_mandatory INTEGER NOT NULL,
+        is_active INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS master_data_validation_logs (
+        id TEXT PRIMARY KEY,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        warning_type TEXT NOT NULL,
+        message_ko TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS margin_safety_rules (
         rule_id TEXT PRIMARY KEY,
         version TEXT NOT NULL,
@@ -3908,6 +4015,7 @@ function createSqliteService({ app }) {
       estimate: pceEstimate,
       pce,
       calibration,
+      masterData: buildMasterDataUsageSummary('bathroom_remodel'),
       customerView: buildCustomerEstimateView(pceEstimate),
       internalView: buildInternalCostView(pceEstimate)
     };
@@ -4050,6 +4158,7 @@ function createSqliteService({ app }) {
       estimate: pceEstimate,
       pce,
       calibration,
+      masterData: buildMasterDataUsageSummary('kitchen_remodel'),
       customerView: buildCustomerKitchenEstimateView(pceEstimate),
       internalView: buildInternalKitchenCostView(pceEstimate)
     };
@@ -4295,7 +4404,7 @@ function createSqliteService({ app }) {
     purchaseOrder.items.forEach((item, index) => insertItem.run(`${purchaseOrderId}-ITEM-${String(index + 1).padStart(3, '0')}`, purchaseOrderId, item.itemName, item.specification, item.quantity, item.unit, item.expectedUnitPrice, item.expectedTotal, item.supplierName, item.orderStatus, item.requiredDate, item.notes));
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
-    return { purchaseOrderId, purchaseOrder };
+    return { purchaseOrderId, purchaseOrder, masterData: buildMasterDataUsageSummary('bathroom_remodel') };
   }
 
   function calculateFullRemodelingEstimatePreview(payload = {}) {
@@ -4317,6 +4426,7 @@ function createSqliteService({ app }) {
       estimate: pceEstimate,
       pce,
       calibration,
+      masterData: buildMasterDataUsageSummary('full_remodel'),
       customerView: buildCustomerFullEstimateView(pceEstimate),
       internalView: buildInternalFullCostView(pceEstimate)
     };
@@ -4575,7 +4685,7 @@ function createSqliteService({ app }) {
     purchaseOrder.items.forEach((item, index) => insertItem.run(`${purchaseOrderId}-ITEM-${String(index + 1).padStart(3, '0')}`, purchaseOrderId, item.itemName, item.specification, item.quantity, item.unit, item.expectedUnitPrice, item.expectedTotal, item.supplierName, item.orderStatus, item.requiredDate, item.notes));
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
-    return { purchaseOrderId, purchaseOrder };
+    return { purchaseOrderId, purchaseOrder, masterData: buildMasterDataUsageSummary('kitchen_remodel') };
   }
 
   function mapFloorplan(row) {
@@ -7559,7 +7669,7 @@ function createSqliteService({ app }) {
     });
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
-    return { purchaseOrderId, purchaseOrder };
+    return { purchaseOrderId, purchaseOrder, masterData: buildMasterDataUsageSummary('full_remodel') };
   }
 
   function profitGateForWonLead({ lead, payload = {}, actor = 'CEO', createdAt = nowIso() }) {
@@ -14161,6 +14271,294 @@ function createSqliteService({ app }) {
     };
   }
 
+  function normalizeMasterType(type = '') {
+    const normalized = String(type);
+    const map = {
+      process: 'process',
+      material: 'material',
+      vendor: 'vendor',
+      labor: 'labor',
+      equipment: 'equipment',
+      standardItem: 'standardItem',
+      standard_item: 'standardItem'
+    };
+    if (!map[normalized]) throw new Error(`Unsupported master data type: ${type}`);
+    return map[normalized];
+  }
+
+  function getMasterRows() {
+    return {
+      processes: db.master.prepare('SELECT * FROM process_master ORDER BY major_category, process_name').all(),
+      materials: db.master.prepare('SELECT * FROM material_master ORDER BY material_category, material_name').all(),
+      vendors: db.master.prepare('SELECT * FROM vendor_master ORDER BY vendor_name').all(),
+      labor: db.master.prepare('SELECT * FROM labor_master ORDER BY process, role').all(),
+      equipment: db.master.prepare('SELECT * FROM equipment_master ORDER BY equipment_type, equipment_name').all(),
+      standardItems: db.master.prepare('SELECT * FROM standard_estimate_items ORDER BY estimate_type, process, item_name').all()
+    };
+  }
+
+  function getActiveStandardEstimateItems(estimateType = null) {
+    return db.master.prepare(`
+      SELECT *
+      FROM standard_estimate_items
+      WHERE is_active = 1
+        AND (? IS NULL OR estimate_type = ?)
+      ORDER BY is_mandatory DESC, process, item_name
+    `).all(estimateType, estimateType);
+  }
+
+  function buildMasterDataUsageSummary(estimateType) {
+    const standardItems = getActiveStandardEstimateItems(estimateType);
+    const materials = db.master.prepare('SELECT * FROM material_master WHERE is_active = 1 ORDER BY material_name LIMIT 100').all();
+    const vendors = db.master.prepare('SELECT * FROM vendor_master WHERE is_active = 1 ORDER BY reliability_score DESC, vendor_name LIMIT 100').all();
+    return {
+      estimateType,
+      sourceStatus: standardItems.length > 0 ? 'MASTER_DATA_ACTIVE' : 'FALLBACK_ACTIVE',
+      displayStatusKo: standardItems.length > 0 ? '기준 데이터 기반 항목 사용 가능' : '기준 데이터가 없어 기존 fallback 계산을 사용합니다.',
+      standardItemCount: standardItems.length,
+      materialCount: materials.length,
+      vendorCount: vendors.length,
+      standardItems: standardItems.slice(0, 30),
+      materials: materials.slice(0, 20),
+      vendors: vendors.slice(0, 20)
+    };
+  }
+
+  function createMasterDataItem({ type, payload = {}, actor = 'CEO' }) {
+    const normalized = normalizeMasterType(type);
+    const createdAt = nowIso();
+    const id = payload.id || `MD-${normalized}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+    if (normalized === 'process') {
+      db.master.prepare(`
+        INSERT OR REPLACE INTO process_master (
+          id, major_category, middle_category, minor_category, process_name,
+          default_unit, default_labor_qty, predecessor_process, successor_process,
+          risk_level, inspection_required, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM process_master WHERE id = ?), ?), ?)
+      `).run(
+        id,
+        payload.majorCategory || payload.major_category || '공통',
+        payload.middleCategory || payload.middle_category || '공통',
+        payload.minorCategory || payload.minor_category || '공통',
+        payload.processName || payload.process_name || '공정명 미입력',
+        payload.defaultUnit || payload.default_unit || '',
+        Number(payload.defaultLaborQty ?? payload.default_labor_qty ?? 0),
+        payload.predecessorProcess || payload.predecessor_process || '',
+        payload.successorProcess || payload.successor_process || '',
+        payload.riskLevel || payload.risk_level || 'NORMAL',
+        payload.inspectionRequired ? 1 : 0,
+        normalizeActive(payload.isActive ?? payload.is_active ?? true),
+        id,
+        createdAt,
+        createdAt
+      );
+    }
+
+    if (normalized === 'material') {
+      db.master.prepare(`
+        INSERT OR REPLACE INTO material_master (
+          id, material_category, material_name, specification, brand, unit,
+          default_unit_price, latest_unit_price, recommended_vendor,
+          applied_process, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM material_master WHERE id = ?), ?), ?)
+      `).run(
+        id,
+        payload.materialCategory || payload.material_category || 'material',
+        payload.materialName || payload.material_name || '자재명 미입력',
+        payload.specification || 'UNKNOWN',
+        payload.brand || 'UNKNOWN',
+        payload.unit || '',
+        toInteger(payload.defaultUnitPrice ?? payload.default_unit_price ?? 0),
+        toInteger(payload.latestUnitPrice ?? payload.latest_unit_price ?? payload.defaultUnitPrice ?? 0),
+        payload.recommendedVendor || payload.recommended_vendor || '',
+        payload.appliedProcess || payload.applied_process || '',
+        normalizeActive(payload.isActive ?? payload.is_active ?? true),
+        id,
+        createdAt,
+        createdAt
+      );
+    }
+
+    if (normalized === 'vendor') {
+      db.master.prepare(`
+        INSERT OR REPLACE INTO vendor_master (
+          id, vendor_name, vendor_type, process_scope, contact, region,
+          default_payment_terms, reliability_score, is_active, notes,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM vendor_master WHERE id = ?), ?), ?)
+      `).run(
+        id,
+        payload.vendorName || payload.vendor_name || '업체명 미입력',
+        payload.vendorType || payload.vendor_type || 'supplier',
+        payload.processScope || payload.process_scope || '',
+        payload.contact || 'UNKNOWN',
+        payload.region || 'UNKNOWN',
+        payload.defaultPaymentTerms || payload.default_payment_terms || 'UNKNOWN',
+        Number(payload.reliabilityScore ?? payload.reliability_score ?? 70),
+        normalizeActive(payload.isActive ?? payload.is_active ?? true),
+        payload.notes || '',
+        id,
+        createdAt,
+        createdAt
+      );
+    }
+
+    if (normalized === 'labor') {
+      db.master.prepare(`
+        INSERT OR REPLACE INTO labor_master (
+          id, role, process, default_daily_wage, default_productivity,
+          skill_level, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM labor_master WHERE id = ?), ?), ?)
+      `).run(
+        id,
+        payload.role || '역할 미입력',
+        payload.process || '',
+        toInteger(payload.defaultDailyWage ?? payload.default_daily_wage ?? 0),
+        Number(payload.defaultProductivity ?? payload.default_productivity ?? 1),
+        payload.skillLevel || payload.skill_level || 'NORMAL',
+        normalizeActive(payload.isActive ?? payload.is_active ?? true),
+        id,
+        createdAt,
+        createdAt
+      );
+    }
+
+    if (normalized === 'equipment') {
+      db.master.prepare(`
+        INSERT OR REPLACE INTO equipment_master (
+          id, equipment_name, equipment_type, unit, default_unit_price,
+          applied_process, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM equipment_master WHERE id = ?), ?), ?)
+      `).run(
+        id,
+        payload.equipmentName || payload.equipment_name || '장비명 미입력',
+        payload.equipmentType || payload.equipment_type || 'equipment',
+        payload.unit || '',
+        toInteger(payload.defaultUnitPrice ?? payload.default_unit_price ?? 0),
+        payload.appliedProcess || payload.applied_process || '',
+        normalizeActive(payload.isActive ?? payload.is_active ?? true),
+        id,
+        createdAt,
+        createdAt
+      );
+    }
+
+    if (normalized === 'standardItem') {
+      db.master.prepare(`
+        INSERT OR REPLACE INTO standard_estimate_items (
+          id, item_name, process, default_unit, default_customer_unit_price,
+          default_material_cost, default_labor_cost, default_subcontract_cost,
+          default_margin_rate, estimate_type, is_mandatory, is_active,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM standard_estimate_items WHERE id = ?), ?), ?)
+      `).run(
+        id,
+        payload.itemName || payload.item_name || '표준 항목명 미입력',
+        payload.process || '',
+        payload.defaultUnit || payload.default_unit || '',
+        toInteger(payload.defaultCustomerUnitPrice ?? payload.default_customer_unit_price ?? 0),
+        toInteger(payload.defaultMaterialCost ?? payload.default_material_cost ?? 0),
+        toInteger(payload.defaultLaborCost ?? payload.default_labor_cost ?? 0),
+        toInteger(payload.defaultSubcontractCost ?? payload.default_subcontract_cost ?? 0),
+        Number(payload.defaultMarginRate ?? payload.default_margin_rate ?? 0),
+        payload.estimateType || payload.estimate_type || 'bathroom_remodel',
+        payload.isMandatory ?? payload.is_mandatory ? 1 : 0,
+        normalizeActive(payload.isActive ?? payload.is_active ?? true),
+        id,
+        createdAt,
+        createdAt
+      );
+    }
+
+    recordAction({
+      actionType: 'MASTER_DATA_UPSERT',
+      actor,
+      projectId: 'GLOBAL',
+      reasonKo: `기준 데이터 ${normalized} 저장`,
+      payload: { type: normalized, id }
+    });
+
+    return { id, masterData: getMasterDataCenterData({ runValidation: true }) };
+  }
+
+  function runMasterDataValidation({ actor = 'CEO' } = {}) {
+    const createdAt = nowIso();
+    const rows = getMasterRows();
+    const warnings = validateMasterDataSets(rows);
+    db.master.prepare("UPDATE master_data_validation_logs SET status = 'RESOLVED' WHERE status = 'OPEN'").run();
+    const insert = db.master.prepare(`
+      INSERT OR REPLACE INTO master_data_validation_logs (
+        id, entity_type, entity_id, warning_type, message_ko,
+        severity, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    warnings.forEach((warning) => {
+      insert.run(warning.id, warning.entityType, warning.entityId, warning.warningType, warning.messageKo, warning.severity, 'OPEN', createdAt);
+    });
+    recordAction({
+      actionType: 'MASTER_DATA_VALIDATE',
+      actor,
+      projectId: 'GLOBAL',
+      reasonKo: `기준 데이터 검증 ${warnings.length}건`,
+      payload: { warningCount: warnings.length }
+    });
+    return warnings;
+  }
+
+  function getMasterDataCenterData({ runValidation = false } = {}) {
+    if (runValidation) runMasterDataValidation();
+    const rows = getMasterRows();
+    const validationLogs = db.master.prepare(`
+      SELECT *
+      FROM master_data_validation_logs
+      WHERE status = 'OPEN'
+      ORDER BY CASE severity WHEN 'RED' THEN 0 WHEN 'ORANGE' THEN 1 ELSE 2 END, created_at DESC
+      LIMIT 200
+    `).all();
+    return {
+      summary: {
+        processCount: rows.processes.length,
+        materialCount: rows.materials.length,
+        vendorCount: rows.vendors.length,
+        laborCount: rows.labor.length,
+        equipmentCount: rows.equipment.length,
+        standardItemCount: rows.standardItems.length,
+        validationWarningCount: validationLogs.length,
+        displayStatusKo: rows.standardItems.length > 0 ? '기준 데이터 사용 가능' : '기준 데이터 입력 대기'
+      },
+      ...rows,
+      validationLogs,
+      estimateUsage: {
+        bathroom: buildMasterDataUsageSummary('bathroom_remodel'),
+        kitchen: buildMasterDataUsageSummary('kitchen_remodel'),
+        full: buildMasterDataUsageSummary('full_remodel')
+      },
+      emptyState: Object.values(rows).every((list) => Array.isArray(list) && list.length === 0)
+    };
+  }
+
+  function importMasterDataCsv({ type, csvText = '', actor = 'CEO' }) {
+    const normalized = normalizeMasterType(type);
+    const rows = parseMasterCsv(csvText);
+    const ids = rows.map((row) => createMasterDataItem({ type: normalized, payload: row, actor }).id);
+    return { importedCount: ids.length, ids, masterData: getMasterDataCenterData({ runValidation: true }) };
+  }
+
+  function exportMasterDataCsv({ type }) {
+    const normalized = normalizeMasterType(type);
+    const rows = getMasterRows();
+    const keyMap = {
+      process: 'processes',
+      material: 'materials',
+      vendor: 'vendors',
+      labor: 'labor',
+      equipment: 'equipment',
+      standardItem: 'standardItems'
+    };
+    return { type: normalized, csv: buildCsv(rows[keyMap[normalized]] || []) };
+  }
+
   function getVendorPriceSummary() {
     const catalog = db.master.prepare(`
       SELECT price_status, COUNT(*) AS count
@@ -16843,7 +17241,14 @@ function createSqliteService({ app }) {
       materialPriceHistoryCount: countRows(db.master, 'material_price_history'),
       vendorReliabilityScoreCount: countRows(db.master, 'vendor_reliability_scores'),
       vendorPriceAlertCount: countRows(db.master, 'vendor_price_alerts'),
-      vendorPriceRecommendationCount: countRows(db.master, 'vendor_price_recommendations')
+      vendorPriceRecommendationCount: countRows(db.master, 'vendor_price_recommendations'),
+      processMasterCount: countRows(db.master, 'process_master'),
+      materialMasterCount: countRows(db.master, 'material_master'),
+      vendorMasterCount: countRows(db.master, 'vendor_master'),
+      laborMasterCount: countRows(db.master, 'labor_master'),
+      equipmentMasterCount: countRows(db.master, 'equipment_master'),
+      standardEstimateItemCount: countRows(db.master, 'standard_estimate_items'),
+      masterDataValidationLogCount: countRows(db.master, 'master_data_validation_logs')
     };
   }
 
@@ -16930,6 +17335,11 @@ function createSqliteService({ app }) {
     importMaterialPriceHistoryCsv,
     decideVendorPriceRecommendation,
     getVendorSelectionRecommendation,
+    getMasterDataCenterData,
+    createMasterDataItem,
+    runMasterDataValidation,
+    importMasterDataCsv,
+    exportMasterDataCsv,
     runAutomationScheduler,
     getPermissionAdminData,
     assertUserPermission,

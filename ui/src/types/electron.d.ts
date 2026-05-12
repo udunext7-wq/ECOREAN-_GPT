@@ -101,6 +101,11 @@ declare global {
         importMaterialPriceHistoryCsv: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         decideVendorPriceRecommendation: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getVendorSelectionRecommendation: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getMasterDataCenterData: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createMasterDataItem: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        runMasterDataValidation: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        importMasterDataCsv: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        exportMasterDataCsv: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getPermissionAdminData: () => Promise<Record<string, unknown>>;
         getPortfolioDashboardData: () => Promise<Record<string, unknown>>;
         getCrewDashboardData: () => Promise<Record<string, unknown>>;

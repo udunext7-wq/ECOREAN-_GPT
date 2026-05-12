@@ -55,6 +55,10 @@ const releaseChecks = [
     script: 'vendor-price-intelligence.smoke.js'
   },
   {
+    label: '기준 데이터 관리',
+    script: 'master-data-management.smoke.js'
+  },
+  {
     label: 'AI 투시도 프롬프트',
     script: 'ai-visualization-generation.smoke.js'
   },
