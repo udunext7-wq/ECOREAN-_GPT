@@ -10,6 +10,7 @@ export const emptyDashboardData: DashboardData = {
   profitSummary: {},
   calibrationSummary: {},
   vendorPriceIntelligenceSummary: {},
+  franchiseSummary: {},
   profitAlerts: [],
   profitTemplates: [],
   estimateVsActualTop: [],

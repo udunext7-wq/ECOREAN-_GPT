@@ -94,6 +94,15 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:master-data:validate', (_event, payload = {}) => sqliteService.runMasterDataValidation(payload));
   ipcMain.handle('boc:master-data:import-csv', (_event, payload) => sqliteService.importMasterDataCsv(payload));
   ipcMain.handle('boc:master-data:export-csv', (_event, payload) => sqliteService.exportMasterDataCsv(payload));
+  ipcMain.handle('boc:franchise:get', (_event, payload = {}) => sqliteService.getFranchiseCenterData(payload));
+  ipcMain.handle('boc:franchise:branch:create', (_event, payload) => sqliteService.createFranchiseBranch(payload));
+  ipcMain.handle('boc:franchise:package:publish', (_event, payload) => sqliteService.publishFranchiseDistributionPackage(payload));
+  ipcMain.handle('boc:franchise:package:apply', (_event, payload) => sqliteService.applyFranchisePackageToBranch(payload));
+  ipcMain.handle('boc:franchise:policy:create', (_event, payload) => sqliteService.createBranchProfitPolicy(payload));
+  ipcMain.handle('boc:franchise:fee:calculate', (_event, payload) => sqliteService.calculateFranchiseFeeRecord(payload));
+  ipcMain.handle('boc:franchise:fee:paid', (_event, payload) => sqliteService.markFranchiseFeePaid(payload));
+  ipcMain.handle('boc:franchise:template:create', (_event, payload) => sqliteService.createFranchiseReplicationTemplate(payload));
+  ipcMain.handle('boc:franchise:template:apply', (_event, payload) => sqliteService.applyReplicationTemplateToBranch(payload));
   ipcMain.handle('boc:permissions:get', () => sqliteService.getPermissionAdminData());
   ipcMain.handle('boc:portfolio:get', () => sqliteService.getPortfolioDashboardData());
   ipcMain.handle('boc:crew:get', () => sqliteService.getCrewDashboardData());

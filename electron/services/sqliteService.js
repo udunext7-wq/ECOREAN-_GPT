@@ -58,6 +58,11 @@ const {
   parseMasterCsv,
   buildCsv
 } = require('./masterDataService');
+const {
+  calculateBranchMetrics,
+  calculateFranchiseFee,
+  shouldCreateBranchRiskAlert
+} = require('./franchiseService');
 const { requestManualGeneration } = require('./visualizationProviders/manualProvider');
 const { healthCheck: comfyUiHealthCheck, queuePrompt: queueComfyUiPrompt, downloadImages: downloadComfyUiImages } = require('./visualizationProviders/comfyuiProvider');
 const { requestExternalApiGeneration } = require('./visualizationProviders/externalApiProvider');
@@ -2462,6 +2467,93 @@ function createSqliteService({ app }) {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS franchise_branches (
+        id TEXT PRIMARY KEY,
+        branch_name TEXT NOT NULL,
+        branch_code TEXT NOT NULL,
+        owner_name TEXT NOT NULL,
+        contact TEXT NOT NULL,
+        region TEXT NOT NULL,
+        address TEXT NOT NULL,
+        status TEXT NOT NULL,
+        opened_at TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS franchise_distribution_packages (
+        id TEXT PRIMARY KEY,
+        package_name TEXT NOT NULL,
+        package_type TEXT NOT NULL,
+        version TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        published_at TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS franchise_branch_package_status (
+        id TEXT PRIMARY KEY,
+        branch_id TEXT NOT NULL,
+        package_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        applied_at TEXT,
+        error_message TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS branch_profit_policies (
+        id TEXT PRIMARY KEY,
+        branch_id TEXT NOT NULL,
+        min_margin_rate REAL NOT NULL,
+        scale_margin_rate REAL NOT NULL,
+        block_threshold REAL NOT NULL,
+        requires_hq_approval INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS franchise_fee_rules (
+        id TEXT PRIMARY KEY,
+        branch_id TEXT NOT NULL,
+        fee_type TEXT NOT NULL,
+        revenue_percent REAL NOT NULL,
+        fixed_monthly_amount INTEGER NOT NULL,
+        payment_due_day INTEGER NOT NULL,
+        is_active INTEGER NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS franchise_fee_records (
+        id TEXT PRIMARY KEY,
+        branch_id TEXT NOT NULL,
+        period TEXT NOT NULL,
+        branch_revenue INTEGER NOT NULL,
+        calculated_fee INTEGER NOT NULL,
+        paid_amount INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS franchise_risk_alerts (
+        id TEXT PRIMARY KEY,
+        branch_id TEXT NOT NULL,
+        alert_type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS franchise_replication_templates (
+        id TEXT PRIMARY KEY,
+        template_name TEXT NOT NULL,
+        version TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS vendor_price_catalog (
         price_id TEXT PRIMARY KEY,
         vendor_id TEXT NOT NULL,
@@ -2838,8 +2930,14 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'estimate_drafts', 'estimated_margin', 'estimated_margin INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'estimate_drafts', 'estimated_margin_rate', 'estimated_margin_rate REAL NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'estimate_drafts', 'margin_safety_status', "margin_safety_status TEXT NOT NULL DEFAULT 'NOT_EVALUATED'");
+    ensureColumn(db.project, 'estimate_drafts', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
     ensureColumn(db.project, 'estimate_drafts', 'lead_id', 'lead_id TEXT');
+    ensureColumn(db.project, 'projects', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
+    ensureColumn(db.project, 'bathroom_estimates', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
+    ensureColumn(db.project, 'kitchen_estimates', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
+    ensureColumn(db.project, 'full_remodeling_estimates', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
     ensureColumn(db.project, 'leads', 'area_m2', 'area_m2 REAL NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'leads', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
     ensureColumn(db.project, 'leads', 'location_ko', "location_ko TEXT NOT NULL DEFAULT 'UNKNOWN'");
     ensureColumn(db.project, 'leads', 'client_type', "client_type TEXT NOT NULL DEFAULT 'RESIDENTIAL'");
     ensureColumn(db.project, 'leads', 'qualification_decision', "qualification_decision TEXT NOT NULL DEFAULT 'CONDITIONAL'");
@@ -2881,6 +2979,7 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'contracts', 'cancellation_terms', "cancellation_terms TEXT NOT NULL DEFAULT ''");
     ensureColumn(db.project, 'contracts', 'special_terms', "special_terms TEXT NOT NULL DEFAULT ''");
     ensureColumn(db.project, 'contracts', 'status', "status TEXT NOT NULL DEFAULT 'DRAFT'");
+    ensureColumn(db.project, 'contracts', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
     ensureColumn(db.project, 'purchase_orders', 'estimate_id', 'estimate_id TEXT');
     ensureColumn(db.project, 'purchase_orders', 'contract_id', 'contract_id TEXT');
     ensureColumn(db.project, 'purchase_orders', 'order_number', 'order_number TEXT');
@@ -2889,6 +2988,11 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'purchase_orders', 'status', "status TEXT NOT NULL DEFAULT 'DRAFT'");
     ensureColumn(db.project, 'purchase_orders', 'required_date', "required_date TEXT NOT NULL DEFAULT ''");
     ensureColumn(db.project, 'purchase_orders', 'updated_at', "updated_at TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.project, 'purchase_orders', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
+    ensureColumn(db.project, 'profit_decisions', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
+    ensureColumn(db.project, 'project_closing_snapshots', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
+    ensureColumn(db.project, 'customer_payments', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
+    ensureColumn(db.project, 'vendor_payments', 'branch_id', "branch_id TEXT NOT NULL DEFAULT 'HEADQUARTERS'");
     ensureColumn(db.project, 'cashflow_snapshots', 'today_actual_inflow', 'today_actual_inflow INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'cashflow_snapshots', 'today_actual_outflow', 'today_actual_outflow INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'cashflow_snapshots', 'seven_day_actual_inflow', 'seven_day_actual_inflow INTEGER NOT NULL DEFAULT 0');
@@ -3830,6 +3934,29 @@ function createSqliteService({ app }) {
     return Math.min(score, 100);
   }
 
+  function ensureHeadquartersBranch() {
+    const createdAt = nowIso();
+    db.master.prepare(`
+      INSERT OR IGNORE INTO franchise_branches (
+        id, branch_name, branch_code, owner_name, contact, region, address,
+        status, opened_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run('HEADQUARTERS', '본사', 'HQ', 'CEO', 'UNKNOWN', '본사', '본사 주소 미입력', 'ACTIVE', createdAt.slice(0, 10), createdAt, createdAt);
+    db.master.prepare(`
+      INSERT OR IGNORE INTO branch_profit_policies (
+        id, branch_id, min_margin_rate, scale_margin_rate, block_threshold,
+        requires_hq_approval, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run('BPP-HEADQUARTERS', 'HEADQUARTERS', 0.25, 0.35, 0.25, 1, createdAt, createdAt);
+  }
+
+  function getBranchProfitPolicy(branchId = 'HEADQUARTERS') {
+    ensureHeadquartersBranch();
+    return db.master.prepare('SELECT * FROM branch_profit_policies WHERE branch_id = ? ORDER BY updated_at DESC LIMIT 1').get(branchId)
+      || db.master.prepare('SELECT * FROM branch_profit_policies WHERE branch_id = ? ORDER BY updated_at DESC LIMIT 1').get('HEADQUARTERS')
+      || { min_margin_rate: 0.25, scale_margin_rate: 0.35, block_threshold: 0.25, requires_hq_approval: 1 };
+  }
+
   function runQualificationEngine({
     leadId,
     estimatedBudget = 0,
@@ -3911,26 +4038,32 @@ function createSqliteService({ app }) {
     scheduleRisk = 0,
     defectRisk = 0,
     forceDecision = null,
+    branchId = 'HEADQUARTERS',
     createdAt = nowIso()
   }) {
+    ensureHeadquartersBranch();
     const normalizedRevenue = Math.max(0, Math.round(Number(revenue || 0)));
     const normalizedTotalCost = Math.max(0, Math.round(Number(totalCost || 0)));
     const riskBuffer = Math.max(0, Math.round(Number(vendorRisk || 0) + Number(laborVariance || 0) + Number(scheduleRisk || 0) + Number(defectRisk || 0)));
     const realMargin = normalizedRevenue > 0
       ? Number(((normalizedRevenue - normalizedTotalCost - riskBuffer) / normalizedRevenue).toFixed(4))
       : 0;
+    const policy = getBranchProfitPolicy(branchId);
+    const blockMarginRate = Number(policy.block_threshold ?? policy.min_margin_rate ?? PROFIT_POLICY.blockMarginRate);
+    const modifyMarginRate = Math.max(blockMarginRate, Number(policy.min_margin_rate ?? PROFIT_POLICY.modifyMarginRate) + 0.05);
+    const goMarginRate = Number(policy.scale_margin_rate ?? PROFIT_POLICY.goMarginRate);
     let decision = 'BLOCK';
     if (forceDecision) decision = forceDecision;
-    else if (realMargin < PROFIT_POLICY.blockMarginRate) decision = 'BLOCK';
-    else if (realMargin < PROFIT_POLICY.modifyMarginRate) decision = 'MODIFY';
-    else if (realMargin < PROFIT_POLICY.goMarginRate) decision = 'GO';
+    else if (realMargin < blockMarginRate) decision = 'BLOCK';
+    else if (realMargin < modifyMarginRate) decision = 'MODIFY';
+    else if (realMargin < goMarginRate) decision = 'GO';
     else decision = 'SCALE';
 
     const id = `PCE-${estimateId || 'NOEST'}-${Date.now()}`;
     db.project.prepare(`
       INSERT INTO profit_decisions (
-        id, estimate_id, revenue, total_cost, risk_buffer, real_margin, decision, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        id, estimate_id, revenue, total_cost, risk_buffer, real_margin, decision, created_at, branch_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       estimateId || 'UNKNOWN_ESTIMATE',
@@ -3939,7 +4072,8 @@ function createSqliteService({ app }) {
       riskBuffer,
       realMargin,
       decision,
-      createdAt
+      createdAt,
+      branchId || 'HEADQUARTERS'
     );
     logProfitAutomationEvent({
       sourceModule: 'PCE',
@@ -3955,7 +4089,7 @@ function createSqliteService({ app }) {
     if (decision === 'BLOCK') {
       syncAutoBlockRules(createdAt);
     }
-    return { id, estimateId: estimateId || 'UNKNOWN_ESTIMATE', revenue: normalizedRevenue, totalCost: normalizedTotalCost, riskBuffer, realMargin, decision, createdAt };
+    return { id, estimateId: estimateId || 'UNKNOWN_ESTIMATE', revenue: normalizedRevenue, totalCost: normalizedTotalCost, riskBuffer, realMargin, decision, branchId: branchId || 'HEADQUARTERS', branchPolicy: policy, createdAt };
   }
 
   function latestApprovedOverride(estimateId) {
@@ -4024,6 +4158,7 @@ function createSqliteService({ app }) {
   function saveBathroomEstimate(payload = {}) {
     const createdAt = nowIso();
     const estimateId = payload.estimateId || `BATH-EST-${Date.now()}`;
+    const branchId = payload.branchId || payload.branch_id || 'HEADQUARTERS';
     const rawCalculated = calculateBathroomEstimate(payload);
     const { estimate: calculated, calibration } = applyApprovedCalibrationToEstimate(rawCalculated, 'bathroom_remodel');
     const pce = runProfitControlEngine({
@@ -4034,6 +4169,7 @@ function createSqliteService({ app }) {
       laborVariance: payload.laborVariance || 0,
       scheduleRisk: payload.scheduleRisk || 0,
       defectRisk: payload.defectRisk || 0,
+      branchId,
       createdAt
     });
 
@@ -4055,8 +4191,8 @@ function createSqliteService({ app }) {
       INSERT OR REPLACE INTO bathroom_estimates (
         id, customer_name, site_name, bathroom_count, bathroom_area_m2, ceiling_height_mm,
         construction_method, waterproof_method, tile_wall_type, tile_floor_type, options_json,
-        revenue, total_cost, expected_margin, expected_margin_rate, pce_decision, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        revenue, total_cost, expected_margin, expected_margin_rate, pce_decision, created_at, updated_at, branch_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       estimateId,
       calculated.input.customerName || 'UNKNOWN',
@@ -4075,7 +4211,8 @@ function createSqliteService({ app }) {
       calculated.expected_margin_rate,
       pce.decision,
       createdAt,
-      createdAt
+      createdAt,
+      branchId
     );
 
     db.project.prepare('DELETE FROM bathroom_estimate_items WHERE estimate_id = ?').run(estimateId);
@@ -4167,6 +4304,7 @@ function createSqliteService({ app }) {
   function saveKitchenEstimate(payload = {}) {
     const createdAt = nowIso();
     const estimateId = payload.estimateId || `KIT-EST-${Date.now()}`;
+    const branchId = payload.branchId || payload.branch_id || 'HEADQUARTERS';
     const rawCalculated = calculateKitchenEstimate(payload);
     const { estimate: calculated, calibration } = applyApprovedCalibrationToEstimate(rawCalculated, 'kitchen_remodel');
     const pce = runProfitControlEngine({
@@ -4177,6 +4315,7 @@ function createSqliteService({ app }) {
       laborVariance: payload.laborVariance || 0,
       scheduleRisk: payload.scheduleRisk || 0,
       defectRisk: payload.defectRisk || 0,
+      branchId,
       createdAt
     });
     if (pce.decision === 'BLOCK' && !payload.adminOverrideReason) {
@@ -4188,8 +4327,8 @@ function createSqliteService({ app }) {
         demolition_included, expansion_included, upper_cabinet_length_mm, lower_cabinet_length_mm,
         tall_cabinet, pantry, island, door_finish, countertop_type, handle_type,
         options_json, revenue, total_cost, expected_margin, expected_margin_rate,
-        pce_decision, schedule_days, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        pce_decision, schedule_days, created_at, updated_at, branch_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       estimateId,
       calculated.input.customerName || 'UNKNOWN',
@@ -4215,7 +4354,8 @@ function createSqliteService({ app }) {
       pce.decision,
       calculated.schedule_days,
       createdAt,
-      createdAt
+      createdAt,
+      branchId
     );
     db.project.prepare('DELETE FROM kitchen_estimate_items WHERE estimate_id = ?').run(estimateId);
     const insertItem = db.project.prepare(`
@@ -4435,6 +4575,7 @@ function createSqliteService({ app }) {
   function saveFullRemodelingEstimate(payload = {}) {
     const createdAt = nowIso();
     const estimateId = payload.estimateId || `FULL-EST-${Date.now()}`;
+    const branchId = payload.branchId || payload.branch_id || 'HEADQUARTERS';
     const rawCalculated = calculateFullRemodelingEstimate(payload);
     const { estimate: calculated, calibration } = applyApprovedCalibrationToEstimate(rawCalculated, 'full_remodel');
     const pce = runProfitControlEngine({
@@ -4445,6 +4586,7 @@ function createSqliteService({ app }) {
       laborVariance: payload.laborVariance || 0,
       scheduleRisk: payload.scheduleRisk || 0,
       defectRisk: payload.defectRisk || 0,
+      branchId,
       createdAt
     });
     if (pce.decision === 'BLOCK' && !payload.adminOverrideReason) {
@@ -4456,8 +4598,8 @@ function createSqliteService({ app }) {
         room_count, bathroom_count, kitchen_type, balcony_count, construction_scope,
         selected_processes_json, process_options_json, demolition_json,
         revenue, total_cost, expected_margin, expected_margin_rate,
-        pce_decision, schedule_days, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        pce_decision, schedule_days, created_at, updated_at, branch_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       estimateId,
       calculated.input.customerName || 'UNKNOWN',
@@ -4480,7 +4622,8 @@ function createSqliteService({ app }) {
       pce.decision,
       calculated.schedule_days,
       createdAt,
-      createdAt
+      createdAt,
+      branchId
     );
     db.project.prepare('DELETE FROM full_remodeling_estimate_items WHERE estimate_id = ?').run(estimateId);
     const insertItem = db.project.prepare(`
@@ -10004,6 +10147,7 @@ function createSqliteService({ app }) {
       profitSummary,
       calibrationSummary: getCalibrationSummary(),
       vendorPriceIntelligenceSummary: getVendorPriceIntelligenceSummary(),
+      franchiseSummary: getFranchiseSummary(),
       profitAlerts,
       profitTemplates,
       estimateVsActualTop,
@@ -17042,6 +17186,330 @@ function createSqliteService({ app }) {
     return getDashboardData();
   }
 
+  function getFranchiseSourceData() {
+    const estimates = [
+      ...db.project.prepare("SELECT id AS estimate_id, customer_name, site_name, revenue, total_cost, expected_margin_rate, pce_decision, branch_id, created_at FROM bathroom_estimates").all(),
+      ...db.project.prepare("SELECT id AS estimate_id, customer_name, site_name, revenue, total_cost, expected_margin_rate, pce_decision, branch_id, created_at FROM kitchen_estimates").all(),
+      ...db.project.prepare("SELECT id AS estimate_id, customer_name, site_name, revenue, total_cost, expected_margin_rate, pce_decision, branch_id, created_at FROM full_remodeling_estimates").all()
+    ];
+    return {
+      estimates,
+      contracts: db.project.prepare("SELECT * FROM contracts").all(),
+      profitDecisions: db.project.prepare("SELECT * FROM profit_decisions").all(),
+      closings: db.project.prepare("SELECT * FROM project_closing_snapshots").all(),
+      receivables: db.project.prepare("SELECT * FROM customer_payments").all(),
+      payables: db.project.prepare("SELECT * FROM vendor_payments").all(),
+      templates: db.project.prepare("SELECT * FROM profit_templates").all()
+    };
+  }
+
+  function syncFranchiseRiskAlerts(createdAt = nowIso()) {
+    ensureHeadquartersBranch();
+    const branches = db.master.prepare("SELECT * FROM franchise_branches ORDER BY created_at DESC").all();
+    const sourceData = getFranchiseSourceData();
+    const metrics = branches.map((branch) => calculateBranchMetrics({ branch, ...sourceData }));
+    const alerts = [];
+    metrics.forEach((metric) => {
+      const alert = shouldCreateBranchRiskAlert(metric);
+      if (!alert) return;
+      const id = `FRA-${metric.branchId}-${alert.alertType}`;
+      db.master.prepare(`
+        INSERT OR REPLACE INTO franchise_risk_alerts (
+          id, branch_id, alert_type, severity, title, description, status, created_at
+        ) VALUES (
+          ?, ?, ?, ?, ?, ?, COALESCE((SELECT status FROM franchise_risk_alerts WHERE id = ?), 'OPEN'),
+          COALESCE((SELECT created_at FROM franchise_risk_alerts WHERE id = ?), ?)
+        )
+      `).run(id, metric.branchId, alert.alertType, alert.severity, alert.title, alert.description, id, id, createdAt);
+      alerts.push({ id, branchId: metric.branchId, ...alert, status: 'OPEN' });
+    });
+    return alerts;
+  }
+
+  function getFranchiseSummary() {
+    ensureHeadquartersBranch();
+    const sourceData = getFranchiseSourceData();
+    const branches = db.master.prepare("SELECT * FROM franchise_branches ORDER BY created_at DESC").all();
+    const metrics = branches.map((branch) => calculateBranchMetrics({ branch, ...sourceData }));
+    const openAlerts = db.master.prepare("SELECT * FROM franchise_risk_alerts WHERE status = 'OPEN' ORDER BY created_at DESC LIMIT 10").all();
+    return {
+      branchCount: branches.length,
+      activeBranchCount: branches.filter((branch) => branch.status === 'ACTIVE').length,
+      totalRevenue: metrics.reduce((sum, row) => sum + Number(row.totalRevenue || 0), 0),
+      averageMarginRate: metrics.length ? Number((metrics.reduce((sum, row) => sum + Number(row.averageMarginRate || 0), 0) / metrics.length).toFixed(4)) : 0,
+      lowMarginBranchCount: metrics.filter((row) => Number(row.averageMarginRate || 0) > 0 && Number(row.averageMarginRate || 0) < 0.25).length,
+      pendingPackageCount: countRows(db.master, 'franchise_distribution_packages'),
+      openRiskAlertCount: openAlerts.length,
+      displayStatusKo: branches.length ? '지점 데이터 있음' : '등록된 지점이 없습니다.'
+    };
+  }
+
+  function getFranchiseCenterData({ branchId = null } = {}) {
+    ensureHeadquartersBranch();
+    const createdAt = nowIso();
+    syncFranchiseRiskAlerts(createdAt);
+    const branches = db.master.prepare("SELECT * FROM franchise_branches ORDER BY CASE id WHEN 'HEADQUARTERS' THEN 0 ELSE 1 END, created_at DESC").all();
+    const sourceData = getFranchiseSourceData();
+    const branchMetrics = branches.map((branch) => calculateBranchMetrics({ branch, ...sourceData }));
+    const packages = db.master.prepare("SELECT * FROM franchise_distribution_packages ORDER BY created_at DESC LIMIT 100").all().map((row) => ({
+      ...row,
+      payload: fromJson(row.payload_json, {})
+    }));
+    const packageStatuses = db.master.prepare("SELECT * FROM franchise_branch_package_status ORDER BY applied_at DESC, id DESC LIMIT 100").all();
+    const policies = db.master.prepare("SELECT * FROM branch_profit_policies ORDER BY updated_at DESC").all();
+    const feeRules = db.master.prepare("SELECT * FROM franchise_fee_rules ORDER BY created_at DESC").all();
+    const feeRecords = db.master.prepare("SELECT * FROM franchise_fee_records ORDER BY created_at DESC LIMIT 100").all();
+    const riskAlerts = db.master.prepare("SELECT * FROM franchise_risk_alerts ORDER BY CASE severity WHEN 'RED' THEN 0 WHEN 'ORANGE' THEN 1 ELSE 2 END, created_at DESC LIMIT 100").all();
+    const templates = db.master.prepare("SELECT * FROM franchise_replication_templates ORDER BY created_at DESC LIMIT 50").all().map((row) => ({
+      ...row,
+      payload: fromJson(row.payload_json, {})
+    }));
+    const selectedBranch = branchId ? branches.find((branch) => branch.id === branchId) : branches[0];
+    return {
+      summary: getFranchiseSummary(),
+      branches,
+      branchMetrics,
+      selectedBranch,
+      packages,
+      packageStatuses,
+      policies,
+      feeRules,
+      feeRecords,
+      riskAlerts,
+      templates,
+      emptyState: branches.length <= 1 && branchMetrics.every((metric) => metric.estimateCount === 0 && metric.contractCount === 0)
+    };
+  }
+
+  function createFranchiseBranch(payload = {}) {
+    ensureHeadquartersBranch();
+    const createdAt = payload.createdAt || nowIso();
+    const branchId = payload.branchId || `BR-${String(payload.branchCode || payload.branchName || Date.now()).replace(/[^A-Za-z0-9]/g, '').toUpperCase() || Date.now()}`;
+    const branchCode = payload.branchCode || branchId.replace(/^BR-/, '').slice(0, 12);
+    db.master.prepare(`
+      INSERT OR REPLACE INTO franchise_branches (
+        id, branch_name, branch_code, owner_name, contact, region, address,
+        status, opened_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM franchise_branches WHERE id = ?), ?), ?)
+    `).run(
+      branchId,
+      payload.branchName || payload.branch_name || '신규 지점',
+      branchCode,
+      payload.ownerName || payload.owner_name || 'UNKNOWN',
+      payload.contact || 'UNKNOWN',
+      payload.region || 'UNKNOWN',
+      payload.address || 'UNKNOWN',
+      payload.status || 'ACTIVE',
+      payload.openedAt || payload.opened_at || createdAt.slice(0, 10),
+      branchId,
+      createdAt,
+      createdAt
+    );
+    const hqPolicy = getBranchProfitPolicy('HEADQUARTERS');
+    db.master.prepare(`
+      INSERT OR IGNORE INTO branch_profit_policies (
+        id, branch_id, min_margin_rate, scale_margin_rate, block_threshold,
+        requires_hq_approval, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(`BPP-${branchId}`, branchId, hqPolicy.min_margin_rate, hqPolicy.scale_margin_rate, hqPolicy.block_threshold, 1, createdAt, createdAt);
+    insertNotification({
+      level: 'INFO',
+      messageKo: `프랜차이즈 지점 생성: ${payload.branchName || branchId}`,
+      relatedProjectId: branchId,
+      actionKo: '지점 생성',
+      createdAt
+    });
+    return { branchId, branch: db.master.prepare("SELECT * FROM franchise_branches WHERE id = ?").get(branchId), franchiseData: getFranchiseCenterData({ branchId }) };
+  }
+
+  function buildDistributionPayload(packageType) {
+    const type = packageType || 'MASTER_STANDARD';
+    if (type === 'MASTER_DATA') return getMasterDataCenterData({ runValidation: false });
+    if (type === 'VENDOR_INTELLIGENCE') return getVendorPriceIntelligenceData();
+    if (type === 'BOARD_TEMPLATES') return db.project.prepare("SELECT * FROM design_board_templates ORDER BY created_at DESC").all();
+    return {
+      masterData: getMasterDataCenterData({ runValidation: false }).summary,
+      pcePolicy: getBranchProfitPolicy('HEADQUARTERS'),
+      calibrationSummary: getCalibrationSummary(),
+      vendorSummary: getVendorPriceIntelligenceSummary()
+    };
+  }
+
+  function publishFranchiseDistributionPackage(payload = {}) {
+    ensureHeadquartersBranch();
+    const createdAt = payload.createdAt || nowIso();
+    const packageId = payload.packageId || `FDP-${Date.now()}`;
+    const packageType = payload.packageType || payload.package_type || 'MASTER_STANDARD';
+    const packagePayload = payload.payload || buildDistributionPayload(packageType);
+    db.master.prepare(`
+      INSERT OR REPLACE INTO franchise_distribution_packages (
+        id, package_name, package_type, version, payload_json, status,
+        created_at, published_at
+      ) VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM franchise_distribution_packages WHERE id = ?), ?), ?)
+    `).run(
+      packageId,
+      payload.packageName || payload.package_name || '본사 기준 패키지',
+      packageType,
+      payload.version || '1.0.0',
+      toJson(packagePayload),
+      payload.status || 'PUBLISHED',
+      packageId,
+      createdAt,
+      payload.status === 'DRAFT' ? null : createdAt
+    );
+    return { packageId, package: db.master.prepare("SELECT * FROM franchise_distribution_packages WHERE id = ?").get(packageId), franchiseData: getFranchiseCenterData() };
+  }
+
+  function applyFranchisePackageToBranch(payload = {}) {
+    const createdAt = payload.createdAt || nowIso();
+    const branchId = payload.branchId || payload.branch_id || 'HEADQUARTERS';
+    const packageId = payload.packageId || payload.package_id;
+    const branch = db.master.prepare("SELECT * FROM franchise_branches WHERE id = ?").get(branchId);
+    const distributionPackage = db.master.prepare("SELECT * FROM franchise_distribution_packages WHERE id = ?").get(packageId);
+    if (!branch) throw new Error(`Branch not found: ${branchId}`);
+    if (!distributionPackage) throw new Error(`Distribution package not found: ${packageId}`);
+    const statusId = `FBPS-${branchId}-${packageId}`;
+    db.master.prepare(`
+      INSERT OR REPLACE INTO franchise_branch_package_status (
+        id, branch_id, package_id, status, applied_at, error_message
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).run(statusId, branchId, packageId, 'APPLIED', createdAt, '');
+    insertNotification({
+      level: 'INFO',
+      messageKo: `${branch.branch_name} 지점에 본사 기준 패키지를 적용했습니다.`,
+      relatedProjectId: branchId,
+      actionKo: '본사 기준 배포',
+      createdAt
+    });
+    return { statusId, status: db.master.prepare("SELECT * FROM franchise_branch_package_status WHERE id = ?").get(statusId), franchiseData: getFranchiseCenterData({ branchId }) };
+  }
+
+  function createBranchProfitPolicy(payload = {}) {
+    ensureHeadquartersBranch();
+    const createdAt = payload.createdAt || nowIso();
+    const branchId = payload.branchId || payload.branch_id || 'HEADQUARTERS';
+    const hqApproved = Boolean(payload.hqApproved || payload.hq_approved || payload.approvedBy === 'HQ' || payload.approvedBy === 'CEO');
+    if (branchId !== 'HEADQUARTERS' && !hqApproved) {
+      const requestId = `APR-FRANCHISE-POLICY-${branchId}-${Date.now()}`;
+      db.project.prepare(`
+        INSERT OR REPLACE INTO approval_requests (
+          request_id, source_module, entity_id, project_id, title_ko, amount, reason_ko,
+          status, created_at, approved_at, approved_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        requestId,
+        'FRANCHISE',
+        branchId,
+        branchId,
+        '지점 수익 기준 변경 승인',
+        0,
+        payload.reasonKo || '본사 승인 없는 지점별 마진 기준 변경 요청',
+        'PENDING',
+        createdAt,
+        null,
+        null
+      );
+      return { approvalRequired: true, requestId, status: 'PENDING_HQ_APPROVAL', franchiseData: getFranchiseCenterData({ branchId }) };
+    }
+    const policyId = payload.policyId || `BPP-${branchId}-${Date.now()}`;
+    db.master.prepare(`
+      INSERT OR REPLACE INTO branch_profit_policies (
+        id, branch_id, min_margin_rate, scale_margin_rate, block_threshold,
+        requires_hq_approval, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM branch_profit_policies WHERE id = ?), ?), ?)
+    `).run(
+      policyId,
+      branchId,
+      Number(payload.minMarginRate ?? payload.min_margin_rate ?? 0.25),
+      Number(payload.scaleMarginRate ?? payload.scale_margin_rate ?? 0.35),
+      Number(payload.blockThreshold ?? payload.block_threshold ?? payload.minMarginRate ?? 0.25),
+      branchId === 'HEADQUARTERS' ? 0 : 1,
+      policyId,
+      createdAt,
+      createdAt
+    );
+    return { approvalRequired: false, policyId, policy: db.master.prepare("SELECT * FROM branch_profit_policies WHERE id = ?").get(policyId), franchiseData: getFranchiseCenterData({ branchId }) };
+  }
+
+  function calculateFranchiseFeeRecord(payload = {}) {
+    ensureHeadquartersBranch();
+    const createdAt = payload.createdAt || nowIso();
+    const branchId = payload.branchId || payload.branch_id || 'HEADQUARTERS';
+    const period = payload.period || currentMonthKey();
+    let rule = db.master.prepare("SELECT * FROM franchise_fee_rules WHERE branch_id = ? AND is_active = 1 ORDER BY created_at DESC LIMIT 1").get(branchId);
+    if (!rule) {
+      const ruleId = `FFR-${branchId}`;
+      db.master.prepare(`
+        INSERT OR IGNORE INTO franchise_fee_rules (
+          id, branch_id, fee_type, revenue_percent, fixed_monthly_amount,
+          payment_due_day, is_active, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(ruleId, branchId, 'REVENUE_PERCENT', Number(payload.revenuePercent ?? 0.03), 0, Number(payload.paymentDueDay ?? 10), 1, createdAt);
+      rule = db.master.prepare("SELECT * FROM franchise_fee_rules WHERE id = ?").get(ruleId);
+    }
+    const metric = getFranchiseCenterData({ branchId }).branchMetrics.find((row) => row.branchId === branchId) || { totalRevenue: 0 };
+    const branchRevenue = Number(payload.branchRevenue ?? metric.totalRevenue ?? 0);
+    const calculatedFee = calculateFranchiseFee({ rule, branchRevenue });
+    const recordId = payload.recordId || `FFREC-${branchId}-${period}`;
+    db.master.prepare(`
+      INSERT OR REPLACE INTO franchise_fee_records (
+        id, branch_id, period, branch_revenue, calculated_fee,
+        paid_amount, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM franchise_fee_records WHERE id = ?), ?))
+    `).run(recordId, branchId, period, branchRevenue, calculatedFee, Number(payload.paidAmount || 0), Number(payload.paidAmount || 0) >= calculatedFee ? 'PAID' : 'PENDING', recordId, createdAt);
+    return { recordId, feeRecord: db.master.prepare("SELECT * FROM franchise_fee_records WHERE id = ?").get(recordId), franchiseData: getFranchiseCenterData({ branchId }) };
+  }
+
+  function markFranchiseFeePaid(payload = {}) {
+    const recordId = payload.recordId || payload.id;
+    const paidAmount = Number(payload.paidAmount || payload.paid_amount || 0);
+    db.master.prepare(`
+      UPDATE franchise_fee_records
+      SET paid_amount = ?, status = CASE WHEN ? >= calculated_fee THEN 'PAID' ELSE 'PENDING' END
+      WHERE id = ?
+    `).run(paidAmount, paidAmount, recordId);
+    return { recordId, feeRecord: db.master.prepare("SELECT * FROM franchise_fee_records WHERE id = ?").get(recordId), franchiseData: getFranchiseCenterData() };
+  }
+
+  function createFranchiseReplicationTemplate(payload = {}) {
+    ensureHeadquartersBranch();
+    const createdAt = payload.createdAt || nowIso();
+    const templateId = payload.templateId || `FRT-${Date.now()}`;
+    const templatePayload = payload.payload || {
+      masterData: getMasterDataCenterData({ runValidation: false }).summary,
+      pceRules: getBranchProfitPolicy('HEADQUARTERS'),
+      documentTemplates: db.project.prepare("SELECT * FROM contract_documents ORDER BY created_at DESC LIMIT 20").all(),
+      communicationTemplates: db.project.prepare("SELECT * FROM communication_templates ORDER BY created_at DESC LIMIT 50").all(),
+      boardTemplates: db.project.prepare("SELECT * FROM design_board_templates ORDER BY created_at DESC LIMIT 20").all(),
+      visualizationPresets: db.project.prepare("SELECT * FROM comfyui_workflow_presets ORDER BY created_at DESC LIMIT 20").all(),
+      dashboardSettings: { entry: 'estimate-first', controlTower: true }
+    };
+    db.master.prepare(`
+      INSERT OR REPLACE INTO franchise_replication_templates (
+        id, template_name, version, payload_json, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM franchise_replication_templates WHERE id = ?), ?))
+    `).run(templateId, payload.templateName || payload.template_name || '신규 지점 표준 복제 템플릿', payload.version || '1.0.0', toJson(templatePayload), payload.status || 'ACTIVE', templateId, createdAt);
+    return { templateId, template: db.master.prepare("SELECT * FROM franchise_replication_templates WHERE id = ?").get(templateId), franchiseData: getFranchiseCenterData() };
+  }
+
+  function applyReplicationTemplateToBranch(payload = {}) {
+    const branchId = payload.branchId || payload.branch_id;
+    const templateId = payload.templateId || payload.template_id;
+    const template = db.master.prepare("SELECT * FROM franchise_replication_templates WHERE id = ?").get(templateId);
+    const branch = db.master.prepare("SELECT * FROM franchise_branches WHERE id = ?").get(branchId);
+    if (!branch) throw new Error(`Branch not found: ${branchId}`);
+    if (!template) throw new Error(`Replication template not found: ${templateId}`);
+    const published = publishFranchiseDistributionPackage({
+      packageName: `${branch.branch_name} 복제 템플릿 적용`,
+      packageType: 'REPLICATION_TEMPLATE',
+      version: template.version,
+      payload: fromJson(template.payload_json, {}),
+      status: 'PUBLISHED'
+    });
+    const applied = applyFranchisePackageToBranch({ branchId, packageId: published.packageId });
+    return { templateId, branchId, packageId: published.packageId, applied, franchiseData: getFranchiseCenterData({ branchId }) };
+  }
+
   function decisionToKorean(decision) {
     if (decision === 'APPROVED') return '대표 승인';
     if (decision === 'REJECTED') return '대표 반려';
@@ -17248,7 +17716,15 @@ function createSqliteService({ app }) {
       laborMasterCount: countRows(db.master, 'labor_master'),
       equipmentMasterCount: countRows(db.master, 'equipment_master'),
       standardEstimateItemCount: countRows(db.master, 'standard_estimate_items'),
-      masterDataValidationLogCount: countRows(db.master, 'master_data_validation_logs')
+      masterDataValidationLogCount: countRows(db.master, 'master_data_validation_logs'),
+      franchiseBranchCount: countRows(db.master, 'franchise_branches'),
+      franchiseDistributionPackageCount: countRows(db.master, 'franchise_distribution_packages'),
+      franchiseBranchPackageStatusCount: countRows(db.master, 'franchise_branch_package_status'),
+      branchProfitPolicyCount: countRows(db.master, 'branch_profit_policies'),
+      franchiseFeeRuleCount: countRows(db.master, 'franchise_fee_rules'),
+      franchiseFeeRecordCount: countRows(db.master, 'franchise_fee_records'),
+      franchiseRiskAlertCount: countRows(db.master, 'franchise_risk_alerts'),
+      franchiseReplicationTemplateCount: countRows(db.master, 'franchise_replication_templates')
     };
   }
 
@@ -17340,6 +17816,15 @@ function createSqliteService({ app }) {
     runMasterDataValidation,
     importMasterDataCsv,
     exportMasterDataCsv,
+    getFranchiseCenterData,
+    createFranchiseBranch,
+    publishFranchiseDistributionPackage,
+    applyFranchisePackageToBranch,
+    createBranchProfitPolicy,
+    calculateFranchiseFeeRecord,
+    markFranchiseFeePaid,
+    createFranchiseReplicationTemplate,
+    applyReplicationTemplateToBranch,
     runAutomationScheduler,
     getPermissionAdminData,
     assertUserPermission,

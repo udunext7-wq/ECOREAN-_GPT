@@ -59,6 +59,10 @@ const releaseChecks = [
     script: 'master-data-management.smoke.js'
   },
   {
+    label: '프랜차이즈 복제',
+    script: 'franchise-replication.smoke.js'
+  },
+  {
     label: 'AI 투시도 프롬프트',
     script: 'ai-visualization-generation.smoke.js'
   },

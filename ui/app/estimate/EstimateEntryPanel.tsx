@@ -77,6 +77,7 @@ const secondaryActions: EntryAction[] = [
   { title: '실제 프로젝트 보정', headline: '완료 데이터로 다음 견적 보정', note: '학습 승인', view: 'calibration', tone: 'warning' },
   { title: '협력업체 단가 지능화', headline: '실제 매입가와 업체 신뢰도로 다음 견적 보정', note: '단가 학습', view: 'vendorIntelligence', tone: 'warning' },
   { title: '기준 데이터 관리', headline: '공정 / 자재 / 업체 / 인력 / 표준 품목 관리', note: 'Master DB', view: 'masterDb', tone: 'warning' },
+  { title: '프랜차이즈 관리', headline: '본사 기준 배포와 지점별 수익/리스크 관리', note: 'HQ 운영', view: 'franchise', tone: 'warning' },
   { title: '평면도 / 아이소메트릭', headline: '공간 구역과 견적 연결', note: '공간 관리', view: 'floorplanCenter' },
   { title: 'AI 투시도 생성', headline: '프롬프트 / ComfyUI / 이미지 검토', note: '시각화', view: 'aiVisualization' },
   { title: '디자인 보드 생성', headline: '고객 제안서 / 포트폴리오 보드', note: '보드 출력', view: 'boardGeneration' }
