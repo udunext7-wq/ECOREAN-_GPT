@@ -39,6 +39,10 @@ const releaseChecks = [
     script: 'daily-site-report.smoke.js'
   },
   {
+    label: '현장 모바일 운영',
+    script: 'field-mobile-operations.smoke.js'
+  },
+  {
     label: '결제/현금흐름',
     script: 'payment-cashflow.smoke.js'
   },

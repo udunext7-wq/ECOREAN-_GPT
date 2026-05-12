@@ -18,6 +18,7 @@ import { FullRemodelingEstimateWizardView } from '../../app/estimate/FullRemodel
 import { KitchenEstimateWizardView } from '../../app/estimate/KitchenEstimateWizardView';
 import { NewEstimateWizard } from '../../app/estimate/NewEstimateWizard';
 import { CeoControlTowerView } from '../../app/dashboard/CeoControlTowerView';
+import { FieldMobileCenterView } from '../../app/mobile/FieldMobileCenterView';
 import { BoardGenerationCenterView } from '../../app/board/BoardGenerationCenterView';
 import { AIVisualizationCenterView } from '../../app/design/AIVisualizationCenterView';
 import { FloorplanCenterView } from '../../app/design/FloorplanCenterView';
@@ -61,6 +62,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     boardGeneration: '디자인 보드 생성',
     masterDb: '기준 데이터 관리',
     franchise: '프랜차이즈 관리',
+    fieldMobile: '현장 모바일',
     estimate: '새 견적 만들기',
     kitchenEstimate: '주방 리모델링',
     fullRemodelingEstimate: '전체 리모델링',
@@ -89,7 +91,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     profitAutomation: '수익 자동화'
   };
 
-  const isWideView = ['masterDb', 'franchise', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
+  const isWideView = ['masterDb', 'franchise', 'fieldMobile', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
 
   return (
     <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
@@ -114,6 +116,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'boardGeneration' ? <BoardGenerationCenterView /> : null}
       {view === 'masterDb' ? <MasterDataCenterView /> : null}
       {view === 'franchise' ? <FranchiseCenterView /> : null}
+      {view === 'fieldMobile' ? <FieldMobileCenterView projectId={project.projectId} /> : null}
       {view === 'caseLibrary' ? <CaseLibraryView /> : null}
       {view === 'costCapture' ? <CostCaptureDashboard /> : null}
       {view === 'marginSafety' ? <MarginSafetyDashboard /> : null}

@@ -60,6 +60,17 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:board:export-pdf', (_event, payload) => sqliteService.exportDesignBoardPdf(payload));
   ipcMain.handle('boc:board:portfolio-candidate', (_event, payload) => sqliteService.createPortfolioCandidate(payload));
   ipcMain.handle('boc:execution:readiness', (_event, payload) => sqliteService.getProjectExecutionReadiness(payload));
+  ipcMain.handle('boc:field-mobile:get', (_event, payload = {}) => sqliteService.getFieldMobileCenterData(payload));
+  ipcMain.handle('boc:field-mobile:attendance:check-in', (_event, payload) => sqliteService.saveFieldAttendanceCheckIn(payload));
+  ipcMain.handle('boc:field-mobile:attendance:check-out', (_event, payload) => sqliteService.saveFieldAttendanceCheckOut(payload));
+  ipcMain.handle('boc:field-mobile:daily-report:create', (_event, payload) => sqliteService.createFieldDailyReport(payload));
+  ipcMain.handle('boc:field-mobile:media:save', (_event, payload) => sqliteService.saveSiteMediaFile(payload));
+  ipcMain.handle('boc:field-mobile:material-receiving:create', (_event, payload) => sqliteService.createFieldMaterialReceiving(payload));
+  ipcMain.handle('boc:field-mobile:inspection:save', (_event, payload) => sqliteService.saveFieldInspectionResult(payload));
+  ipcMain.handle('boc:field-mobile:change-order:create', (_event, payload) => sqliteService.createFieldChangeOrderRequest(payload));
+  ipcMain.handle('boc:field-mobile:defect:create', (_event, payload) => sqliteService.createFieldDefectReport(payload));
+  ipcMain.handle('boc:field-mobile:signature:save', (_event, payload) => sqliteService.saveFieldSignature(payload));
+  ipcMain.handle('boc:field-mobile:risk:create', (_event, payload) => sqliteService.createFieldRiskReport(payload));
   ipcMain.handle('boc:execution:transition', (_event, payload) => sqliteService.transitionProjectToExecution(payload));
   ipcMain.handle('boc:site:status', (_event, payload) => sqliteService.getSiteOperationStatus(payload));
   ipcMain.handle('boc:site:start', (_event, payload) => sqliteService.startSiteOperation(payload));

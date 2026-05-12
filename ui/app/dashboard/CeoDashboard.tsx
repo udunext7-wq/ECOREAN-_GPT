@@ -70,6 +70,7 @@ export function CeoDashboard() {
       openProfitTemplates: 'profitTemplates',
       openProfitAutomation: 'profitAutomation',
       openExecutionManagement: 'executionManagement',
+      openFieldMobile: 'fieldMobile',
       openCeoControlTower: 'ceoControlTower',
       openCommunication: 'communication',
       openPaymentCenter: 'payment',
@@ -173,6 +174,7 @@ export function CeoDashboard() {
               <button className="command command-order" onClick={() => openView('approvals', 'click')}>발주</button>
               <button className="command command-claim" onClick={() => openView('project', 'click')}>청구</button>
               <button className="command command-approve" onClick={() => openView('executionManagement', 'confirm')}>현장</button>
+              <button className="command command-order" onClick={() => openView('fieldMobile', 'confirm')}>Mobile</button>
               <button className="command command-block" onClick={() => openView('ceoControlTower', 'warning')}>Control</button>
             </div>
             <div className="today-action-list">

@@ -1437,6 +1437,45 @@ function createSqliteService({ app }) {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS site_media_files (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        report_id TEXT,
+        related_entity_type TEXT NOT NULL,
+        related_entity_id TEXT NOT NULL,
+        file_name TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        media_type TEXT NOT NULL,
+        caption TEXT NOT NULL,
+        uploaded_by TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS field_signatures (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        related_entity_type TEXT NOT NULL,
+        related_entity_id TEXT NOT NULL,
+        signer_name TEXT NOT NULL,
+        signer_role TEXT NOT NULL,
+        signature_text TEXT NOT NULL,
+        signed_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS field_risk_reports (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        risk_type TEXT NOT NULL,
+        description TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        immediate_action_taken INTEGER NOT NULL,
+        photo_status TEXT NOT NULL,
+        reported_by TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS ceo_decision_queue (
         decision_id TEXT PRIMARY KEY,
         source_module TEXT NOT NULL,
@@ -13143,6 +13182,199 @@ function createSqliteService({ app }) {
     return { dashboardData: getDashboardData(), defectId, rootCauseId, defect };
   }
 
+  function getFieldMobileCenterData({ projectId = null, roleMode = '팀장' } = {}) {
+    const today = new Date().toISOString().slice(0, 10);
+    const projects = db.project.prepare('SELECT * FROM projects ORDER BY project_id ASC LIMIT 20').all();
+    const executionProjects = db.project.prepare('SELECT * FROM execution_projects ORDER BY updated_at DESC LIMIT 20').all();
+    const siteOperations = db.project.prepare('SELECT * FROM site_operations ORDER BY updated_at DESC LIMIT 20').all();
+    const activeProjectId = projectId || siteOperations[0]?.project_id || executionProjects[0]?.project_id || projects[0]?.project_id || 'FIELD-MOBILE-DEMO';
+    const todayReports = db.project.prepare('SELECT * FROM daily_site_reports WHERE report_date = ? ORDER BY created_at DESC LIMIT 20').all(today);
+    const todayAttendance = db.project.prepare('SELECT * FROM crew_attendance_logs WHERE work_date = ? ORDER BY created_at DESC LIMIT 30').all(today);
+    const materialReceiving = db.project.prepare('SELECT * FROM material_receiving_logs ORDER BY created_at DESC LIMIT 20').all();
+    const inspections = db.project.prepare('SELECT * FROM inspection_checklist_items ORDER BY created_at DESC LIMIT 30').all();
+    const mediaFiles = db.project.prepare('SELECT * FROM site_media_files ORDER BY created_at DESC LIMIT 30').all();
+    const signatures = db.project.prepare('SELECT * FROM field_signatures ORDER BY created_at DESC LIMIT 20').all();
+    const riskReports = db.project.prepare("SELECT * FROM field_risk_reports ORDER BY CASE severity WHEN 'RED' THEN 0 WHEN 'ORANGE' THEN 1 WHEN 'YELLOW' THEN 2 ELSE 3 END, created_at DESC LIMIT 30").all();
+    const todaySite = {
+      projectId: activeProjectId,
+      siteNameKo: projects.find((project) => project.project_id === activeProjectId)?.project_name_ko || activeProjectId,
+      todayProcessKo: todayReports[0] ? fromJson(todayReports[0].process_progress_json, [])[0]?.processNameKo || '현장 확인' : '오늘 공정 미등록',
+      plannedWorkKo: todayReports[0]?.issue_summary_ko || '오늘 배정된 현장이 없습니다.',
+      teamKo: todayAttendance.length ? `${todayAttendance.length}명 출역` : '팀 미등록',
+      startTime: todayAttendance[0]?.check_in_time || '미등록',
+      expectedEndTime: todayAttendance[0]?.check_out_time || '미등록',
+      checklistKo: inspections.length ? inspections.slice(0, 5).map((item) => item.check_item_ko) : [],
+      riskAlerts: riskReports.filter((risk) => risk.project_id === activeProjectId && risk.severity !== 'NORMAL').slice(0, 5)
+    };
+    return {
+      roleModes: ['현장 작업자', '팀장', '마스터', '관리자'],
+      roleMode,
+      todaySite,
+      todayReports,
+      todayAttendance,
+      materialReceiving,
+      inspections,
+      mediaFiles,
+      signatures,
+      riskReports,
+      summary: {
+        attendanceCount: todayAttendance.length,
+        dailyReportCount: todayReports.length,
+        mediaCount: mediaFiles.length,
+        shortageCount: materialReceiving.filter((row) => Number(row.missing_quantity || 0) > 0 || Number(row.damage_or_missing || 0) > 0).length,
+        failInspectionCount: inspections.filter((row) => row.result_status === 'FAIL').length,
+        redRiskCount: riskReports.filter((row) => row.severity === 'RED').length,
+        displayStatusKo: projects.length || executionProjects.length ? '현장 데이터 있음' : '오늘 배정된 현장이 없습니다.'
+      },
+      emptyState: projects.length === 0 && executionProjects.length === 0 && siteOperations.length === 0
+    };
+  }
+
+  function saveSiteMediaFile(payload = {}) {
+    const createdAt = payload.createdAt || nowIso();
+    const projectId = payload.projectId || payload.project_id || 'FIELD-MOBILE-DEMO';
+    const id = payload.id || `MEDIA-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO site_media_files (
+        id, project_id, report_id, related_entity_type, related_entity_id,
+        file_name, file_path, media_type, caption, uploaded_by, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM site_media_files WHERE id = ?), ?))
+    `).run(id, projectId, payload.reportId || payload.report_id || null, payload.relatedEntityType || payload.related_entity_type || 'FIELD', payload.relatedEntityId || payload.related_entity_id || 'FIELD-MOBILE', payload.fileName || payload.file_name || '현장사진.jpg', payload.filePath || payload.file_path || '', payload.mediaType || payload.media_type || 'PHOTO', payload.caption || '', payload.uploadedBy || payload.uploaded_by || payload.actor || 'FIELD', id, createdAt);
+    writeOperationalLog({ actionType: 'FIELD_MEDIA_UPLOAD', actor: payload.uploadedBy || payload.actor || 'FIELD', projectId, messageKo: `현장 미디어 저장: ${payload.fileName || payload.file_name || '현장사진.jpg'}`, actionKo: '사진 업로드', level: 'INFO', payload: { mediaId: id }, reasonKo: payload.caption || '현장 모바일 업로드', createdAt });
+    return { mediaId: id, media: db.project.prepare('SELECT * FROM site_media_files WHERE id = ?').get(id), fieldMobileData: getFieldMobileCenterData({ projectId }) };
+  }
+
+  function saveFieldAttendanceCheckIn(payload = {}) {
+    const createdAt = payload.createdAt || nowIso();
+    const projectId = payload.projectId || payload.project_id || 'FIELD-MOBILE-DEMO';
+    ensureExecutionContextForRecord(projectId);
+    const workDate = payload.workDate || payload.work_date || createdAt.slice(0, 10);
+    const attendanceId = payload.attendanceId || `FATT-${projectId}-${Date.now()}`;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO crew_attendance_logs (
+        attendance_log_id, project_id, site_name_ko, work_date, worker_name_ko,
+        role_ko, affiliation_ko, check_in_time, check_out_time, work_hours,
+        daily_wage, labor_cost, notes_ko, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM crew_attendance_logs WHERE attendance_log_id = ?), ?))
+    `).run(attendanceId, projectId, payload.siteNameKo || payload.site_name_ko || '현장', workDate, payload.workerNameKo || payload.worker_name_ko || '작업자', payload.roleKo || payload.role_ko || '작업자', payload.affiliationKo || payload.affiliation_ko || '현장팀', payload.checkInTime || payload.check_in_time || new Date().toTimeString().slice(0, 5), payload.checkOutTime || payload.check_out_time || '', 0, Math.round(Number(payload.dailyWage || payload.daily_wage || 0)), 0, payload.notesKo || payload.notes_ko || '모바일 출근 체크', attendanceId, createdAt);
+    writeOperationalLog({ actionType: 'FIELD_ATTENDANCE_CHECK_IN', actor: payload.workerNameKo || payload.worker_name_ko || 'FIELD', projectId, messageKo: '모바일 출근 체크가 저장되었습니다.', actionKo: '출근 체크', level: 'INFO', payload: { attendanceId }, reasonKo: '현장 모바일 출역', createdAt });
+    return { attendanceId, attendance: db.project.prepare('SELECT * FROM crew_attendance_logs WHERE attendance_log_id = ?').get(attendanceId), fieldMobileData: getFieldMobileCenterData({ projectId }) };
+  }
+
+  function timeDiffHours(start, end) {
+    const [sh, sm] = String(start || '00:00').split(':').map(Number);
+    const [eh, em] = String(end || '00:00').split(':').map(Number);
+    return Math.max(0, Number((((eh * 60 + em) - (sh * 60 + sm)) / 60).toFixed(2)));
+  }
+
+  function saveFieldAttendanceCheckOut(payload = {}) {
+    const createdAt = payload.createdAt || nowIso();
+    const projectId = payload.projectId || payload.project_id || 'FIELD-MOBILE-DEMO';
+    const workDate = payload.workDate || payload.work_date || createdAt.slice(0, 10);
+    const attendance = payload.attendanceId
+      ? db.project.prepare('SELECT * FROM crew_attendance_logs WHERE attendance_log_id = ?').get(payload.attendanceId)
+      : db.project.prepare('SELECT * FROM crew_attendance_logs WHERE project_id = ? AND work_date = ? AND worker_name_ko = ? ORDER BY created_at DESC LIMIT 1').get(projectId, workDate, payload.workerNameKo || payload.worker_name_ko || '작업자');
+    if (!attendance) throw new Error('Attendance log not found');
+    const checkOutTime = payload.checkOutTime || payload.check_out_time || new Date().toTimeString().slice(0, 5);
+    const workHours = Number(payload.workHours || payload.work_hours || timeDiffHours(attendance.check_in_time, checkOutTime));
+    const laborCost = Math.round(Number(attendance.daily_wage || payload.dailyWage || 0) * (workHours / 8));
+    db.project.prepare('UPDATE crew_attendance_logs SET check_out_time = ?, work_hours = ?, labor_cost = ?, notes_ko = ? WHERE attendance_log_id = ?')
+      .run(checkOutTime, workHours, laborCost, payload.notesKo || payload.notes_ko || attendance.notes_ko || '', attendance.attendance_log_id);
+    db.project.prepare(`
+      INSERT INTO labor_cost_records (
+        labor_cost_record_id, crew_allocation_id, crew_member_id, project_id,
+        cost_capture_entry_id, planned_labor_cost, actual_labor_cost,
+        variance_amount, variance_rate, cost_status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(`LABOR-FIELD-${attendance.attendance_log_id}`, 'FIELD_MOBILE', attendance.worker_name_ko, projectId, null, 0, laborCost, laborCost, 0, 'ACTUAL_RECORDED', createdAt, createdAt);
+    writeOperationalLog({ actionType: 'FIELD_ATTENDANCE_CHECK_OUT', actor: attendance.worker_name_ko, projectId, messageKo: `모바일 퇴근 체크: ${workHours}시간 / 노무비 ${laborCost.toLocaleString('ko-KR')}원`, actionKo: '퇴근 체크', level: 'INFO', payload: { attendanceId: attendance.attendance_log_id, workHours, laborCost }, reasonKo: '출역 기반 노무비 자동 반영', createdAt });
+    return { attendanceId: attendance.attendance_log_id, workHours, laborCost, attendance: db.project.prepare('SELECT * FROM crew_attendance_logs WHERE attendance_log_id = ?').get(attendance.attendance_log_id), fieldMobileData: getFieldMobileCenterData({ projectId }) };
+  }
+
+  function createFieldDailyReport(payload = {}) {
+    const projectId = payload.projectId || payload.project_id || 'FIELD-MOBILE-DEMO';
+    const report = createDailySiteReportFromSchedule({ projectId, reportDate: payload.reportDate || payload.report_date || new Date().toISOString().slice(0, 10), weatherKo: payload.weatherKo || payload.weather_ko || '맑음', issueSummaryKo: payload.issueSummaryKo || payload.issue_summary_ko || payload.specialNotesKo || '특이사항 없음', managerKo: payload.managerKo || payload.manager_ko || payload.actor || '팀장', actor: 'CEO' });
+    db.project.prepare('UPDATE daily_site_report_items SET work_content_ko = ?, crew_summary_json = ?, material_summary_json = ?, delay_reason_ko = ?, tomorrow_process_ko = ?, manager_ko = ? WHERE report_id = ?')
+      .run(payload.workContentKo || payload.work_content_ko || '모바일 공사일보 작성', toJson({ crewCount: Number(payload.crewCount || payload.crew_count || 0), noteKo: payload.crewNoteKo || '' }), toJson({ usedMaterialsKo: payload.usedMaterialsKo || payload.used_materials_ko || '' }), payload.delayReasonKo || payload.delay_reason_ko || '', payload.tomorrowProcessKo || payload.tomorrow_process_ko || '', payload.managerKo || payload.manager_ko || payload.actor || '팀장', report.reportId);
+    if (payload.delayReasonKo || payload.delay_reason_ko) {
+      upsertCeoDecisionItem({ decisionId: `CEO-FIELD-DELAY-${report.reportId}`, sourceModule: 'FieldMobile', entityType: 'DailySiteReport', entityId: report.reportId, decisionType: 'SCHEDULE_DELAY_REPORTED', titleKo: '현장 지연 사유 입력', projectId, financialImpact: 0, riskLevel: 'ORANGE', requiredActionKo: '지연 사유 확인', payload });
+    }
+    if (payload.filePath || payload.file_path) saveSiteMediaFile({ projectId, reportId: report.reportId, relatedEntityType: 'DailySiteReport', relatedEntityId: report.reportId, fileName: payload.fileName || '공사일보사진.jpg', filePath: payload.filePath || payload.file_path, caption: payload.caption || '공사일보 첨부 사진', uploadedBy: payload.actor || '팀장' });
+    return { ...report, fieldMobileData: getFieldMobileCenterData({ projectId }) };
+  }
+
+  function createFieldMaterialReceiving(payload = {}) {
+    const projectId = payload.projectId || payload.project_id || 'FIELD-MOBILE-DEMO';
+    const result = createMaterialReceivingLog({ projectId, purchaseOrderId: payload.purchaseOrderId || payload.purchase_order_id || `PO-${projectId}`, receivedItems: payload.receivedItems || payload.items || [{ itemNameKo: payload.itemNameKo || payload.item_name_ko || '자재', specificationKo: payload.specificationKo || payload.specification_ko || 'UNKNOWN', orderedQuantity: Number(payload.orderedQuantity || payload.ordered_quantity || 0), receivedQuantity: Number(payload.receivedQuantity || payload.received_quantity || 0), unit: payload.unit || 'EA', supplierNameKo: payload.supplierNameKo || payload.supplier_name_ko || 'UNKNOWN', damageOrMissing: Boolean(payload.damageOrMissing || payload.damage_or_missing), notesKo: payload.notesKo || payload.notes_ko || '' }], actor: 'CEO' });
+    if (payload.filePath || payload.file_path) saveSiteMediaFile({ projectId, relatedEntityType: 'MaterialReceiving', relatedEntityId: payload.purchaseOrderId || payload.purchase_order_id || `PO-${projectId}`, fileName: payload.fileName || '자재입고사진.jpg', filePath: payload.filePath || payload.file_path, caption: payload.caption || '자재입고 첨부 사진', uploadedBy: payload.actor || '팀장' });
+    return { ...result, fieldMobileData: getFieldMobileCenterData({ projectId }) };
+  }
+
+  function saveFieldInspectionResult(payload = {}) {
+    const projectId = payload.projectId || payload.project_id || 'FIELD-MOBILE-DEMO';
+    let checklistId = payload.checklistId || payload.checklist_id;
+    if (!checklistId) checklistId = createInspectionChecklistFromSchedule({ projectId, processNameKo: payload.processNameKo || payload.process_name_ko || '현장 검수', actor: 'CEO' }).checklistId;
+    const defaultItem = db.project.prepare('SELECT * FROM inspection_checklist_items WHERE checklist_id = ? ORDER BY critical_flag DESC, item_id ASC LIMIT 1').get(checklistId);
+    const results = payload.results || [{
+      itemId: payload.itemId || payload.item_id || defaultItem?.item_id,
+      checkItemKo: payload.checkItemKo || payload.check_item_ko || defaultItem?.check_item_ko || '모바일 검수 항목',
+      resultStatus: payload.resultStatus || payload.result_status || payload.result || 'PASS',
+      actionRequiredKo: payload.actionRequiredKo || payload.action_required_ko || ''
+    }];
+    const result = saveInspectionChecklistResults({ projectId, checklistId, results, actor: 'CEO' });
+    if (payload.filePath || payload.file_path) saveSiteMediaFile({ projectId, relatedEntityType: 'Inspection', relatedEntityId: result.inspectionResultId, fileName: payload.fileName || '검수사진.jpg', filePath: payload.filePath || payload.file_path, caption: payload.caption || '검수 첨부 사진', uploadedBy: payload.actor || '팀장' });
+    return { ...result, fieldMobileData: getFieldMobileCenterData({ projectId }) };
+  }
+
+  function createFieldChangeOrderRequest(payload = {}) {
+    const projectId = payload.projectId || payload.project_id || 'FIELD-MOBILE-DEMO';
+    const result = createExecutionChangeOrder({ projectId, siteNameKo: payload.siteNameKo || payload.site_name_ko || '현장', requestedByKo: payload.requestedByKo || payload.requested_by_ko || payload.actor || '마스터', titleKo: payload.titleKo || payload.title_ko || '모바일 추가공사 요청', changeContentKo: payload.changeContentKo || payload.change_content_ko || '현장 추가 작업', changeReasonKo: payload.changeReasonKo || payload.change_reason_ko || '현장 조건 변경', additionalAmount: Number(payload.additionalAmount || payload.additional_amount || 0), additionalCost: Number(payload.additionalCost || payload.additional_cost || 0), scheduleImpactDays: Number(payload.scheduleImpactDays || payload.schedule_impact_days || 0), customerApprovalStatus: payload.customerApprovalStatus || payload.customer_approval_status || 'PENDING', actor: 'CEO' });
+    if (payload.filePath || payload.file_path) saveSiteMediaFile({ projectId, relatedEntityType: 'ChangeOrder', relatedEntityId: result.changeOrderId, fileName: payload.fileName || '추가공사사진.jpg', filePath: payload.filePath || payload.file_path, caption: payload.caption || '추가공사 첨부 사진', uploadedBy: payload.actor || '마스터' });
+    return { ...result, fieldMobileData: getFieldMobileCenterData({ projectId }) };
+  }
+
+  function createFieldDefectReport(payload = {}) {
+    const projectId = payload.projectId || payload.project_id || 'FIELD-MOBILE-DEMO';
+    const result = createDefectReport({ projectId, siteNameKo: payload.siteNameKo || payload.site_name_ko || '현장', defectLocationKo: payload.defectLocationKo || payload.defect_location_ko || '현장', defectTypeKo: payload.defectTypeKo || payload.defect_type_ko || '하자', severity: payload.severity || 'MEDIUM', rootCauseKo: payload.rootCauseKo || payload.root_cause_ko || '원인 확인 필요', estimatedCost: Number(payload.estimatedCost || payload.estimated_cost || 0), managerKo: payload.managerKo || payload.manager_ko || '현장관리자', actor: 'CEO' });
+    if (payload.filePath || payload.file_path) saveSiteMediaFile({ projectId, relatedEntityType: 'Defect', relatedEntityId: result.defectId, fileName: payload.fileName || '하자사진.jpg', filePath: payload.filePath || payload.file_path, caption: payload.caption || '하자 접수 사진', uploadedBy: payload.actor || '마스터' });
+    return { ...result, fieldMobileData: getFieldMobileCenterData({ projectId }) };
+  }
+
+  function saveFieldSignature(payload = {}) {
+    const createdAt = payload.createdAt || nowIso();
+    const projectId = payload.projectId || payload.project_id || 'FIELD-MOBILE-DEMO';
+    const id = payload.id || `FSIG-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO field_signatures (
+        id, project_id, related_entity_type, related_entity_id, signer_name,
+        signer_role, signature_text, signed_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM field_signatures WHERE id = ?), ?))
+    `).run(id, projectId, payload.relatedEntityType || payload.related_entity_type || 'FieldSignature', payload.relatedEntityId || payload.related_entity_id || 'FIELD', payload.signerName || payload.signer_name || '고객', payload.signerRole || payload.signer_role || '고객', payload.signatureText || payload.signature_text || payload.signerName || '서명', payload.signedAt || payload.signed_at || createdAt, id, createdAt);
+    writeOperationalLog({ actionType: 'FIELD_SIGNATURE_SAVED', actor: payload.signerName || payload.signer_name || '고객', projectId, messageKo: '고객 서명 placeholder가 저장되었습니다.', actionKo: '고객 서명', level: 'INFO', payload: { signatureId: id }, reasonKo: payload.relatedEntityType || payload.related_entity_type || '현장 확인', createdAt });
+    return { signatureId: id, signature: db.project.prepare('SELECT * FROM field_signatures WHERE id = ?').get(id), fieldMobileData: getFieldMobileCenterData({ projectId }) };
+  }
+
+  function createFieldRiskReport(payload = {}) {
+    const createdAt = payload.createdAt || nowIso();
+    const projectId = payload.projectId || payload.project_id || 'FIELD-MOBILE-DEMO';
+    ensureExecutionContextForRecord(projectId);
+    const id = payload.id || `FRISK-${projectId}-${Date.now()}`;
+    const severity = payload.severity || 'NORMAL';
+    db.project.prepare(`
+      INSERT OR REPLACE INTO field_risk_reports (
+        id, project_id, risk_type, description, severity, immediate_action_taken,
+        photo_status, reported_by, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM field_risk_reports WHERE id = ?), ?))
+    `).run(id, projectId, payload.riskType || payload.risk_type || '기타', payload.description || '현장 위험 보고', severity, payload.immediateActionTaken || payload.immediate_action_taken ? 1 : 0, payload.filePath || payload.file_path ? 'PHOTO_ATTACHED' : 'PHOTO_PLACEHOLDER', payload.reportedBy || payload.reported_by || payload.actor || 'FIELD', 'OPEN', id, createdAt);
+    if (payload.filePath || payload.file_path) saveSiteMediaFile({ projectId, relatedEntityType: 'FieldRiskReport', relatedEntityId: id, fileName: payload.fileName || '위험보고사진.jpg', filePath: payload.filePath || payload.file_path, caption: payload.caption || '위험 보고 사진', uploadedBy: payload.reportedBy || payload.actor || 'FIELD' });
+    if (severity === 'RED') {
+      upsertRedAlertEvent({ redAlertId: `RED-FIELD-RISK-${id}`, sourceModule: 'FieldMobile', entityId: id, projectId, titleKo: '현장 RED 위험 보고', reasonKo: payload.description || '현장에서 RED 위험이 보고되었습니다.', severity: 'RED', financialImpact: Number(payload.financialImpact || 0), blockingRequired: true, payload }, createdAt);
+      upsertCeoDecisionItem({ decisionId: `CEO-FIELD-RISK-${id}`, sourceModule: 'FieldMobile', entityType: 'FieldRiskReport', entityId: id, decisionType: 'FIELD_RED_RISK', titleKo: '현장 RED 위험 보고', projectId, siteNameKo: projectId, financialImpact: Number(payload.financialImpact || 0), riskLevel: 'RED', requiredActionKo: '즉시 현장 확인', payload }, createdAt);
+    }
+    writeOperationalLog({ actionType: 'FIELD_RISK_REPORT', actor: payload.reportedBy || payload.actor || 'FIELD', projectId, messageKo: `현장 위험 보고: ${severity}`, actionKo: '위험 보고', level: severity === 'RED' ? 'RED' : severity === 'ORANGE' ? 'WARNING' : 'INFO', payload: { riskReportId: id, severity }, reasonKo: payload.description || '', createdAt });
+    return { riskReportId: id, riskReport: db.project.prepare('SELECT * FROM field_risk_reports WHERE id = ?').get(id), dashboardData: getDashboardData(), fieldMobileData: getFieldMobileCenterData({ projectId }) };
+  }
+
   function getChangeOrderIdFromApproval(approvalId) {
     if (!approvalId.startsWith('APP-CO-')) return null;
     const withoutPrefix = approvalId.slice(4);
@@ -17653,6 +17885,9 @@ function createSqliteService({ app }) {
       crewAttendanceLogCount: countRows(db.project, 'crew_attendance_logs'),
       materialDeliveryCheckCount: countRows(db.project, 'material_delivery_checks'),
       materialReceivingLogCount: countRows(db.project, 'material_receiving_logs'),
+      siteMediaFileCount: countRows(db.project, 'site_media_files'),
+      fieldSignatureCount: countRows(db.project, 'field_signatures'),
+      fieldRiskReportCount: countRows(db.project, 'field_risk_reports'),
       inspectionResultCount: countRows(db.project, 'inspection_results'),
       inspectionChecklistItemCount: countRows(db.project, 'inspection_checklist_items'),
       siteIssueCount: countRows(db.project, 'site_issues'),
@@ -17782,6 +18017,17 @@ function createSqliteService({ app }) {
     exportDesignBoardPdf,
     createPortfolioCandidate,
     getProjectExecutionReadiness,
+    getFieldMobileCenterData,
+    saveFieldAttendanceCheckIn,
+    saveFieldAttendanceCheckOut,
+    createFieldDailyReport,
+    saveSiteMediaFile,
+    createFieldMaterialReceiving,
+    saveFieldInspectionResult,
+    createFieldChangeOrderRequest,
+    createFieldDefectReport,
+    saveFieldSignature,
+    createFieldRiskReport,
     transitionProjectToExecution,
     getSiteOperationStatus,
     startSiteOperation,

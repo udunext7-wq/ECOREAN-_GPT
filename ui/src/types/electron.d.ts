@@ -72,6 +72,17 @@ declare global {
         exportDesignBoardPdf: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createPortfolioCandidate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getProjectExecutionReadiness: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getFieldMobileCenterData: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        saveFieldAttendanceCheckIn: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        saveFieldAttendanceCheckOut: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createFieldDailyReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        saveSiteMediaFile: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createFieldMaterialReceiving: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        saveFieldInspectionResult: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createFieldChangeOrderRequest: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createFieldDefectReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        saveFieldSignature: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createFieldRiskReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         transitionProjectToExecution: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; executionProject: Record<string, unknown> }>;
         getSiteOperationStatus: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         startSiteOperation: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; siteOperation: Record<string, unknown> }>;

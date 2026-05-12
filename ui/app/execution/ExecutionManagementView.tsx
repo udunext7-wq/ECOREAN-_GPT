@@ -43,6 +43,13 @@ export function ExecutionManagementView({ project }: Props) {
         </div>
         <span className="preliminary-badge">IN-APP CONTROL</span>
       </div>
+      <div className="estimate-save-bar">
+        <div>
+          <strong>현장 모바일 입력</strong>
+          <span>출역, 사진, 검수, 추가공사, 위험 보고를 모바일 화면에서 바로 입력합니다.</span>
+        </div>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'fieldMobile' }))}>현장 모바일 열기</button>
+      </div>
       <p className="small-note">{messageKo}</p>
       <div className="case-library-grid">
         <DailySiteReportView onCreate={() => run('공사일보', () => createDailySiteReportFromSchedule(project.projectId))} />

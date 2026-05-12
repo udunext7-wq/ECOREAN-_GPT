@@ -70,6 +70,7 @@ const primaryActions: EntryAction[] = [
 
 const secondaryActions: EntryAction[] = [
   { title: 'CEO Control Tower', headline: '오늘의 위험과 승인 대기', note: '운영 통제', view: 'ceoControlTower', tone: 'warning' },
+  { title: '현장 모바일', headline: '출역 / 공사일보 / 사진 / 검수 / 위험 보고', note: '모바일 현장', view: 'fieldMobile', tone: 'confirm' },
   { title: '현장 실행 관리', headline: '공사일보 / 출역 / 자재입고 / 검수', note: '현장 관리', view: 'executionManagement' },
   { title: '결제/현금흐름', headline: '입금 / 지급 / 연체 / 7일 현금흐름', note: '자금 관리', view: 'payment', tone: 'warning' },
   { title: '커뮤니케이션 센터', headline: '고객 / 협력업체 메시지 생성', note: '발송 기록', view: 'communication' },
