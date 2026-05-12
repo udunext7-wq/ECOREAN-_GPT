@@ -73,6 +73,7 @@ export function CeoDashboard() {
       openCommunication: 'communication',
       openPaymentCenter: 'payment',
       openProjectClosing: 'closing',
+      openCalibration: 'calibration',
       openFloorplanCenter: 'floorplanCenter',
       openAIVisualization: 'aiVisualization'
     };
@@ -227,6 +228,15 @@ export function CeoDashboard() {
               <button onClick={() => openView('marginSafety', 'warning')}>Margin Safety</button>
             </div>
           </SectionCard>
+
+          <SectionCard title="Calibration" eyebrow="REAL PROJECT LEARNING">
+            <div className="profit-tile">
+              <span>실제 프로젝트 보정</span>
+              <strong>{String(dashboard.data.calibrationSummary.pendingCalibrationApprovals || 0)}건 승인 대기</strong>
+              <p>실제 원가 누수와 반복 위험 패턴을 다음 견적 보정 룰로 연결합니다.</p>
+              <button onClick={() => openView('calibration', 'warning')}>보정 센터 열기</button>
+            </div>
+          </SectionCard>
         </aside>
       </div>
 
@@ -258,6 +268,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('communication', 'click')}>Communication</button>
         <button onClick={() => openView('payment', 'warning')}>Payment</button>
         <button onClick={() => openView('closing', 'warning')}>Project Closing</button>
+        <button onClick={() => openView('calibration', 'warning')}>Calibration</button>
         <button onClick={() => openView('caseLibrary', 'click')}>Case Library</button>
         <button onClick={() => openView('executionManagement', 'confirm')}>현장 실행</button>
         <button onClick={() => openView('ceoControlTower', 'warning')}>CEO Control Tower</button>

@@ -110,6 +110,9 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:closing:snapshot', (_event, payload) => sqliteService.createProjectClosingSnapshot(payload));
   ipcMain.handle('boc:closing:finalize', (_event, payload) => sqliteService.finalizeProjectClosing(payload));
   ipcMain.handle('boc:closing:template', (_event, payload) => sqliteService.saveHighMarginTemplateFromClosing(payload));
+  ipcMain.handle('boc:calibration:get', (_event, payload = {}) => sqliteService.getProjectCalibrationCenterData(payload));
+  ipcMain.handle('boc:calibration:snapshot', (_event, payload) => sqliteService.createProjectCalibrationSnapshot(payload));
+  ipcMain.handle('boc:calibration:decide', (_event, payload) => sqliteService.decideCalibrationRule(payload));
   ipcMain.handle('boc:bathroom-pricing:get', () => sqliteService.getBathroomPricingStandardDashboard());
   ipcMain.handle('boc:bathroom-pricing:evaluate', (_event, payload) => sqliteService.evaluateBathroomQuote(payload));
   ipcMain.handle('boc:case-library:get', () => sqliteService.getCaseLibrarySnapshot());

@@ -34,6 +34,13 @@ const { buildCommunicationMessage, defaultCommunicationTemplates } = require('./
 const { buildEstimateIntelligence } = require('./aiEstimateIntelligenceService');
 const { buildVisualizationPromptSet, pickPromptByType, injectPromptIntoWorkflow } = require('./visualizationService');
 const { BOARD_TEMPLATES, buildBoardLayout, exportBoardPdf, shouldRecommendPortfolioCandidate } = require('./boardGenerationService');
+const {
+  COST_LEAK_LABELS_KO,
+  compareExpectedActual,
+  buildProjectCostLeak,
+  buildCalibrationRule,
+  buildRiskPattern
+} = require('./projectCalibrationService');
 const { requestManualGeneration } = require('./visualizationProviders/manualProvider');
 const { healthCheck: comfyUiHealthCheck, queuePrompt: queueComfyUiPrompt, downloadImages: downloadComfyUiImages } = require('./visualizationProviders/comfyuiProvider');
 const { requestExternalApiGeneration } = require('./visualizationProviders/externalApiProvider');
@@ -1608,6 +1615,47 @@ function createSqliteService({ app }) {
         created_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS project_cost_leaks (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        category_ko TEXT NOT NULL,
+        expected_amount INTEGER NOT NULL,
+        actual_amount INTEGER NOT NULL,
+        variance_amount INTEGER NOT NULL,
+        variance_rate REAL NOT NULL,
+        root_cause TEXT NOT NULL,
+        prevention_rule TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        risk_score INTEGER NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS project_risk_patterns (
+        id TEXT PRIMARY KEY,
+        pattern_type TEXT NOT NULL,
+        pattern_key TEXT NOT NULL,
+        occurrence_count INTEGER NOT NULL,
+        average_margin_loss INTEGER NOT NULL,
+        average_delay_days INTEGER NOT NULL,
+        recommendation TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS calibration_approval_logs (
+        id TEXT PRIMARY KEY,
+        rule_id TEXT NOT NULL,
+        project_id TEXT,
+        decision TEXT NOT NULL,
+        previous_status TEXT NOT NULL,
+        next_status TEXT NOT NULL,
+        reason_ko TEXT NOT NULL,
+        actor TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS ai_estimate_recommendations (
         id TEXT PRIMARY KEY,
         estimate_id TEXT NOT NULL,
@@ -2627,6 +2675,16 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'final_estimates', 'estimated_margin', 'estimated_margin INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'final_estimates', 'estimated_margin_rate', 'estimated_margin_rate REAL NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'final_estimates', 'margin_safety_status', "margin_safety_status TEXT NOT NULL DEFAULT 'NOT_EVALUATED'");
+    ensureColumn(db.project, 'estimate_calibration_rules', 'estimate_type', "estimate_type TEXT NOT NULL DEFAULT 'bathroom_remodel'");
+    ensureColumn(db.project, 'estimate_calibration_rules', 'process_type', "process_type TEXT NOT NULL DEFAULT 'general'");
+    ensureColumn(db.project, 'estimate_calibration_rules', 'condition_json', "condition_json TEXT NOT NULL DEFAULT '{}'");
+    ensureColumn(db.project, 'estimate_calibration_rules', 'adjustment_type', "adjustment_type TEXT NOT NULL DEFAULT 'MANDATORY_ITEM'");
+    ensureColumn(db.project, 'estimate_calibration_rules', 'confidence_score', 'confidence_score REAL NOT NULL DEFAULT 0.5');
+    ensureColumn(db.project, 'estimate_calibration_rules', 'source_project_ids', "source_project_ids TEXT NOT NULL DEFAULT '[]'");
+    ensureColumn(db.project, 'estimate_calibration_rules', 'auto_generated', 'auto_generated INTEGER NOT NULL DEFAULT 0');
+    ensureColumn(db.project, 'estimate_calibration_rules', 'requires_approval', 'requires_approval INTEGER NOT NULL DEFAULT 1');
+    ensureColumn(db.project, 'estimate_calibration_rules', 'approved_at', 'approved_at TEXT');
+    ensureColumn(db.project, 'estimate_calibration_rules', 'approved_by', 'approved_by TEXT');
     ensureColumn(db.project, 'contracts', 'estimate_id', 'estimate_id TEXT');
     ensureColumn(db.project, 'contracts', 'contract_number', 'contract_number TEXT');
     ensureColumn(db.project, 'contracts', 'customer_name', "customer_name TEXT NOT NULL DEFAULT 'UNKNOWN'");
@@ -3750,7 +3808,8 @@ function createSqliteService({ app }) {
   }
 
   function calculateBathroomEstimatePreview(payload = {}) {
-    const estimate = calculateBathroomEstimate(payload);
+    const rawEstimate = calculateBathroomEstimate(payload);
+    const { estimate, calibration } = applyApprovedCalibrationToEstimate(rawEstimate, 'bathroom_remodel');
     const estimateId = payload.estimateId || `BATH-PREVIEW-${Date.now()}`;
     const pce = runProfitControlEngine({
       estimateId,
@@ -3775,6 +3834,7 @@ function createSqliteService({ app }) {
     return {
       estimate: pceEstimate,
       pce,
+      calibration,
       customerView: buildCustomerEstimateView(pceEstimate),
       internalView: buildInternalCostView(pceEstimate)
     };
@@ -3783,7 +3843,8 @@ function createSqliteService({ app }) {
   function saveBathroomEstimate(payload = {}) {
     const createdAt = nowIso();
     const estimateId = payload.estimateId || `BATH-EST-${Date.now()}`;
-    const calculated = calculateBathroomEstimate(payload);
+    const rawCalculated = calculateBathroomEstimate(payload);
+    const { estimate: calculated, calibration } = applyApprovedCalibrationToEstimate(rawCalculated, 'bathroom_remodel');
     const pce = runProfitControlEngine({
       estimateId,
       revenue: calculated.revenue,
@@ -3889,6 +3950,7 @@ function createSqliteService({ app }) {
     return {
       estimateId,
       pce,
+      calibration,
       estimate: { ...calculated, pce_decision: pce.decision },
       customerView: buildCustomerEstimateView(calculated),
       internalView: buildInternalCostView({ ...calculated, pce_decision: pce.decision }),
@@ -3897,7 +3959,8 @@ function createSqliteService({ app }) {
   }
 
   function calculateKitchenEstimatePreview(payload = {}) {
-    const estimate = calculateKitchenEstimate(payload);
+    const rawEstimate = calculateKitchenEstimate(payload);
+    const { estimate, calibration } = applyApprovedCalibrationToEstimate(rawEstimate, 'kitchen_remodel');
     const estimateId = payload.estimateId || `KIT-PREVIEW-${Date.now()}`;
     const pce = runProfitControlEngine({
       estimateId,
@@ -3913,6 +3976,7 @@ function createSqliteService({ app }) {
     return {
       estimate: pceEstimate,
       pce,
+      calibration,
       customerView: buildCustomerKitchenEstimateView(pceEstimate),
       internalView: buildInternalKitchenCostView(pceEstimate)
     };
@@ -3921,7 +3985,8 @@ function createSqliteService({ app }) {
   function saveKitchenEstimate(payload = {}) {
     const createdAt = nowIso();
     const estimateId = payload.estimateId || `KIT-EST-${Date.now()}`;
-    const calculated = calculateKitchenEstimate(payload);
+    const rawCalculated = calculateKitchenEstimate(payload);
+    const { estimate: calculated, calibration } = applyApprovedCalibrationToEstimate(rawCalculated, 'kitchen_remodel');
     const pce = runProfitControlEngine({
       estimateId,
       revenue: calculated.revenue,
@@ -4005,6 +4070,7 @@ function createSqliteService({ app }) {
     return {
       estimateId,
       pce,
+      calibration,
       estimate: { ...calculated, id: estimateId, pce_decision: pce.decision },
       customerView: buildCustomerKitchenEstimateView(calculated),
       internalView: buildInternalKitchenCostView({ ...calculated, pce_decision: pce.decision }),
@@ -4160,7 +4226,8 @@ function createSqliteService({ app }) {
   }
 
   function calculateFullRemodelingEstimatePreview(payload = {}) {
-    const estimate = calculateFullRemodelingEstimate(payload);
+    const rawEstimate = calculateFullRemodelingEstimate(payload);
+    const { estimate, calibration } = applyApprovedCalibrationToEstimate(rawEstimate, 'full_remodel');
     const estimateId = payload.estimateId || `FULL-PREVIEW-${Date.now()}`;
     const pce = runProfitControlEngine({
       estimateId,
@@ -4176,6 +4243,7 @@ function createSqliteService({ app }) {
     return {
       estimate: pceEstimate,
       pce,
+      calibration,
       customerView: buildCustomerFullEstimateView(pceEstimate),
       internalView: buildInternalFullCostView(pceEstimate)
     };
@@ -4184,7 +4252,8 @@ function createSqliteService({ app }) {
   function saveFullRemodelingEstimate(payload = {}) {
     const createdAt = nowIso();
     const estimateId = payload.estimateId || `FULL-EST-${Date.now()}`;
-    const calculated = calculateFullRemodelingEstimate(payload);
+    const rawCalculated = calculateFullRemodelingEstimate(payload);
+    const { estimate: calculated, calibration } = applyApprovedCalibrationToEstimate(rawCalculated, 'full_remodel');
     const pce = runProfitControlEngine({
       estimateId,
       revenue: calculated.revenue,
@@ -4265,6 +4334,7 @@ function createSqliteService({ app }) {
     return {
       estimateId,
       pce,
+      calibration,
       estimate: { ...calculated, id: estimateId, pce_decision: pce.decision },
       customerView: buildCustomerFullEstimateView(calculated),
       internalView: buildInternalFullCostView({ ...calculated, pce_decision: pce.decision }),
@@ -6872,6 +6942,272 @@ function createSqliteService({ app }) {
     const snapshot = db.project.prepare('SELECT * FROM project_closing_snapshots WHERE project_id = ? ORDER BY updated_at DESC LIMIT 1').get(projectId)
       || createProjectClosingSnapshot({ projectId, actor }).closingSnapshot;
     return maybeCreateClosingProfitTemplate(basis, snapshot, createdAt);
+  }
+
+  function getApprovedCalibrationRules(estimateType = null) {
+    return db.project.prepare(`
+      SELECT *
+      FROM estimate_calibration_rules
+      WHERE status = 'APPROVED'
+        AND (? IS NULL OR estimate_type = ?)
+      ORDER BY confidence_score DESC, created_at DESC
+    `).all(estimateType, estimateType);
+  }
+
+  function applyApprovedCalibrationToEstimate(estimate, estimateType = 'bathroom_remodel') {
+    const rules = getApprovedCalibrationRules(estimateType);
+    if (!rules.length) {
+      return { estimate, calibration: { applied: false, appliedRuleCount: 0, adjustmentAmount: 0, rules: [] } };
+    }
+    const totalRate = Math.min(0.5, rules.reduce((sum, rule) => sum + Math.max(0, Number(rule.adjustment_value || 0)), 0));
+    const baseTotalCost = Number(estimate.total_cost ?? estimate.totalCost ?? 0);
+    const adjustmentAmount = Math.round(baseTotalCost * totalRate);
+    const adjustedTotalCost = baseTotalCost + adjustmentAmount;
+    const revenue = Number(estimate.revenue || 0);
+    const expectedMargin = revenue - adjustedTotalCost;
+    const expectedMarginRate = revenue > 0 ? expectedMargin / revenue : 0;
+    const calibrationRules = rules.map((rule) => ({
+      id: rule.id,
+      processType: rule.process_type,
+      adjustmentType: rule.adjustment_type || rule.rule_type,
+      adjustmentValue: rule.adjustment_value,
+      reasonKo: rule.reason
+    }));
+    return {
+      estimate: {
+        ...estimate,
+        total_cost: adjustedTotalCost,
+        totalCost: adjustedTotalCost,
+        expected_margin: expectedMargin,
+        expectedMargin,
+        expected_margin_rate: expectedMarginRate,
+        expectedMarginRate,
+        calibration_applied: true,
+        calibration_adjustment_amount: adjustmentAmount,
+        calibration_rules: calibrationRules
+      },
+      calibration: {
+        applied: true,
+        appliedRuleCount: rules.length,
+        adjustmentAmount,
+        adjustmentRate: totalRate,
+        rules: calibrationRules,
+        displayMessageKo: '최근 실제 원가 기준 보정 룰이 적용되었습니다.'
+      }
+    };
+  }
+
+  function upsertProjectRiskPatterns(createdAt = nowIso()) {
+    const rows = db.project.prepare('SELECT * FROM project_cost_leaks').all();
+    const grouped = new Map();
+    rows.forEach((row) => {
+      const key = row.category || 'UNKNOWN';
+      grouped.set(key, [...(grouped.get(key) || []), row]);
+    });
+    const upsert = db.project.prepare(`
+      INSERT OR REPLACE INTO project_risk_patterns (
+        id, pattern_type, pattern_key, occurrence_count, average_margin_loss,
+        average_delay_days, recommendation, severity, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM project_risk_patterns WHERE id = ?), ?), ?)
+    `);
+    const patterns = [];
+    grouped.forEach((groupRows, category) => {
+      const pattern = buildRiskPattern({ category, rows: groupRows, createdAt });
+      upsert.run(pattern.id, pattern.patternType, pattern.patternKey, pattern.occurrenceCount, pattern.averageMarginLoss, pattern.averageDelayDays, pattern.recommendation, pattern.severity, pattern.id, createdAt, createdAt);
+      patterns.push(pattern);
+    });
+    return patterns;
+  }
+
+  function createCalibrationRulesFromLeaks(projectId, leaks, createdAt = nowIso()) {
+    const insert = db.project.prepare(`
+      INSERT OR REPLACE INTO estimate_calibration_rules (
+        id, source_project_id, source_category, rule_type, adjustment_target,
+        adjustment_value, reason, status, created_at, estimate_type, process_type,
+        condition_json, adjustment_type, confidence_score, source_project_ids,
+        auto_generated, requires_approval, approved_at, approved_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?,
+        COALESCE((SELECT created_at FROM estimate_calibration_rules WHERE id = ?), ?),
+        ?, ?, ?, ?, ?, ?, ?, ?,
+        (SELECT approved_at FROM estimate_calibration_rules WHERE id = ?),
+        (SELECT approved_by FROM estimate_calibration_rules WHERE id = ?)
+      )
+    `);
+    return leaks.map((leak) => {
+      const rows = db.project.prepare('SELECT project_id FROM project_cost_leaks WHERE category = ? ORDER BY created_at DESC').all(leak.category);
+      const sourceProjectIds = Array.from(new Set([projectId, ...rows.map((row) => row.project_id)])).slice(0, 10);
+      const rule = buildCalibrationRule({ leak, occurrenceCount: sourceProjectIds.length, sourceProjectIds, createdAt });
+      insert.run(
+        rule.id,
+        projectId,
+        leak.category,
+        rule.adjustmentType,
+        rule.processType,
+        rule.adjustmentValue,
+        rule.reason,
+        'PENDING_APPROVAL',
+        rule.id,
+        createdAt,
+        rule.estimateType,
+        rule.processType,
+        rule.conditionJson,
+        rule.adjustmentType,
+        rule.confidenceScore,
+        toJson(rule.sourceProjectIds),
+        rule.autoGenerated ? 1 : 0,
+        rule.requiresApproval ? 1 : 0,
+        rule.id,
+        rule.id
+      );
+      return db.project.prepare('SELECT * FROM estimate_calibration_rules WHERE id = ?').get(rule.id);
+    });
+  }
+
+  function createProjectCalibrationSnapshot({ projectId, actor = 'CEO' }) {
+    const createdAt = nowIso();
+    if (!projectId) throw new Error('projectId is required for calibration.');
+    const closing = db.project.prepare('SELECT * FROM project_closing_snapshots WHERE project_id = ? ORDER BY updated_at DESC LIMIT 1').get(projectId)
+      || createProjectClosingSnapshot({ projectId, actor }).closingSnapshot;
+    const comparison = compareExpectedActual(closing);
+    const sourceLeaks = db.project.prepare(`
+      SELECT *
+      FROM project_closing_cost_leaks
+      WHERE project_id = ?
+      ORDER BY variance_amount DESC, created_at DESC
+    `).all(projectId);
+    const leaks = sourceLeaks.map((sourceLeak) => buildProjectCostLeak({ projectId, sourceLeak, comparison, createdAt }));
+    const insertLeak = db.project.prepare(`
+      INSERT OR REPLACE INTO project_cost_leaks (
+        id, project_id, category, category_ko, expected_amount, actual_amount,
+        variance_amount, variance_rate, root_cause, prevention_rule,
+        severity, risk_score, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    leaks.forEach((leak) => insertLeak.run(leak.id, leak.projectId, leak.category, leak.categoryKo, leak.expectedAmount, leak.actualAmount, leak.varianceAmount, leak.varianceRate, leak.rootCause, leak.preventionRule, leak.severity, leak.riskScore, createdAt));
+    const calibrationRules = createCalibrationRulesFromLeaks(projectId, leaks, createdAt);
+    const riskPatterns = upsertProjectRiskPatterns(createdAt);
+    if (calibrationRules.length) {
+      upsertCeoDecisionItem({
+        decisionId: `CEO-CALIBRATION-${projectId}`,
+        sourceModule: 'Calibration',
+        entityType: 'EstimateCalibrationRule',
+        entityId: calibrationRules[0].id,
+        decisionType: 'CALIBRATION_APPROVAL_REQUIRED',
+        titleKo: '자동 보정 승인 대기',
+        projectId,
+        siteNameKo: projectId,
+        financialImpact: leaks.reduce((sum, leak) => sum + Math.max(0, Number(leak.varianceAmount || 0)), 0),
+        riskLevel: leaks.some((leak) => leak.severity === 'RED') ? 'RED' : 'ORANGE',
+        requiredActionKo: '보정 룰 승인 또는 반려',
+        deadline: createdAt.slice(0, 10),
+        payload: { ruleIds: calibrationRules.map((rule) => rule.id), leaks }
+      }, createdAt);
+    }
+    insertNotification({
+      level: leaks.some((leak) => leak.severity === 'RED') ? 'RED' : leaks.length ? 'WARNING' : 'INFO',
+      messageKo: `실제 프로젝트 보정 분석 완료: ${projectId}`,
+      relatedProjectId: projectId,
+      actionKo: 'Calibration',
+      createdAt
+    });
+    return { comparison, costLeaks: leaks, calibrationRules, riskPatterns, calibrationCenterData: getProjectCalibrationCenterData({ projectId }) };
+  }
+
+  function decideCalibrationRule({ ruleId, decision, actor = 'CEO', reasonKo = '' }) {
+    if (!ruleId) throw new Error('ruleId is required.');
+    const normalized = decision === 'APPROVED' ? 'APPROVED' : decision === 'REJECTED' ? 'REJECTED' : decision === 'TESTING' ? 'TESTING' : null;
+    if (!normalized) throw new Error('decision must be APPROVED, REJECTED, or TESTING.');
+    const createdAt = nowIso();
+    const rule = db.project.prepare('SELECT * FROM estimate_calibration_rules WHERE id = ?').get(ruleId);
+    if (!rule) throw new Error(`Calibration rule not found: ${ruleId}`);
+    db.project.prepare(`
+      UPDATE estimate_calibration_rules
+      SET status = ?, approved_at = CASE WHEN ? = 'APPROVED' THEN ? ELSE approved_at END,
+          approved_by = CASE WHEN ? = 'APPROVED' THEN ? ELSE approved_by END
+      WHERE id = ?
+    `).run(normalized, normalized, createdAt, normalized, actor, ruleId);
+    db.project.prepare(`
+      INSERT INTO calibration_approval_logs (
+        id, rule_id, project_id, decision, previous_status, next_status,
+        reason_ko, actor, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(`CAL-LOG-${ruleId}-${Date.now()}`, ruleId, rule.source_project_id, normalized, rule.status, normalized, reasonKo || (normalized === 'APPROVED' ? '다음 견적 반영 승인' : normalized === 'REJECTED' ? '보정 반려' : '테스트 적용'), actor, createdAt);
+    insertNotification({
+      level: normalized === 'APPROVED' ? 'INFO' : normalized === 'REJECTED' ? 'WARNING' : 'INFO',
+      messageKo: `보정 룰 ${normalized}: ${ruleId}`,
+      relatedProjectId: rule.source_project_id,
+      actionKo: 'Calibration Approval',
+      createdAt
+    });
+    return { rule: db.project.prepare('SELECT * FROM estimate_calibration_rules WHERE id = ?').get(ruleId), calibrationCenterData: getProjectCalibrationCenterData({ projectId: rule.source_project_id }) };
+  }
+
+  function getCalibrationSummary() {
+    const leaks = db.project.prepare(`
+      SELECT category, category_ko, COUNT(*) AS count, COALESCE(SUM(variance_amount), 0) AS total_loss
+      FROM project_cost_leaks
+      GROUP BY category, category_ko
+      ORDER BY total_loss DESC
+      LIMIT 5
+    `).all();
+    const pending = Number(db.project.prepare("SELECT COUNT(*) AS count FROM estimate_calibration_rules WHERE status = 'PENDING_APPROVAL'").get().count || 0);
+    const approved = Number(db.project.prepare("SELECT COUNT(*) AS count FROM estimate_calibration_rules WHERE status = 'APPROVED'").get().count || 0);
+    const patterns = db.project.prepare('SELECT * FROM project_risk_patterns ORDER BY occurrence_count DESC, average_margin_loss DESC LIMIT 5').all();
+    const bestTemplate = db.project.prepare('SELECT * FROM profit_templates ORDER BY margin DESC, created_at DESC LIMIT 1').get() || null;
+    return { topCostLeaks: leaks, pendingCalibrationApprovals: pending, approvedCalibrationRules: approved, repeatedRiskPatterns: patterns, bestProfitTemplate: bestTemplate, displayStatusKo: leaks.length || pending || approved ? '데이터 있음' : '데이터 없음' };
+  }
+
+  function getProjectCalibrationCenterData({ projectId = null } = {}) {
+    const snapshots = db.project.prepare(`
+      SELECT *
+      FROM project_closing_snapshots
+      WHERE (? IS NULL OR project_id = ?)
+      ORDER BY updated_at DESC
+      LIMIT 50
+    `).all(projectId, projectId);
+    const comparisons = snapshots.map((snapshot) => compareExpectedActual(snapshot));
+    const costLeaks = db.project.prepare(`
+      SELECT *
+      FROM project_cost_leaks
+      WHERE (? IS NULL OR project_id = ?)
+      ORDER BY variance_amount DESC, created_at DESC
+      LIMIT 100
+    `).all(projectId, projectId);
+    const calibrationRules = db.project.prepare(`
+      SELECT *
+      FROM estimate_calibration_rules
+      WHERE (? IS NULL OR source_project_id = ?)
+      ORDER BY CASE status WHEN 'PENDING_APPROVAL' THEN 0 WHEN 'TESTING' THEN 1 WHEN 'APPROVED' THEN 2 ELSE 3 END,
+        confidence_score DESC, created_at DESC
+      LIMIT 100
+    `).all(projectId, projectId).map((rule) => ({ ...rule, sourceProjectIds: fromJson(rule.source_project_ids, []) }));
+    const riskPatterns = db.project.prepare('SELECT * FROM project_risk_patterns ORDER BY occurrence_count DESC, average_margin_loss DESC LIMIT 50').all();
+    const approvalLogs = db.project.prepare(`
+      SELECT *
+      FROM calibration_approval_logs
+      WHERE (? IS NULL OR project_id = ?)
+      ORDER BY created_at DESC
+      LIMIT 100
+    `).all(projectId, projectId);
+    return {
+      snapshotDate: nowIso().slice(0, 10),
+      emptyState: snapshots.length === 0 && costLeaks.length === 0 && calibrationRules.length === 0,
+      emptyMessageKo: '아직 실제 프로젝트 보정 데이터가 없습니다.',
+      summary: {
+        projectCount: snapshots.length,
+        costLeakCount: costLeaks.length,
+        pendingApprovalCount: calibrationRules.filter((rule) => rule.status === 'PENDING_APPROVAL').length,
+        approvedRuleCount: calibrationRules.filter((rule) => rule.status === 'APPROVED').length,
+        repeatedPatternCount: riskPatterns.filter((pattern) => Number(pattern.occurrence_count || 0) >= 2).length,
+        totalLeakAmount: costLeaks.reduce((sum, leak) => sum + Math.max(0, Number(leak.variance_amount || 0)), 0)
+      },
+      comparisons,
+      costLeaks,
+      calibrationRules,
+      riskPatterns,
+      approvalLogs,
+      categoryLabelsKo: COST_LEAK_LABELS_KO
+    };
   }
 
   function getProjectClosingCenterData({ projectId = null, skipRefresh = false } = {}) {
@@ -9483,6 +9819,7 @@ function createSqliteService({ app }) {
       approvals,
       immediateActions: buildImmediateActions(),
       profitSummary,
+      calibrationSummary: getCalibrationSummary(),
       profitAlerts,
       profitTemplates,
       estimateVsActualTop,
@@ -15987,8 +16324,11 @@ function createSqliteService({ app }) {
       paymentAlertCount: countRows(db.project, 'payment_alerts'),
       projectClosingSnapshotCount: countRows(db.project, 'project_closing_snapshots'),
       projectClosingCostLeakCount: countRows(db.project, 'project_closing_cost_leaks'),
+      projectCostLeakCount: countRows(db.project, 'project_cost_leaks'),
       projectClosingReportCount: countRows(db.project, 'project_closing_reports'),
       estimateCalibrationRuleCount: countRows(db.project, 'estimate_calibration_rules'),
+      projectRiskPatternCount: countRows(db.project, 'project_risk_patterns'),
+      calibrationApprovalLogCount: countRows(db.project, 'calibration_approval_logs'),
       aiEstimateRecommendationCount: countRows(db.project, 'ai_estimate_recommendations'),
       aiEstimateWarningCount: countRows(db.project, 'ai_estimate_warnings'),
       aiEstimateRiskScoreCount: countRows(db.project, 'ai_estimate_risk_scores'),
@@ -16132,6 +16472,9 @@ function createSqliteService({ app }) {
     createProjectClosingSnapshot,
     finalizeProjectClosing,
     saveHighMarginTemplateFromClosing,
+    getProjectCalibrationCenterData,
+    createProjectCalibrationSnapshot,
+    decideCalibrationRule,
     getBathroomPricingStandardDashboard,
     evaluateBathroomQuote,
     getCaseLibrarySnapshot,

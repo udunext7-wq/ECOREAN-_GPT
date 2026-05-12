@@ -8,6 +8,7 @@ export const emptyDashboardData: DashboardData = {
   approvals: [],
   immediateActions: [],
   profitSummary: {},
+  calibrationSummary: {},
   profitAlerts: [],
   profitTemplates: [],
   estimateVsActualTop: [],

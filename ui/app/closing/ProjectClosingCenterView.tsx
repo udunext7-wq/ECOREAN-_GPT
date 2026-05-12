@@ -73,6 +73,10 @@ export function ProjectClosingCenterView() {
     await refresh(projectId);
   }
 
+  function openCalibrationCenter() {
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'calibration' }));
+  }
+
   if (!data) return <div className="drawer-block">Project Closing Center 로딩 중</div>;
 
   const labels = data.statusLabelsKo || {};
@@ -102,6 +106,7 @@ export function ProjectClosingCenterView() {
           <button onClick={() => runFinalize(false)}>마감 확정</button>
           <button onClick={() => runFinalize(true)}>관리자 예외 마감</button>
           <button onClick={runTemplateSave}>고마진 템플릿 저장</button>
+          <button onClick={openCalibrationCenter}>실제 보정 센터</button>
         </div>
         <p>{messageKo}</p>
       </div>

@@ -47,6 +47,10 @@ const releaseChecks = [
     script: 'project-profit-closing.smoke.js'
   },
   {
+    label: '실제 프로젝트 보정',
+    script: 'project-calibration.smoke.js'
+  },
+  {
     label: 'AI 투시도 프롬프트',
     script: 'ai-visualization-generation.smoke.js'
   },

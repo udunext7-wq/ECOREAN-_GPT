@@ -122,6 +122,9 @@ declare global {
         createProjectClosingSnapshot: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         finalizeProjectClosing: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         saveHighMarginTemplateFromClosing: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getProjectCalibrationCenterData: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createProjectCalibrationSnapshot: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        decideCalibrationRule: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getBathroomPricingStandardDashboard: () => Promise<Record<string, unknown>>;
         evaluateBathroomQuote: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getCaseLibrarySnapshot: () => Promise<Record<string, unknown>>;
