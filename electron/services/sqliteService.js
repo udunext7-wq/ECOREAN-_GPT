@@ -958,6 +958,53 @@ function createSqliteService({ app }) {
         created_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS client_portal_tokens (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        client_name TEXT NOT NULL,
+        token TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS client_confirmations (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        confirmation_type TEXT NOT NULL,
+        client_name TEXT NOT NULL,
+        status TEXT NOT NULL,
+        note TEXT NOT NULL,
+        signed_at TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS client_change_order_responses (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        change_order_id TEXT NOT NULL,
+        client_name TEXT NOT NULL,
+        response_status TEXT NOT NULL,
+        question TEXT NOT NULL,
+        responded_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS client_defect_requests (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        client_name TEXT NOT NULL,
+        defect_location_ko TEXT NOT NULL,
+        defect_content_ko TEXT NOT NULL,
+        photo_path TEXT NOT NULL,
+        urgent INTEGER NOT NULL,
+        contact_time_ko TEXT NOT NULL,
+        request_status TEXT NOT NULL,
+        related_defect_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS communication_templates (
         id TEXT PRIMARY KEY,
         template_type TEXT NOT NULL UNIQUE,
@@ -8954,6 +9001,517 @@ function createSqliteService({ app }) {
       createdAt
     );
     return { clientContractData: getClientContractData(), dashboardData: getDashboardData() };
+  }
+
+  function getEstimateSourceForClientPortal(estimateId) {
+    const sources = [
+      { estimateType: 'bathroom', labelKo: '욕실 리모델링', table: 'bathroom_estimates', itemTable: 'bathroom_estimate_items' },
+      { estimateType: 'kitchen', labelKo: '주방 리모델링', table: 'kitchen_estimates', itemTable: 'kitchen_estimate_items' },
+      { estimateType: 'full_remodeling', labelKo: '전체 리모델링', table: 'full_remodeling_estimates', itemTable: 'full_remodeling_estimate_items' }
+    ];
+    for (const source of sources) {
+      const estimate = db.project.prepare(`SELECT * FROM ${source.table} WHERE id = ? LIMIT 1`).get(estimateId);
+      if (estimate) return { ...source, estimate };
+    }
+    return null;
+  }
+
+  function getLatestClientPortalEstimate() {
+    const rows = [
+      ...db.project.prepare("SELECT id, created_at, updated_at FROM bathroom_estimates").all(),
+      ...db.project.prepare("SELECT id, created_at, updated_at FROM kitchen_estimates").all(),
+      ...db.project.prepare("SELECT id, created_at, updated_at FROM full_remodeling_estimates").all()
+    ].sort((a, b) => String(b.updated_at || b.created_at).localeCompare(String(a.updated_at || a.created_at)));
+    return rows[0]?.id || null;
+  }
+
+  function resolveClientPortalContext({ projectId = null, token = null } = {}) {
+    let activeProjectId = projectId;
+    let tokenRow = null;
+    if (token) {
+      tokenRow = db.project.prepare(`
+        SELECT *
+        FROM client_portal_tokens
+        WHERE token = ? AND status = 'ACTIVE'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `).get(token);
+      if (tokenRow) activeProjectId = tokenRow.project_id;
+    }
+
+    let contract = activeProjectId
+      ? db.project.prepare(`
+          SELECT *
+          FROM contracts
+          WHERE project_id = ? OR estimate_id = ? OR contract_id = ? OR contract_number = ?
+          ORDER BY updated_at DESC, created_at DESC
+          LIMIT 1
+        `).get(activeProjectId, activeProjectId, activeProjectId, activeProjectId)
+      : null;
+    if (!contract) contract = db.project.prepare('SELECT * FROM contracts ORDER BY updated_at DESC, created_at DESC LIMIT 1').get();
+
+    const estimateId = contract?.estimate_id || contract?.project_id || activeProjectId || getLatestClientPortalEstimate();
+    const estimateSource = estimateId ? getEstimateSourceForClientPortal(estimateId) : null;
+    const estimate = estimateSource?.estimate || null;
+    activeProjectId = contract?.project_id || estimate?.project_id || estimateId || activeProjectId || 'CLIENT-PORTAL-DEMO';
+    const client = contract?.client_id ? db.project.prepare('SELECT * FROM clients WHERE client_id = ? LIMIT 1').get(contract.client_id) : null;
+
+    return { projectId: activeProjectId, estimateId, contract, estimateSource, estimate, client, tokenRow };
+  }
+
+  function buildClientSafeEstimateView(estimateSource) {
+    if (!estimateSource) {
+      return {
+        estimateId: null,
+        estimateTypeKo: '견적 데이터 없음',
+        customerName: '고객명 확인 필요',
+        siteName: '현장명 확인 필요',
+        totalCustomerAmount: 0,
+        scopeSummaryKo: '먼저 견적을 생성하세요.',
+        separateAgreementItemsKo: ['추가공사는 별도 승인 후 진행'],
+        validUntil: '데이터 없음',
+        groupedItems: []
+      };
+    }
+    const { estimate, itemTable, labelKo } = estimateSource;
+    const items = db.project.prepare(`
+      SELECT category, item_name, quantity, unit, customer_unit_price, customer_total
+      FROM ${itemTable}
+      WHERE estimate_id = ?
+      ORDER BY category, item_name
+    `).all(estimate.id);
+    const grouped = new Map();
+    items.forEach((item) => {
+      if (!grouped.has(item.category)) grouped.set(item.category, { category: item.category, totalCustomerAmount: 0, items: [] });
+      const group = grouped.get(item.category);
+      group.totalCustomerAmount += Number(item.customer_total || 0);
+      group.items.push({
+        itemName: item.item_name,
+        quantity: Number(item.quantity || 0),
+        unit: item.unit,
+        customerUnitPrice: Number(item.customer_unit_price || 0),
+        customerTotal: Number(item.customer_total || 0)
+      });
+    });
+    const validUntil = new Date(estimate.created_at || nowIso());
+    validUntil.setDate(validUntil.getDate() + 14);
+    return {
+      estimateId: estimate.id,
+      estimateTypeKo: labelKo,
+      customerName: estimate.customer_name,
+      siteName: estimate.site_name,
+      totalCustomerAmount: Number(estimate.revenue || 0),
+      scopeSummaryKo: `${labelKo} 공사 범위와 선택 옵션 기준 견적입니다.`,
+      separateAgreementItemsKo: ['추가공사', '현장 확인 후 변경되는 항목', '고객 요청 변경'],
+      validUntil: validUntil.toISOString().slice(0, 10),
+      groupedItems: Array.from(grouped.values())
+    };
+  }
+
+  function buildClientSafeContractView(contract, estimateView) {
+    const amount = Number(contract?.contract_amount || estimateView.totalCustomerAmount || 0);
+    if (!contract) {
+      return {
+        contractId: null,
+        contractNumber: '계약서 미생성',
+        projectName: estimateView.estimateTypeKo,
+        contractAmount: amount,
+        paymentTerms: '계약금 30% / 중도금 40% / 잔금 30%',
+        depositAmount: Math.round(amount * 0.3),
+        progressPaymentAmount: Math.round(amount * 0.4),
+        balanceAmount: Math.round(amount * 0.3),
+        startDate: '일정 협의 필요',
+        endDate: '일정 협의 필요',
+        durationDays: 0,
+        warrantyTerms: '계약서 생성 후 확정',
+        specialTerms: '특약사항 없음',
+        signatureStatus: '대기'
+      };
+    }
+    return {
+      contractId: contract.contract_id,
+      contractNumber: contract.contract_number || contract.contract_id,
+      projectName: contract.project_name || estimateView.estimateTypeKo,
+      contractAmount: amount,
+      paymentTerms: contract.payment_terms || '계약금 30% / 중도금 40% / 잔금 30%',
+      depositAmount: Number(contract.deposit_amount || Math.round(amount * Number(contract.deposit_rate || 0.3))),
+      progressPaymentAmount: Number(contract.progress_payment_amount || Math.round(amount * Number(contract.interim_rate || 0.4))),
+      balanceAmount: Number(contract.balance_amount || Math.round(amount * Number(contract.balance_rate || 0.3))),
+      startDate: contract.start_date || '일정 협의 필요',
+      endDate: contract.end_date || '일정 협의 필요',
+      durationDays: Number(contract.duration_days || 0),
+      warrantyTerms: contract.warranty_terms || contract.defect_warranty_terms_ko || '하자보수 조건 확인 필요',
+      specialTerms: contract.special_terms || '특약사항 없음',
+      signatureStatus: contract.status === 'APPROVED' || contract.contract_status === 'APPROVED' ? '확인 가능' : '확인 대기'
+    };
+  }
+
+  function getClientPortalData(payload = {}) {
+    const context = resolveClientPortalContext(payload);
+    const estimateView = buildClientSafeEstimateView(context.estimateSource);
+    const contractView = buildClientSafeContractView(context.contract, estimateView);
+    const projectId = context.projectId;
+    const estimateId = context.estimateId || estimateView.estimateId || projectId;
+    const customerName = context.client?.customer_name_ko || context.contract?.customer_name || estimateView.customerName || '고객명 확인 필요';
+    const siteName = context.contract?.site_name || estimateView.siteName || context.client?.site_address_ko || '현장명 확인 필요';
+    const today = nowIso().slice(0, 10);
+
+    const schedule = db.project.prepare(`
+      SELECT *
+      FROM construction_schedules
+      WHERE estimate_id = ? OR contract_id = ?
+      ORDER BY updated_at DESC, created_at DESC
+      LIMIT 1
+    `).get(estimateId, context.contract?.contract_id || '');
+    const scheduleItems = schedule ? db.project.prepare('SELECT * FROM construction_schedule_items WHERE schedule_id = ? ORDER BY sort_order ASC, start_date ASC').all(schedule.id) : [];
+    const completedItems = scheduleItems.filter((item) => String(item.status || '').toUpperCase().includes('COMPLETE')).length;
+    const nextSchedule = scheduleItems.find((item) => !String(item.status || '').toUpperCase().includes('COMPLETE')) || scheduleItems[0] || null;
+    const todaySchedule = scheduleItems.find((item) => item.start_date <= today && item.end_date >= today) || nextSchedule;
+
+    const progressReports = db.project.prepare(`
+      SELECT *
+      FROM daily_site_report_items
+      WHERE project_id = ?
+      ORDER BY created_at DESC
+      LIMIT 20
+    `).all(projectId).map((row) => ({
+      processNameKo: row.process_name_ko,
+      workContentKo: row.work_content_ko,
+      tomorrowProcessKo: row.tomorrow_process_ko,
+      photoStatus: row.photo_status || '사진 없음',
+      noticeKo: row.delay_reason_ko ? '일정 조정 필요' : '특이사항 없음',
+      managerKo: row.manager_ko,
+      createdAt: row.created_at
+    }));
+
+    const payments = db.project.prepare(`
+      SELECT payment_id, payment_type, due_date, scheduled_amount, actual_received_date,
+             actual_received_amount, payment_status, notes_ko
+      FROM customer_payments
+      WHERE project_id = ? OR estimate_id = ? OR contract_id = ?
+      ORDER BY due_date ASC, created_at ASC
+    `).all(projectId, estimateId, context.contract?.contract_id || '').map((row) => ({
+      paymentId: row.payment_id,
+      paymentType: row.payment_type,
+      dueDate: row.due_date,
+      scheduledAmount: Number(row.scheduled_amount || 0),
+      receivedDate: row.actual_received_date || null,
+      receivedAmount: Number(row.actual_received_amount || 0),
+      paymentStatus: row.payment_status,
+      messageKo: row.notes_ko || '결제 일정 확인'
+    }));
+
+    const changeOrders = db.project.prepare(`
+      SELECT change_order_id, request_date, requested_by_ko, change_content_ko,
+             change_reason_ko, additional_amount, schedule_impact_days,
+             customer_approval_status, signature_status, status, updated_at
+      FROM change_orders
+      WHERE project_id = ?
+      ORDER BY created_at DESC
+      LIMIT 20
+    `).all(projectId).map((row) => ({
+      changeOrderId: row.change_order_id,
+      requestDate: row.request_date,
+      requestedByKo: row.requested_by_ko,
+      changeContentKo: row.change_content_ko,
+      changeReasonKo: row.change_reason_ko,
+      additionalAmount: Number(row.additional_amount || 0),
+      scheduleImpactDays: Number(row.schedule_impact_days || 0),
+      approvalStatus: row.customer_approval_status,
+      signatureStatus: row.signature_status,
+      status: row.status,
+      updatedAt: row.updated_at
+    }));
+
+    const inspectionResults = db.project.prepare(`
+      SELECT process_name_ko, check_item_ko, criterion_ko, result_status,
+             photo_status, action_required_ko, inspector_ko, inspected_at
+      FROM inspection_checklist_items
+      WHERE project_id = ?
+      ORDER BY inspected_at DESC, created_at DESC
+      LIMIT 40
+    `).all(projectId).map((row) => ({
+      processNameKo: row.process_name_ko,
+      checkItemKo: row.check_item_ko,
+      criterionKo: row.criterion_ko,
+      resultKo: row.result_status === 'PASS' ? 'PASS' : '보완 필요',
+      photoStatus: row.photo_status || '사진 없음',
+      actionKo: row.action_required_ko || '조치사항 없음',
+      inspectorKo: row.inspector_ko,
+      inspectedAt: row.inspected_at
+    }));
+
+    const defectRequests = db.project.prepare(`
+      SELECT id, defect_location_ko, defect_content_ko, photo_path, urgent,
+             contact_time_ko, request_status, related_defect_id, created_at
+      FROM client_defect_requests
+      WHERE project_id = ?
+      ORDER BY created_at DESC
+      LIMIT 20
+    `).all(projectId).map((row) => ({
+      requestId: row.id,
+      defectLocationKo: row.defect_location_ko,
+      defectContentKo: row.defect_content_ko,
+      photoStatus: row.photo_path ? '사진 첨부' : '사진 없음',
+      urgent: Boolean(row.urgent),
+      contactTimeKo: row.contact_time_ko,
+      requestStatus: row.request_status,
+      relatedDefectId: row.related_defect_id,
+      createdAt: row.created_at
+    }));
+
+    const confirmations = db.project.prepare(`
+      SELECT id, confirmation_type, client_name, status, note, signed_at, created_at
+      FROM client_confirmations
+      WHERE project_id = ?
+      ORDER BY created_at DESC
+      LIMIT 20
+    `).all(projectId).map((row) => ({
+      confirmationId: row.id,
+      confirmationType: row.confirmation_type,
+      clientName: row.client_name,
+      status: row.status,
+      note: row.note,
+      signedAt: row.signed_at,
+      createdAt: row.created_at
+    }));
+
+    const tokens = db.project.prepare(`
+      SELECT id, client_name, token, expires_at, status, created_at
+      FROM client_portal_tokens
+      WHERE project_id = ?
+      ORDER BY created_at DESC
+      LIMIT 5
+    `).all(projectId).map((row) => ({
+      tokenId: row.id,
+      clientName: row.client_name,
+      token: row.token,
+      expiresAt: row.expires_at,
+      status: row.status,
+      createdAt: row.created_at,
+      shareStatusKo: '고객 공유 링크 준비 중'
+    }));
+
+    return {
+      snapshotDate: today,
+      projectSummary: {
+        projectId,
+        customerName,
+        siteName,
+        projectName: contractView.projectName,
+        contractAmount: contractView.contractAmount || estimateView.totalCustomerAmount,
+        startDate: contractView.startDate,
+        expectedEndDate: contractView.endDate,
+        currentStatusKo: schedule?.status || context.contract?.status || '진행 상태 확인 필요',
+        nextProcessKo: nextSchedule?.process_name || '다음 예정 공정 없음',
+        managerContactKo: '담당자 연락처 등록 예정'
+      },
+      estimateView,
+      contractView,
+      scheduleView: {
+        scheduleId: schedule?.id || null,
+        scheduleName: schedule?.schedule_name || '공정표 미생성',
+        todayProcessKo: todaySchedule?.process_name || '오늘 공정 없음',
+        nextProcessKo: nextSchedule?.process_name || '다음 예정 공정 없음',
+        progressRate: scheduleItems.length ? Math.round((completedItems / scheduleItems.length) * 100) : 0,
+        delayNoticeKo: scheduleItems.some((item) => String(item.status || '').toUpperCase().includes('DELAY')) ? '일정 조정 필요' : '일정 안내 없음',
+        items: scheduleItems.map((item) => ({
+          processName: item.process_name,
+          startDate: item.start_date,
+          endDate: item.end_date,
+          durationDays: Number(item.duration_days || 0),
+          status: item.status
+        }))
+      },
+      progressView: { reports: progressReports, emptyMessageKo: progressReports.length ? '' : '아직 공유할 공사 진행 기록이 없습니다.' },
+      paymentView: { payments, emptyMessageKo: payments.length ? '' : '결제 일정 데이터가 없습니다.' },
+      changeOrderView: { changeOrders, emptyMessageKo: changeOrders.length ? '' : '승인 대기 추가공사가 없습니다.' },
+      inspectionView: { inspectionResults, emptyMessageKo: inspectionResults.length ? '' : '공유된 검수 결과가 없습니다.' },
+      defectView: { defectRequests, emptyMessageKo: defectRequests.length ? '' : '접수된 하자 요청이 없습니다.' },
+      completionView: { confirmations, emptyMessageKo: confirmations.length ? '' : '완료 확인 기록이 없습니다.' },
+      tokenView: { tokens, shareStatusKo: '고객 공유 링크 준비 중' },
+      customerSafe: true
+    };
+  }
+
+  function generateClientPortalToken({ projectId, clientName = '고객', daysValid = 30 } = {}) {
+    const context = resolveClientPortalContext({ projectId });
+    const safeProjectId = context.projectId || projectId || 'CLIENT-PORTAL-DEMO';
+    const createdAt = nowIso();
+    const expires = new Date(createdAt);
+    expires.setDate(expires.getDate() + Number(daysValid || 30));
+    const tokenId = `CLIENT-TOKEN-${safeProjectId}-${Date.now()}`;
+    const token = `portal_${safeProjectId}_${Math.random().toString(36).slice(2, 12)}`;
+    db.project.prepare(`
+      INSERT INTO client_portal_tokens (
+        id, project_id, client_name, token, expires_at, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(tokenId, safeProjectId, clientName || context.client?.customer_name_ko || context.contract?.customer_name || '고객', token, expires.toISOString(), 'ACTIVE', createdAt);
+    return { tokenId, token, projectId: safeProjectId, shareStatusKo: '고객 공유 링크 준비 중', clientPortalData: getClientPortalData({ projectId: safeProjectId }) };
+  }
+
+  function confirmClientContract({ projectId, contractId = null, clientName = '고객', signatureText = '계약 내용을 확인했습니다.' } = {}) {
+    const context = resolveClientPortalContext({ projectId });
+    const safeProjectId = context.projectId || projectId;
+    const safeContractId = contractId || context.contract?.contract_id || 'NO_CONTRACT';
+    const createdAt = nowIso();
+    const confirmationId = `CLIENT-CONFIRM-CONTRACT-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO client_confirmations (
+        id, project_id, confirmation_type, client_name, status, note, signed_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(confirmationId, safeProjectId, 'CONTRACT_CONFIRMED', clientName, 'CONFIRMED', signatureText, createdAt, createdAt);
+    createCommunicationDraft({
+      messageType: 'CLIENT_CONTRACT_NOTICE',
+      relatedEntityType: 'Contract',
+      relatedEntityId: safeContractId,
+      targetType: 'CLIENT',
+      targetName: clientName,
+      status: 'SENT',
+      createdAt,
+      force: true
+    });
+    return { confirmationId, clientPortalData: getClientPortalData({ projectId: safeProjectId }) };
+  }
+
+  function respondClientChangeOrder({ projectId, changeOrderId, clientName = '고객', responseStatus = 'APPROVED', question = '' } = {}) {
+    const changeOrder = db.project.prepare('SELECT * FROM change_orders WHERE change_order_id = ?').get(changeOrderId);
+    if (!changeOrder) throw new Error(`Change order not found: ${changeOrderId}`);
+    const safeProjectId = projectId || changeOrder.project_id;
+    const normalized = String(responseStatus || 'APPROVED').toUpperCase();
+    const createdAt = nowIso();
+    const responseId = `CLIENT-CO-RESP-${changeOrderId}-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO client_change_order_responses (
+        id, project_id, change_order_id, client_name, response_status, question, responded_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(responseId, safeProjectId, changeOrderId, clientName, normalized, question || '', createdAt, createdAt);
+    db.project.prepare(`
+      UPDATE change_orders
+      SET customer_approval_status = ?, signature_status = ?, updated_at = ?
+      WHERE change_order_id = ?
+    `).run(normalized, normalized === 'APPROVED' ? 'CLIENT_CONFIRMED' : 'CLIENT_RESPONSE_RECORDED', createdAt, changeOrderId);
+    if (normalized === 'APPROVED' && Number(changeOrder.additional_amount || 0) > 0) {
+      const context = resolveClientPortalContext({ projectId: safeProjectId });
+      const contractId = context.contract?.contract_id || `CO-${changeOrderId}`;
+      db.project.prepare(`
+        INSERT OR REPLACE INTO customer_payments (
+          payment_id, contract_id, estimate_id, project_id, customer_name, site_name,
+          payment_type, due_date, scheduled_amount, actual_received_date,
+          actual_received_amount, payment_status, notes_ko, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        `PAY-CLIENT-CO-${changeOrderId}`,
+        contractId,
+        context.estimateId || safeProjectId,
+        safeProjectId,
+        clientName,
+        changeOrder.site_name_ko,
+        '추가공사',
+        createdAt.slice(0, 10),
+        Number(changeOrder.additional_amount || 0),
+        null,
+        0,
+        'SCHEDULED',
+        '고객 승인 추가공사 수금 예정',
+        createdAt,
+        createdAt
+      );
+      syncCashflowSnapshot(createdAt);
+    }
+    createCommunicationDraft({
+      messageType: 'CLIENT_CHANGE_ORDER_APPROVAL',
+      relatedEntityType: 'ChangeOrder',
+      relatedEntityId: changeOrderId,
+      targetType: 'CLIENT',
+      targetName: clientName,
+      status: 'SENT',
+      createdAt,
+      force: true
+    });
+    return { responseId, clientPortalData: getClientPortalData({ projectId: safeProjectId }) };
+  }
+
+  function createClientDefectRequest({ projectId, clientName = '고객', defectLocationKo = '위치 확인 필요', defectContentKo = '하자 내용 확인 필요', photoPath = '', urgent = false, contactTimeKo = '연락 가능 시간 확인 필요' } = {}) {
+    const context = resolveClientPortalContext({ projectId });
+    const safeProjectId = context.projectId || projectId || 'CLIENT-PORTAL-DEMO';
+    const createdAt = nowIso();
+    const requestId = `CLIENT-DEFECT-${safeProjectId}-${Date.now()}`;
+    const defectResult = createDefectReport({
+      projectId: safeProjectId,
+      siteNameKo: context.contract?.site_name || context.estimate?.site_name || '현장',
+      defectLocationKo,
+      defectTypeKo: defectContentKo,
+      severity: urgent ? 'HIGH' : 'MEDIUM',
+      rootCauseKo: '고객 접수 - 원인 확인 필요',
+      estimatedCost: 0,
+      managerKo: '고객센터',
+      actor: 'CEO'
+    });
+    db.project.prepare(`
+      INSERT INTO client_defect_requests (
+        id, project_id, client_name, defect_location_ko, defect_content_ko,
+        photo_path, urgent, contact_time_ko, request_status, related_defect_id,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(requestId, safeProjectId, clientName, defectLocationKo, defectContentKo, photoPath || '', urgent ? 1 : 0, contactTimeKo, 'RECEIVED', defectResult.defectId, createdAt, createdAt);
+    if (urgent) {
+      upsertCeoDecisionItem({
+        decisionId: `CEO-CLIENT-DEFECT-${requestId}`,
+        sourceModule: 'CLIENT_PORTAL',
+        entityType: 'DefectRequest',
+        entityId: requestId,
+        decisionType: 'URGENT_DEFECT',
+        titleKo: '고객 긴급 하자 접수',
+        projectId: safeProjectId,
+        siteNameKo: context.contract?.site_name || context.estimate?.site_name || safeProjectId,
+        financialImpact: 0,
+        riskLevel: 'RED',
+        requiredActionKo: '현장 확인 및 고객 안내',
+        status: 'PENDING'
+      }, createdAt);
+      upsertRedAlertEvent({
+        redAlertId: `RED-CLIENT-DEFECT-${requestId}`,
+        sourceModule: 'CLIENT_PORTAL',
+        entityId: requestId,
+        projectId: safeProjectId,
+        titleKo: '고객 긴급 하자 접수',
+        reasonKo: defectContentKo,
+        severity: 'RED',
+        blockingRequired: false
+      }, createdAt);
+    }
+    return { requestId, defectId: defectResult.defectId, clientPortalData: getClientPortalData({ projectId: safeProjectId }) };
+  }
+
+  function saveClientCompletionConfirmation({ projectId, clientName = '고객', confirmationType = 'COMPLETION', status = 'CONFIRMED', note = '완료 확인' } = {}) {
+    const context = resolveClientPortalContext({ projectId });
+    const safeProjectId = context.projectId || projectId || 'CLIENT-PORTAL-DEMO';
+    const normalizedStatus = String(status || 'CONFIRMED').toUpperCase() === 'REVISION_REQUESTED' ? 'REVISION_REQUESTED' : 'CONFIRMED';
+    const createdAt = nowIso();
+    const confirmationId = `CLIENT-CONFIRM-${safeProjectId}-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO client_confirmations (
+        id, project_id, confirmation_type, client_name, status, note, signed_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(confirmationId, safeProjectId, confirmationType, clientName, normalizedStatus, note || '', normalizedStatus === 'CONFIRMED' ? createdAt : null, createdAt);
+    if (normalizedStatus === 'REVISION_REQUESTED') {
+      upsertCeoDecisionItem({
+        decisionId: `CEO-CLIENT-COMPLETION-${confirmationId}`,
+        sourceModule: 'CLIENT_PORTAL',
+        entityType: 'CompletionConfirmation',
+        entityId: confirmationId,
+        decisionType: 'REVISION_REQUESTED',
+        titleKo: '고객 완료 보완 요청',
+        projectId: safeProjectId,
+        siteNameKo: context.contract?.site_name || context.estimate?.site_name || safeProjectId,
+        financialImpact: 0,
+        riskLevel: 'ORANGE',
+        requiredActionKo: '보완 요청 확인',
+        status: 'PENDING'
+      }, createdAt);
+    }
+    return { confirmationId, clientPortalData: getClientPortalData({ projectId: safeProjectId }) };
   }
 
   function seedProjectLearningData() {
@@ -17856,6 +18414,10 @@ function createSqliteService({ app }) {
       contractDocumentCount: countRows(db.project, 'contract_documents'),
       contractApprovalLogCount: countRows(db.project, 'contract_approval_logs'),
       clientDocumentLogCount: countRows(db.project, 'client_document_logs'),
+      clientPortalTokenCount: countRows(db.project, 'client_portal_tokens'),
+      clientConfirmationCount: countRows(db.project, 'client_confirmations'),
+      clientChangeOrderResponseCount: countRows(db.project, 'client_change_order_responses'),
+      clientDefectRequestCount: countRows(db.project, 'client_defect_requests'),
       communicationMessageCount: countRows(db.project, 'communication_messages'),
       communicationTemplateCount: countRows(db.project, 'communication_templates'),
       communicationSendLogCount: countRows(db.project, 'communication_send_logs'),
@@ -18088,6 +18650,12 @@ function createSqliteService({ app }) {
     decideCeoApprovalRequest,
     getClientContractData,
     approveContract,
+    getClientPortalData,
+    generateClientPortalToken,
+    confirmClientContract,
+    respondClientChangeOrder,
+    createClientDefectRequest,
+    saveClientCompletionConfirmation,
     getCommunicationCenterData,
     generateCommunicationMessage,
     markCommunicationMessageSent,

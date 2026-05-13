@@ -43,6 +43,10 @@ const releaseChecks = [
     script: 'field-mobile-operations.smoke.js'
   },
   {
+    label: '고객 포털',
+    script: 'client-portal.smoke.js'
+  },
+  {
     label: '결제/현금흐름',
     script: 'payment-cashflow.smoke.js'
   },

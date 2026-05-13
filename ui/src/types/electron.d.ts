@@ -139,6 +139,12 @@ declare global {
         decideCeoApprovalRequest: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getClientContractData: () => Promise<Record<string, unknown>>;
         approveContract: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getClientPortalData: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        generateClientPortalToken: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        confirmClientContract: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        respondClientChangeOrder: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createClientDefectRequest: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        saveClientCompletionConfirmation: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getCommunicationCenterData: () => Promise<Record<string, unknown>>;
         generateCommunicationMessage: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         markCommunicationMessageSent: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

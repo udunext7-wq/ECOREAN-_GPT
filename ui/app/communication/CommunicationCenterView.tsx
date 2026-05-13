@@ -126,7 +126,10 @@ export function CommunicationCenterView() {
             <h3>외부 커뮤니케이션 센터</h3>
             <p>계약, 공정, 발주, 검수, 하자, 결제 데이터를 복사 가능한 한글 메시지로 변환합니다. 실제 발송은 아직 하지 않습니다.</p>
           </div>
-          <button onClick={refresh}>새로고침</button>
+          <div className="button-row">
+            <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'clientPortal' }))}>고객 포털</button>
+            <button onClick={refresh}>새로고침</button>
+          </div>
         </div>
 
         <div className="case-library-grid">

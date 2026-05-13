@@ -1,6 +1,6 @@
 export type Severity = 'GREEN' | 'YELLOW' | 'RED';
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'BLOCKING';
-export type ViewKey = 'dashboard' | 'project' | 'approvals' | 'risks' | 'ontology' | 'floorplanCenter' | 'aiVisualization' | 'boardGeneration' | 'masterDb' | 'franchise' | 'fieldMobile' | 'estimate' | 'bathroomEstimate' | 'kitchenEstimate' | 'fullRemodelingEstimate' | 'contractDocuments' | 'constructionSchedule' | 'purchaseOrders' | 'executionManagement' | 'ceoControlTower' | 'communication' | 'payment' | 'closing' | 'calibration' | 'caseLibrary' | 'costCapture' | 'marginSafety' | 'vendorPrice' | 'vendorIntelligence' | 'portfolio' | 'crew' | 'finance' | 'sales' | 'client' | 'settings' | 'profitTemplates' | 'profitAutomation';
+export type ViewKey = 'dashboard' | 'project' | 'approvals' | 'risks' | 'ontology' | 'floorplanCenter' | 'aiVisualization' | 'boardGeneration' | 'masterDb' | 'franchise' | 'fieldMobile' | 'clientPortal' | 'estimate' | 'bathroomEstimate' | 'kitchenEstimate' | 'fullRemodelingEstimate' | 'contractDocuments' | 'constructionSchedule' | 'purchaseOrders' | 'executionManagement' | 'ceoControlTower' | 'communication' | 'payment' | 'closing' | 'calibration' | 'caseLibrary' | 'costCapture' | 'marginSafety' | 'vendorPrice' | 'vendorIntelligence' | 'portfolio' | 'crew' | 'finance' | 'sales' | 'client' | 'settings' | 'profitTemplates' | 'profitAutomation';
 
 export type TopBarKpi = {
   id: string;

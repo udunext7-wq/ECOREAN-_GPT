@@ -127,6 +127,12 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:ceo-control-tower:decide', (_event, payload) => sqliteService.decideCeoApprovalRequest(payload));
   ipcMain.handle('boc:client-contract:get', () => sqliteService.getClientContractData());
   ipcMain.handle('boc:client-contract:approve', (_event, payload) => sqliteService.approveContract(payload));
+  ipcMain.handle('boc:client-portal:get', (_event, payload = {}) => sqliteService.getClientPortalData(payload));
+  ipcMain.handle('boc:client-portal:token', (_event, payload = {}) => sqliteService.generateClientPortalToken(payload));
+  ipcMain.handle('boc:client-portal:contract-confirm', (_event, payload = {}) => sqliteService.confirmClientContract(payload));
+  ipcMain.handle('boc:client-portal:change-order-response', (_event, payload = {}) => sqliteService.respondClientChangeOrder(payload));
+  ipcMain.handle('boc:client-portal:defect-request', (_event, payload = {}) => sqliteService.createClientDefectRequest(payload));
+  ipcMain.handle('boc:client-portal:completion-confirm', (_event, payload = {}) => sqliteService.saveClientCompletionConfirmation(payload));
   ipcMain.handle('boc:communication:get', () => sqliteService.getCommunicationCenterData());
   ipcMain.handle('boc:communication:generate', (_event, payload) => sqliteService.generateCommunicationMessage(payload));
   ipcMain.handle('boc:communication:mark-sent', (_event, payload) => sqliteService.markCommunicationMessageSent(payload));

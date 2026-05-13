@@ -67,6 +67,7 @@ export function CeoDashboard() {
       openFinance: 'finance',
       openSales: 'sales',
       openClientContract: 'client',
+      openClientPortal: 'clientPortal',
       openProfitTemplates: 'profitTemplates',
       openProfitAutomation: 'profitAutomation',
       openExecutionManagement: 'executionManagement',
@@ -175,6 +176,7 @@ export function CeoDashboard() {
               <button className="command command-claim" onClick={() => openView('project', 'click')}>청구</button>
               <button className="command command-approve" onClick={() => openView('executionManagement', 'confirm')}>현장</button>
               <button className="command command-order" onClick={() => openView('fieldMobile', 'confirm')}>Mobile</button>
+              <button className="command command-approve" onClick={() => openView('clientPortal', 'confirm')}>고객</button>
               <button className="command command-block" onClick={() => openView('ceoControlTower', 'warning')}>Control</button>
             </div>
             <div className="today-action-list">
@@ -277,6 +279,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('profitTemplates', 'confirm')}>Profit Templates</button>
         <button onClick={() => openView('profitAutomation', 'confirm')}>Profit Loop</button>
         <button onClick={() => openView('client', 'click')}>Client Contract</button>
+        <button onClick={() => openView('clientPortal', 'confirm')}>Client Portal</button>
         <button onClick={() => openView('communication', 'click')}>Communication</button>
         <button onClick={() => openView('payment', 'warning')}>Payment</button>
         <button onClick={() => openView('closing', 'warning')}>Project Closing</button>

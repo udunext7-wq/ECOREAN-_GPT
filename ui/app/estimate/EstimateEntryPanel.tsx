@@ -73,6 +73,7 @@ const secondaryActions: EntryAction[] = [
   { title: '현장 모바일', headline: '출역 / 공사일보 / 사진 / 검수 / 위험 보고', note: '모바일 현장', view: 'fieldMobile', tone: 'confirm' },
   { title: '현장 실행 관리', headline: '공사일보 / 출역 / 자재입고 / 검수', note: '현장 관리', view: 'executionManagement' },
   { title: '결제/현금흐름', headline: '입금 / 지급 / 연체 / 7일 현금흐름', note: '자금 관리', view: 'payment', tone: 'warning' },
+  { title: '고객 포털', headline: '견적 / 계약 / 일정 / 결제 / 하자 접수', note: '고객 화면', view: 'clientPortal', tone: 'confirm' },
   { title: '커뮤니케이션 센터', headline: '고객 / 협력업체 메시지 생성', note: '발송 기록', view: 'communication' },
   { title: '프로젝트 마감', headline: '실제 원가 / 마진 / 원가 누수 분석', note: '마감 검토', view: 'closing' },
   { title: '실제 프로젝트 보정', headline: '완료 데이터로 다음 견적 보정', note: '학습 승인', view: 'calibration', tone: 'warning' },
