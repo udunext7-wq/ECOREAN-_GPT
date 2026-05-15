@@ -1005,6 +1005,35 @@ function createSqliteService({ app }) {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS analytics_snapshots (
+        id TEXT PRIMARY KEY,
+        snapshot_date TEXT NOT NULL,
+        total_revenue INTEGER NOT NULL,
+        total_cost INTEGER NOT NULL,
+        total_margin INTEGER NOT NULL,
+        average_margin_rate REAL NOT NULL,
+        kpi_payload_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS analytics_predictions (
+        id TEXT PRIMARY KEY,
+        prediction_type TEXT NOT NULL,
+        risk_level TEXT NOT NULL,
+        confidence_score REAL NOT NULL,
+        recommendation_ko TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS analytics_export_logs (
+        id TEXT PRIMARY KEY,
+        export_type TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS communication_templates (
         id TEXT PRIMARY KEY,
         template_type TEXT NOT NULL UNIQUE,
@@ -10639,6 +10668,367 @@ function createSqliteService({ app }) {
     `).all(limit);
   }
 
+  function safeDivide(numerator, denominator) {
+    const bottom = Number(denominator || 0);
+    if (bottom === 0) return 0;
+    return Number((Number(numerator || 0) / bottom).toFixed(4));
+  }
+
+  function getAnalyticsEstimateRows() {
+    return [
+      ...db.project.prepare("SELECT id, customer_name, site_name, revenue, total_cost, expected_margin, expected_margin_rate, pce_decision, branch_id, created_at, '욕실' AS project_type_ko FROM bathroom_estimates").all(),
+      ...db.project.prepare("SELECT id, customer_name, site_name, revenue, total_cost, expected_margin, expected_margin_rate, pce_decision, branch_id, created_at, '주방' AS project_type_ko FROM kitchen_estimates").all(),
+      ...db.project.prepare("SELECT id, customer_name, site_name, revenue, total_cost, expected_margin, expected_margin_rate, pce_decision, branch_id, created_at, '전체' AS project_type_ko FROM full_remodeling_estimates").all()
+    ];
+  }
+
+  function getAnalyticsEstimateItems() {
+    return [
+      ...db.project.prepare("SELECT estimate_id, category, item_name, customer_total, internal_total, margin, margin_rate, '욕실' AS project_type_ko FROM bathroom_estimate_items").all(),
+      ...db.project.prepare("SELECT estimate_id, category, item_name, customer_total, internal_total, margin, margin_rate, '주방' AS project_type_ko FROM kitchen_estimate_items").all(),
+      ...db.project.prepare("SELECT estimate_id, category, item_name, customer_total, internal_total, margin, margin_rate, '전체' AS project_type_ko FROM full_remodeling_estimate_items").all()
+    ];
+  }
+
+  function sumBy(rows, keyFn, valueFn) {
+    const map = new Map();
+    rows.forEach((row) => {
+      const key = keyFn(row);
+      const current = map.get(key) || { key, count: 0, total: 0, cost: 0, margin: 0 };
+      const value = valueFn(row);
+      current.count += 1;
+      current.total += Number(value.total || 0);
+      current.cost += Number(value.cost || 0);
+      current.margin += Number(value.margin || 0);
+      map.set(key, current);
+    });
+    return Array.from(map.values());
+  }
+
+  function riskLevelFromScore(score) {
+    if (score >= 80) return 'HIGH';
+    if (score >= 50) return 'MEDIUM';
+    return 'LOW';
+  }
+
+  function buildAnalyticsPrediction({ type, score, confidence, recommendationKo, payload = {}, createdAt = nowIso() }) {
+    const riskLevel = riskLevelFromScore(score);
+    const id = `ANALYTICS-PRED-${type}-${createdAt.slice(0, 10)}`;
+    db.project.prepare(`
+      INSERT OR REPLACE INTO analytics_predictions (
+        id, prediction_type, risk_level, confidence_score, recommendation_ko,
+        payload_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM analytics_predictions WHERE id = ?), ?))
+    `).run(id, type, riskLevel, Number(confidence || 0), recommendationKo, toJson(payload), id, createdAt);
+    return { id, predictionType: type, riskLevel, confidenceScore: Number(confidence || 0), recommendationKo, payload };
+  }
+
+  function getAnalyticsSummary(createdAt = nowIso()) {
+    const estimates = getAnalyticsEstimateRows();
+    const closings = db.project.prepare('SELECT * FROM project_closing_snapshots ORDER BY updated_at DESC').all();
+    const revenue = estimates.reduce((sum, row) => sum + Number(row.revenue || 0), 0);
+    const cost = estimates.reduce((sum, row) => sum + Number(row.total_cost || 0), 0);
+    const margin = revenue - cost;
+    const averageMarginRate = safeDivide(margin, revenue);
+    const cashflow = db.project.prepare('SELECT * FROM cashflow_snapshots ORDER BY created_at DESC LIMIT 1').get() || syncCashflowSnapshot(createdAt);
+    const lossProcesses = db.project.prepare('SELECT process_name_ko, reason_ko FROM repeated_loss_processes ORDER BY created_at DESC LIMIT 3').all();
+    const branchSummary = getFranchiseSummary();
+    const topProject = estimates.slice().sort((a, b) => Number(b.expected_margin || 0) - Number(a.expected_margin || 0))[0] || null;
+    const cashflowRiskScore = Number(cashflow?.seven_day_net_cashflow || 0) < 0 ? 85 : Number(cashflow?.today_net_cashflow || 0) < 0 ? 65 : 20;
+    return {
+      expectedNetProfit: margin,
+      averageMarginRate,
+      cashflowRiskLevel: riskLevelFromScore(cashflowRiskScore),
+      repeatedLossProcessKo: lossProcesses[0]?.process_name_ko || '데이터 없음',
+      riskyBranchCount: branchSummary.lowMarginBranchCount || 0,
+      topProfitProjectKo: topProject?.site_name || topProject?.id || '데이터 없음',
+      aiRiskPredictionKo: cashflowRiskScore >= 80 ? '7일 현금흐름 위험 높음' : averageMarginRate < 0.25 ? '평균 마진율 방어 필요' : '현재 위험 낮음',
+      completedProjectCount: closings.length
+    };
+  }
+
+  function getAnalyticsCenterData() {
+    const createdAt = nowIso();
+    const estimates = getAnalyticsEstimateRows();
+    const items = getAnalyticsEstimateItems();
+    const closings = db.project.prepare('SELECT * FROM project_closing_snapshots ORDER BY updated_at DESC').all();
+    const defects = db.project.prepare('SELECT * FROM defect_reports ORDER BY created_at DESC').all();
+    const attendance = db.project.prepare('SELECT * FROM crew_attendance_logs ORDER BY created_at DESC').all();
+    const customerPayments = db.project.prepare('SELECT * FROM customer_payments ORDER BY due_date').all();
+    const vendorPayments = db.project.prepare('SELECT * FROM vendor_payments ORDER BY due_date').all();
+    const leads = db.project.prepare('SELECT * FROM leads ORDER BY created_at DESC').all();
+    const pipeline = db.project.prepare('SELECT * FROM sales_pipeline_metrics ORDER BY month_key DESC LIMIT 12').all();
+    const vendorHistory = db.master.prepare('SELECT * FROM material_price_history ORDER BY recorded_at DESC, created_at DESC').all();
+    const vendorScores = db.master.prepare('SELECT * FROM vendor_reliability_scores ORDER BY vendor_score DESC, updated_at DESC').all();
+    const franchiseData = getFranchiseCenterData();
+
+    const totalRevenue = estimates.reduce((sum, row) => sum + Number(row.revenue || 0), 0);
+    const totalCost = estimates.reduce((sum, row) => sum + Number(row.total_cost || 0), 0);
+    const totalMargin = totalRevenue - totalCost;
+    const averageMarginRate = safeDivide(totalMargin, totalRevenue);
+
+    const processProfitability = sumBy(
+      items,
+      (row) => row.category || '미분류',
+      (row) => ({ total: row.customer_total, cost: row.internal_total, margin: row.margin })
+    ).map((row) => ({
+      processNameKo: row.key,
+      revenue: row.total,
+      cost: row.cost,
+      margin: row.margin,
+      marginRate: safeDivide(row.margin, row.total),
+      itemCount: row.count
+    })).sort((a, b) => a.marginRate - b.marginRate);
+
+    const projectTypeProfitability = sumBy(
+      estimates,
+      (row) => row.project_type_ko,
+      (row) => ({ total: row.revenue, cost: row.total_cost, margin: Number(row.revenue || 0) - Number(row.total_cost || 0) })
+    ).map((row) => ({
+      projectTypeKo: row.key,
+      revenue: row.total,
+      cost: row.cost,
+      margin: row.margin,
+      marginRate: safeDivide(row.margin, row.total),
+      estimateCount: row.count
+    })).sort((a, b) => b.margin - a.margin);
+
+    const monthlyTrend = sumBy(
+      estimates,
+      (row) => String(row.created_at || createdAt).slice(0, 7),
+      (row) => ({ total: row.revenue, cost: row.total_cost, margin: Number(row.revenue || 0) - Number(row.total_cost || 0) })
+    ).map((row) => ({
+      monthKey: row.key,
+      revenue: row.total,
+      cost: row.cost,
+      margin: row.margin,
+      marginRate: safeDivide(row.margin, row.total)
+    })).sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+
+    const regionTrend = sumBy(
+      estimates,
+      (row) => String(row.site_name || '지역 미분류').split(' ')[0] || '지역 미분류',
+      (row) => ({ total: row.revenue, cost: row.total_cost, margin: Number(row.revenue || 0) - Number(row.total_cost || 0) })
+    ).map((row) => ({
+      regionKo: row.key,
+      revenue: row.total,
+      cost: row.cost,
+      margin: row.margin,
+      marginRate: safeDivide(row.margin, row.total)
+    })).sort((a, b) => b.margin - a.margin);
+
+    const topProfitProjects = estimates.slice()
+      .map((row) => ({
+        estimateId: row.id,
+        projectTypeKo: row.project_type_ko,
+        siteName: row.site_name,
+        revenue: Number(row.revenue || 0),
+        cost: Number(row.total_cost || 0),
+        margin: Number(row.revenue || 0) - Number(row.total_cost || 0),
+        marginRate: Number(row.expected_margin_rate || safeDivide(Number(row.revenue || 0) - Number(row.total_cost || 0), row.revenue))
+      }))
+      .sort((a, b) => b.margin - a.margin)
+      .slice(0, 10);
+
+    const teamRows = sumBy(
+      attendance,
+      (row) => row.affiliation_ko || row.role_ko || '팀 미분류',
+      (row) => ({ total: row.work_hours, cost: row.labor_cost, margin: 0 })
+    ).map((row) => {
+      const teamDefects = defects.filter((defect) => String(defect.manager_ko || '').includes(row.key)).length;
+      return {
+        teamNameKo: row.key,
+        attendanceCount: row.count,
+        workHours: row.total,
+        laborCost: row.cost,
+        productivityAmountPerHour: safeDivide(Math.max(0, totalMargin), Math.max(1, row.total)),
+        scheduleComplianceRate: closings.length ? safeDivide(closings.filter((closing) => Number(closing.schedule_variance_days || 0) <= 0).length, closings.length) : 0,
+        defectRate: safeDivide(teamDefects, Math.max(1, row.count)),
+        averageMarginRate
+      };
+    }).sort((a, b) => b.productivityAmountPerHour - a.productivityAmountPerHour);
+
+    const vendorPriceGroups = sumBy(
+      vendorHistory,
+      (row) => row.vendor_name || '업체 미등록',
+      (row) => ({ total: row.actual_unit_price || row.quoted_unit_price, cost: 0, margin: 0 })
+    );
+    const vendorAnalytics = vendorScores.map((score) => {
+      const priceGroup = vendorPriceGroups.find((row) => row.key === score.vendor_name);
+      return {
+        vendorName: score.vendor_name,
+        averageUnitPrice: priceGroup ? Math.round(priceGroup.total / Math.max(1, priceGroup.count)) : 0,
+        onTimeRate: Number(score.on_time_rate || 0),
+        defectCount: Number(score.defect_count || 0),
+        shortageCount: Number(score.shortage_count || 0),
+        priceVarianceRate: Number(score.price_variance_rate || 0),
+        vendorScore: Number(score.vendor_score || 0),
+        reliabilityLevel: score.reliability_level,
+        recommendationKo: Number(score.vendor_score || 0) >= 80 ? '추천 업체' : Number(score.vendor_score || 0) < 60 ? '위험 업체' : '주의 관찰'
+      };
+    }).sort((a, b) => b.vendorScore - a.vendorScore);
+
+    const latestPipeline = pipeline[0] || null;
+    const wonLeadCount = leads.filter((row) => row.consultation_status === 'WON').length;
+    const lostLeadCount = leads.filter((row) => row.consultation_status === 'LOST').length;
+    const conversionAnalytics = {
+      totalLeads: latestPipeline?.total_leads || leads.length,
+      visitConversionRate: latestPipeline ? latestPipeline.contact_conversion_rate : safeDivide(leads.filter((row) => ['VISIT_SCHEDULED', 'VISITED', 'ESTIMATE_SENT', 'NEGOTIATING', 'WON'].includes(row.consultation_status)).length, leads.length),
+      estimateConversionRate: latestPipeline ? latestPipeline.estimate_conversion_rate : safeDivide(leads.filter((row) => ['ESTIMATE_SENT', 'NEGOTIATING', 'WON'].includes(row.consultation_status)).length, leads.length),
+      contractConversionRate: latestPipeline ? latestPipeline.contract_conversion_rate : safeDivide(wonLeadCount, leads.length),
+      averageContractAmount: safeDivide(totalRevenue, Math.max(1, estimates.length)),
+      lostLeadCount,
+      highProfitClientTypeKo: '예산 충분 / 공사범위 명확',
+      lowProfitClientTypeKo: '최저가 중심 / 잦은 범위 변경'
+    };
+
+    const monthlyCash = sumBy(
+      [...customerPayments.map((row) => ({ ...row, cashKind: 'IN' })), ...vendorPayments.map((row) => ({ ...row, cashKind: 'OUT' }))],
+      (row) => String(row.due_date || createdAt).slice(0, 7),
+      (row) => ({ total: row.cashKind === 'IN' ? row.scheduled_amount : 0, cost: row.cashKind === 'OUT' ? row.scheduled_amount : 0, margin: 0 })
+    ).map((row) => ({
+      monthKey: row.key,
+      expectedInflow: row.total,
+      expectedOutflow: row.cost,
+      expectedNetCashflow: row.total - row.cost
+    })).sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+    const receivableAmount = customerPayments.reduce((sum, row) => sum + Math.max(0, Number(row.scheduled_amount || 0) - Number(row.actual_received_amount || 0)), 0);
+    const payableAmount = vendorPayments.reduce((sum, row) => sum + Math.max(0, Number(row.scheduled_amount || 0) - Number(row.actual_paid_amount || 0)), 0);
+    const overdueCustomers = customerPayments.filter((row) => row.payment_status === 'OVERDUE').map((row) => ({ customerName: row.customer_name, amount: Math.max(0, Number(row.scheduled_amount || 0) - Number(row.actual_received_amount || 0)), dueDate: row.due_date }));
+
+    const defectByProcess = sumBy(
+      defects,
+      (row) => row.defect_type_ko || '하자 유형 미분류',
+      (row) => ({ total: 1, cost: row.estimated_cost, margin: 0 })
+    ).map((row) => ({
+      defectTypeKo: row.key,
+      occurrenceCount: row.count,
+      totalDefectCost: row.cost,
+      averageDefectCost: Math.round(row.cost / Math.max(1, row.count)),
+      defectRate: safeDivide(row.count, Math.max(1, estimates.length))
+    })).sort((a, b) => b.totalDefectCost - a.totalDefectCost);
+
+    const branchComparison = (franchiseData.branchMetrics || []).map((row) => ({
+      branchId: row.branchId,
+      branchName: row.branchName,
+      revenue: row.totalRevenue,
+      cost: row.totalCost,
+      marginRate: row.averageMarginRate,
+      defectCount: row.defectCount || 0,
+      cashflow: row.cashflow || 0,
+      conversionRate: row.contractConversionRate || 0,
+      pceBlockRate: safeDivide(row.pceBlockCount || 0, Math.max(1, row.estimateCount || 0)),
+      averageDurationDays: row.averageDurationDays || 0,
+      customerSatisfactionKo: '데이터 수집 예정',
+      statusKo: Number(row.averageMarginRate || 0) < 0.25 && Number(row.averageMarginRate || 0) > 0 ? '본사 기준 미달' : '정상'
+    }));
+
+    const cashRiskScore = monthlyCash.some((row) => row.expectedNetCashflow < 0) || receivableAmount > payableAmount * 2 ? 80 : 25;
+    const marginRiskScore = averageMarginRate > 0 && averageMarginRate < 0.25 ? 75 : 20;
+    const defectRiskScore = defectByProcess.some((row) => row.occurrenceCount >= 3) ? 70 : 25;
+    const branchRiskScore = branchComparison.some((row) => row.statusKo === '본사 기준 미달') ? 70 : 25;
+    const vendorPriceRiskScore = db.master.prepare("SELECT COUNT(*) AS count FROM vendor_price_alerts WHERE status = 'OPEN' AND severity IN ('HIGH', 'CRITICAL')").get().count > 0 ? 75 : 25;
+    const predictions = [
+      buildAnalyticsPrediction({ type: 'MONTHLY_REVENUE', score: marginRiskScore, confidence: estimates.length ? 0.72 : 0.35, recommendationKo: averageMarginRate < 0.25 ? '저마진 견적 차단과 가격 보정이 필요합니다.' : '현재 견적 마진 구조를 유지하세요.', payload: { expectedRevenue: totalRevenue, averageMarginRate }, createdAt }),
+      buildAnalyticsPrediction({ type: 'CASHFLOW_RISK', score: cashRiskScore, confidence: customerPayments.length || vendorPayments.length ? 0.78 : 0.3, recommendationKo: cashRiskScore >= 80 ? '7일 현금흐름과 미수금을 먼저 회수하세요.' : '현금흐름 위험은 낮습니다.', payload: { receivableAmount, payableAmount }, createdAt }),
+      buildAnalyticsPrediction({ type: 'DEFECT_RISK', score: defectRiskScore, confidence: defects.length ? 0.68 : 0.28, recommendationKo: defectRiskScore >= 70 ? '반복 하자 공정의 검수 체크리스트를 강화하세요.' : '하자 위험은 낮습니다.', payload: { topDefects: defectByProcess.slice(0, 3) }, createdAt }),
+      buildAnalyticsPrediction({ type: 'BRANCH_RISK', score: branchRiskScore, confidence: branchComparison.length ? 0.65 : 0.25, recommendationKo: branchRiskScore >= 70 ? '본사 기준 미달 지점의 PCE 정책과 견적 단가를 재점검하세요.' : '지점 위험은 낮습니다.', payload: { riskyBranches: branchComparison.filter((row) => row.statusKo === '본사 기준 미달') }, createdAt }),
+      buildAnalyticsPrediction({ type: 'VENDOR_PRICE_RISK', score: vendorPriceRiskScore, confidence: vendorHistory.length ? 0.7 : 0.25, recommendationKo: vendorPriceRiskScore >= 70 ? '단가 상승 업체의 대체 업체를 검토하세요.' : '단가 상승 위험은 낮습니다.', payload: { vendorCount: vendorAnalytics.length }, createdAt })
+    ];
+
+    const summary = {
+      totalRevenue,
+      totalCost,
+      totalMargin,
+      averageMarginRate,
+      projectCount: estimates.length,
+      cashflowRiskLevel: predictions.find((row) => row.predictionType === 'CASHFLOW_RISK')?.riskLevel || 'LOW',
+      riskyBranchCount: branchComparison.filter((row) => row.statusKo === '본사 기준 미달').length,
+      repeatedLossProcessKo: processProfitability[0]?.processNameKo || '데이터 없음',
+      topProfitProjectKo: topProfitProjects[0]?.siteName || '데이터 없음'
+    };
+
+    db.project.prepare(`
+      INSERT OR REPLACE INTO analytics_snapshots (
+        id, snapshot_date, total_revenue, total_cost, total_margin,
+        average_margin_rate, kpi_payload_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(`ANALYTICS-SNAPSHOT-${createdAt.slice(0, 10)}`, createdAt.slice(0, 10), totalRevenue, totalCost, totalMargin, averageMarginRate, toJson(summary), createdAt);
+
+    return {
+      snapshotDate: createdAt.slice(0, 10),
+      summary,
+      profitAnalytics: {
+        totalRevenue,
+        totalCost,
+        totalMargin,
+        averageMarginRate,
+        processProfitability,
+        projectTypeProfitability,
+        monthlyTrend,
+        regionTrend,
+        topProfitProjects,
+        repeatedLossProcesses: db.project.prepare('SELECT * FROM repeated_loss_processes ORDER BY created_at DESC LIMIT 10').all(),
+        estimateVsActual: db.project.prepare('SELECT * FROM estimate_vs_actual ORDER BY created_at DESC LIMIT 10').all()
+      },
+      teamProductivity: {
+        teams: teamRows,
+        emptyMessageKo: teamRows.length ? '' : '출역/노무 데이터가 없습니다.'
+      },
+      vendorAnalytics: {
+        vendors: vendorAnalytics,
+        topRecommended: vendorAnalytics.filter((row) => row.recommendationKo === '추천 업체').slice(0, 5),
+        riskyVendors: vendorAnalytics.filter((row) => row.recommendationKo === '위험 업체').slice(0, 5),
+        priceTrend: vendorHistory.slice(0, 20)
+      },
+      conversionAnalytics,
+      cashflowAnalytics: {
+        monthlyCash,
+        receivableAmount,
+        payableAmount,
+        overdueCustomers,
+        riskKo: cashRiskScore >= 80 ? '현금 부족 위험' : '현금흐름 안정'
+      },
+      defectAnalytics: {
+        defectByProcess,
+        topRiskProcesses: defectByProcess.slice(0, 5),
+        averageDefectCost: defects.length ? Math.round(defects.reduce((sum, row) => sum + Number(row.estimated_cost || 0), 0) / defects.length) : 0
+      },
+      branchComparison: {
+        branches: branchComparison,
+        topBranches: branchComparison.slice().sort((a, b) => Number(b.marginRate || 0) - Number(a.marginRate || 0)).slice(0, 5),
+        riskyBranches: branchComparison.filter((row) => row.statusKo === '본사 기준 미달')
+      },
+      aiPredictions: predictions,
+      emptyState: estimates.length === 0 && closings.length === 0,
+      emptyMessageKo: '분석할 견적/프로젝트 데이터가 없습니다.'
+    };
+  }
+
+  function exportAnalyticsReport({ exportType = 'PDF', actor = 'CEO' } = {}) {
+    const createdAt = nowIso();
+    const type = String(exportType || 'PDF').toUpperCase() === 'XLSX' ? 'XLSX' : 'PDF';
+    const data = getAnalyticsCenterData();
+    fs.mkdirSync(reportExportDir, { recursive: true });
+    const fileName = `analytics_report_${Date.now()}.${type === 'XLSX' ? 'xlsx' : 'pdf'}`;
+    const filePath = path.join(reportExportDir, fileName);
+    const body = {
+      title: type === 'XLSX' ? 'Analytics Excel Export Placeholder' : 'Analytics PDF Export Placeholder',
+      actor,
+      createdAt,
+      summary: data.summary,
+      predictions: data.aiPredictions
+    };
+    fs.writeFileSync(filePath, JSON.stringify(body, null, 2), 'utf8');
+    const exportId = `ANALYTICS-EXPORT-${Date.now()}`;
+    db.project.prepare(`
+      INSERT INTO analytics_export_logs (
+        id, export_type, file_path, status, created_at
+      ) VALUES (?, ?, ?, ?, ?)
+    `).run(exportId, type, filePath, 'READY', createdAt);
+    return { exportId, exportType: type, filePath, status: 'READY' };
+  }
+
   function getDashboardData() {
     syncCostLeakRootCauses(null, nowIso());
     runAutomationScheduler('EVENT_SWEEP_5M');
@@ -10745,6 +11135,7 @@ function createSqliteService({ app }) {
       calibrationSummary: getCalibrationSummary(),
       vendorPriceIntelligenceSummary: getVendorPriceIntelligenceSummary(),
       franchiseSummary: getFranchiseSummary(),
+      analyticsSummary: getAnalyticsSummary(),
       profitAlerts,
       profitTemplates,
       estimateVsActualTop,
@@ -18418,6 +18809,9 @@ function createSqliteService({ app }) {
       clientConfirmationCount: countRows(db.project, 'client_confirmations'),
       clientChangeOrderResponseCount: countRows(db.project, 'client_change_order_responses'),
       clientDefectRequestCount: countRows(db.project, 'client_defect_requests'),
+      analyticsSnapshotCount: countRows(db.project, 'analytics_snapshots'),
+      analyticsPredictionCount: countRows(db.project, 'analytics_predictions'),
+      analyticsExportLogCount: countRows(db.project, 'analytics_export_logs'),
       communicationMessageCount: countRows(db.project, 'communication_messages'),
       communicationTemplateCount: countRows(db.project, 'communication_templates'),
       communicationSendLogCount: countRows(db.project, 'communication_send_logs'),
@@ -18634,6 +19028,8 @@ function createSqliteService({ app }) {
     createFranchiseReplicationTemplate,
     applyReplicationTemplateToBranch,
     runAutomationScheduler,
+    getAnalyticsCenterData,
+    exportAnalyticsReport,
     getPermissionAdminData,
     assertUserPermission,
     getPortfolioDashboardData,

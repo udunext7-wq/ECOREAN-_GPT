@@ -109,6 +109,8 @@ contextBridge.exposeInMainWorld('ecorean', {
     markFranchiseFeePaid: (payload) => ipcRenderer.invoke('boc:franchise:fee:paid', payload),
     createFranchiseReplicationTemplate: (payload) => ipcRenderer.invoke('boc:franchise:template:create', payload),
     applyReplicationTemplateToBranch: (payload) => ipcRenderer.invoke('boc:franchise:template:apply', payload),
+    getAnalyticsCenterData: () => ipcRenderer.invoke('boc:analytics:get'),
+    exportAnalyticsReport: (payload) => ipcRenderer.invoke('boc:analytics:export', payload),
     getPermissionAdminData: () => ipcRenderer.invoke('boc:permissions:get'),
     getPortfolioDashboardData: () => ipcRenderer.invoke('boc:portfolio:get'),
     getCrewDashboardData: () => ipcRenderer.invoke('boc:crew:get'),

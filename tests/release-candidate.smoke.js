@@ -47,6 +47,10 @@ const releaseChecks = [
     script: 'client-portal.smoke.js'
   },
   {
+    label: '경영 분석 센터',
+    script: 'analytics-business-intelligence.smoke.js'
+  },
+  {
     label: '결제/현금흐름',
     script: 'payment-cashflow.smoke.js'
   },
