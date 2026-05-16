@@ -69,6 +69,7 @@ export function CeoDashboard() {
       openClientContract: 'client',
       openClientPortal: 'clientPortal',
       openAnalytics: 'analytics',
+      openAIAutomation: 'aiAutomation',
       openProfitTemplates: 'profitTemplates',
       openProfitAutomation: 'profitAutomation',
       openExecutionManagement: 'executionManagement',
@@ -179,6 +180,7 @@ export function CeoDashboard() {
               <button className="command command-order" onClick={() => openView('fieldMobile', 'confirm')}>Mobile</button>
               <button className="command command-approve" onClick={() => openView('clientPortal', 'confirm')}>고객</button>
               <button className="command command-order" onClick={() => openView('analytics', 'warning')}>분석</button>
+              <button className="command command-block" onClick={() => openView('aiAutomation', 'warning')}>AI</button>
               <button className="command command-block" onClick={() => openView('ceoControlTower', 'warning')}>Control</button>
             </div>
             <div className="today-action-list">
@@ -263,6 +265,17 @@ export function CeoDashboard() {
               <button onClick={() => openView('analytics', 'warning')}>경영 분석 센터</button>
             </div>
           </SectionCard>
+          <SectionCard title="AI Automation" eyebrow="AI OPERATING AGENTS">
+            <div className="profit-tile">
+              <span>AI 위험 감지</span>
+              <strong>{String(dashboard.data.aiAutomationSummary.pendingTaskCount || 0)}건 승인 대기</strong>
+              <p>
+                RED {String(dashboard.data.aiAutomationSummary.redTaskCount || 0)}건 /
+                예방 룰 {String(dashboard.data.aiAutomationSummary.preventionRuleCount || 0)}건
+              </p>
+              <button onClick={() => openView('aiAutomation', 'warning')}>AI 운영 자동화 열기</button>
+            </div>
+          </SectionCard>
         </aside>
       </div>
 
@@ -289,6 +302,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('crew', 'click')}>Crew</button>
         <button onClick={() => openView('finance', 'warning')}>Finance</button>
         <button onClick={() => openView('analytics', 'warning')}>Analytics</button>
+        <button onClick={() => openView('aiAutomation', 'warning')}>AI Automation</button>
         <button onClick={() => openView('sales', 'click')}>Sales</button>
         <button onClick={() => openView('profitTemplates', 'confirm')}>Profit Templates</button>
         <button onClick={() => openView('profitAutomation', 'confirm')}>Profit Loop</button>

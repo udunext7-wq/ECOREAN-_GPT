@@ -51,6 +51,10 @@ const releaseChecks = [
     script: 'analytics-business-intelligence.smoke.js'
   },
   {
+    label: 'AI 운영 자동화',
+    script: 'ai-agent-automation.smoke.js'
+  },
+  {
     label: '결제/현금흐름',
     script: 'payment-cashflow.smoke.js'
   },

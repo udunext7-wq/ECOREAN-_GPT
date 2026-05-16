@@ -1034,6 +1034,55 @@ function createSqliteService({ app }) {
         created_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS ai_agents (
+        id TEXT PRIMARY KEY,
+        agent_name TEXT NOT NULL,
+        agent_type TEXT NOT NULL UNIQUE,
+        is_enabled INTEGER NOT NULL,
+        risk_threshold REAL NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS ai_task_queue (
+        id TEXT PRIMARY KEY,
+        agent_type TEXT NOT NULL,
+        task_type TEXT NOT NULL,
+        priority TEXT NOT NULL,
+        related_entity_type TEXT NOT NULL,
+        related_entity_id TEXT NOT NULL,
+        detected_risk TEXT NOT NULL,
+        recommendation TEXT NOT NULL,
+        draft_payload_json TEXT NOT NULL,
+        status TEXT NOT NULL,
+        requires_human_approval INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        executed_at TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS ai_learning_logs (
+        id TEXT PRIMARY KEY,
+        agent_type TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        input_summary TEXT NOT NULL,
+        detected_pattern TEXT NOT NULL,
+        generated_action TEXT NOT NULL,
+        final_result TEXT NOT NULL,
+        success_score REAL NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS ai_prevention_rules (
+        id TEXT PRIMARY KEY,
+        rule_name TEXT NOT NULL,
+        trigger_pattern TEXT NOT NULL,
+        recommended_action TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        source_agent TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS communication_templates (
         id TEXT PRIMARY KEY,
         template_type TEXT NOT NULL UNIQUE,
@@ -11029,6 +11078,504 @@ function createSqliteService({ app }) {
     return { exportId, exportType: type, filePath, status: 'READY' };
   }
 
+  const AI_AGENT_DEFINITIONS = [
+    { agentType: 'PROFIT_DEFENSE', agentName: 'Profit Defense Agent', riskThreshold: 0.25 },
+    { agentType: 'CASHFLOW_RISK', agentName: 'Cashflow Risk Agent', riskThreshold: 0 },
+    { agentType: 'SCHEDULE_DELAY', agentName: 'Schedule Delay Agent', riskThreshold: 1 },
+    { agentType: 'VENDOR_RISK', agentName: 'Vendor Risk Agent', riskThreshold: 0.15 },
+    { agentType: 'DEFECT_PREVENTION', agentName: 'Defect Prevention Agent', riskThreshold: 2 },
+    { agentType: 'ESTIMATE_CALIBRATION', agentName: 'Estimate Calibration Agent', riskThreshold: 0.1 },
+    { agentType: 'CLIENT_COMMUNICATION', agentName: 'Client Communication Agent', riskThreshold: 1 },
+    { agentType: 'FRANCHISE_MONITORING', agentName: 'Franchise Monitoring Agent', riskThreshold: 0.25 }
+  ];
+
+  function aiTaskPriorityRank(priority) {
+    return priority === 'RED' ? 0 : priority === 'ORANGE' ? 1 : priority === 'YELLOW' ? 2 : 3;
+  }
+
+  function aiTaskId(agentType, taskType, relatedEntityId) {
+    return `AI-${agentType}-${taskType}-${String(relatedEntityId || 'GLOBAL')}`.replace(/[^A-Z0-9_-]/gi, '-').slice(0, 180);
+  }
+
+  function ensureAIAgents(createdAt = nowIso()) {
+    AI_AGENT_DEFINITIONS.forEach((agent) => {
+      db.project.prepare(`
+        INSERT OR IGNORE INTO ai_agents (
+          id, agent_name, agent_type, is_enabled, risk_threshold, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(`AGENT-${agent.agentType}`, agent.agentName, agent.agentType, 1, agent.riskThreshold, createdAt, createdAt);
+    });
+    return db.project.prepare('SELECT * FROM ai_agents ORDER BY agent_name').all();
+  }
+
+  function writeAILearningLog({ agentType, eventType, inputSummary, detectedPattern, generatedAction, finalResult = 'PENDING_REVIEW', successScore = 0, createdAt = nowIso() }) {
+    const id = `AILOG-${agentType}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    db.project.prepare(`
+      INSERT INTO ai_learning_logs (
+        id, agent_type, event_type, input_summary, detected_pattern,
+        generated_action, final_result, success_score, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, agentType, eventType, inputSummary, detectedPattern, generatedAction, finalResult, Number(successScore || 0), createdAt);
+    return id;
+  }
+
+  function upsertAITask(task, createdAt = nowIso()) {
+    const id = task.id || aiTaskId(task.agentType, task.taskType, task.relatedEntityId);
+    const existing = db.project.prepare('SELECT * FROM ai_task_queue WHERE id = ?').get(id);
+    const status = existing?.status && !['PENDING', 'FAILED'].includes(existing.status) ? existing.status : 'PENDING';
+    db.project.prepare(`
+      INSERT OR REPLACE INTO ai_task_queue (
+        id, agent_type, task_type, priority, related_entity_type, related_entity_id,
+        detected_risk, recommendation, draft_payload_json, status,
+        requires_human_approval, created_at, executed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      task.agentType,
+      task.taskType,
+      task.priority || 'NORMAL',
+      task.relatedEntityType || 'GLOBAL',
+      task.relatedEntityId || 'GLOBAL',
+      task.detectedRisk || '',
+      task.recommendation || '',
+      toJson(task.draftPayload || {}),
+      status,
+      task.requiresHumanApproval === false ? 0 : 1,
+      existing?.created_at || createdAt,
+      existing?.executed_at || null
+    );
+
+    if (!existing) {
+      writeAILearningLog({
+        agentType: task.agentType,
+        eventType: 'AI_TASK_CREATED',
+        inputSummary: task.detectedRisk || '',
+        detectedPattern: task.taskType,
+        generatedAction: task.recommendation || '',
+        createdAt
+      });
+    }
+
+    const riskLevel = task.priority === 'RED' ? 'RED' : task.priority === 'ORANGE' ? 'ORANGE' : task.priority === 'YELLOW' ? 'YELLOW' : 'NORMAL';
+    upsertCeoDecisionItem({
+      decisionId: `CEO-${id}`,
+      sourceModule: 'AI_AGENT',
+      entityType: 'AITask',
+      entityId: id,
+      decisionType: task.taskType,
+      titleKo: task.titleKo || `AI 추천: ${task.detectedRisk || task.taskType}`,
+      projectId: task.projectId || task.relatedEntityId || 'GLOBAL',
+      siteNameKo: task.siteNameKo || task.projectId || task.relatedEntityId || 'AI 운영 자동화',
+      financialImpact: task.financialImpact || 0,
+      riskLevel,
+      requiredActionKo: task.requiredActionKo || 'AI 추천 검토 후 승인/반려',
+      deadline: createdAt.slice(0, 10),
+      payload: { aiTaskId: id, ...task.draftPayload }
+    }, createdAt);
+
+    upsertApprovalRequest({
+      requestId: `APR-${id}`,
+      sourceModule: 'AI_AGENT',
+      entityId: id,
+      projectId: task.projectId || task.relatedEntityId || 'GLOBAL',
+      titleKo: task.titleKo || `AI 작업 승인 필요: ${task.taskType}`,
+      amount: task.financialImpact || 0,
+      reasonKo: task.detectedRisk || task.recommendation || 'AI 추천 검토',
+      status: 'PENDING'
+    }, createdAt);
+
+    if (task.priority === 'RED') {
+      upsertRedAlertEvent({
+        redAlertId: `RED-${id}`,
+        sourceModule: 'AI_AGENT',
+        entityId: id,
+        projectId: task.projectId || task.relatedEntityId || 'GLOBAL',
+        titleKo: task.titleKo || 'AI 위험 경고',
+        reasonKo: task.detectedRisk || task.recommendation || 'AI가 즉시 검토가 필요한 위험을 감지했습니다.',
+        financialImpact: task.financialImpact || 0,
+        blockingRequired: false,
+        payload: { aiTaskId: id, ...task.draftPayload }
+      }, createdAt);
+    }
+
+    return db.project.prepare('SELECT * FROM ai_task_queue WHERE id = ?').get(id);
+  }
+
+  function createAIPreventionRule(rule, createdAt = nowIso()) {
+    const id = rule.id || aiTaskId('RULE', rule.sourceAgent || 'AI', rule.triggerPattern || rule.ruleName);
+    db.project.prepare(`
+      INSERT OR IGNORE INTO ai_prevention_rules (
+        id, rule_name, trigger_pattern, recommended_action, severity,
+        source_agent, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      rule.ruleName,
+      rule.triggerPattern,
+      rule.recommendedAction,
+      rule.severity || 'YELLOW',
+      rule.sourceAgent,
+      rule.status || 'INACTIVE',
+      createdAt
+    );
+    return db.project.prepare('SELECT * FROM ai_prevention_rules WHERE id = ?').get(id);
+  }
+
+  function runAIAgentAutomation({ actor = 'AI_SYSTEM', createdAt = nowIso() } = {}) {
+    ensureAIAgents(createdAt);
+    const enabled = new Set(db.project.prepare('SELECT agent_type FROM ai_agents WHERE is_enabled = 1').all().map((row) => row.agent_type));
+    const tasks = [];
+    const pushTask = (agentType, task) => {
+      if (!enabled.has(agentType)) return;
+      tasks.push(upsertAITask({ agentType, ...task }, createdAt));
+    };
+
+    const recentPce = db.project.prepare(`
+      SELECT *
+      FROM profit_decisions
+      WHERE decision IN ('BLOCK', 'MODIFY')
+      ORDER BY created_at DESC
+      LIMIT 10
+    `).all();
+    recentPce.forEach((row) => {
+      pushTask('PROFIT_DEFENSE', {
+        taskType: row.decision === 'BLOCK' ? 'PROFIT_BLOCK_REVIEW' : 'PROFIT_MODIFY_RECOMMENDATION',
+        priority: row.decision === 'BLOCK' ? 'RED' : 'ORANGE',
+        relatedEntityType: 'Estimate',
+        relatedEntityId: row.estimate_id,
+        projectId: row.estimate_id,
+        financialImpact: Math.max(0, Math.round(Number(row.revenue || 0) * 0.25 - (Number(row.revenue || 0) - Number(row.total_cost || 0) - Number(row.risk_buffer || 0)))),
+        detectedRisk: `실질 마진율 ${(Number(row.real_margin || 0) * 100).toFixed(1)}%`,
+        recommendation: row.decision === 'BLOCK' ? '견적 진행 차단을 유지하고 가격/범위 재설계를 검토하세요.' : '마진 30% 이상으로 회복되도록 고객가 또는 범위를 수정하세요.',
+        titleKo: row.decision === 'BLOCK' ? 'AI 감지: 저마진 견적 차단' : 'AI 추천: 견적 수정 필요',
+        requiredActionKo: '대표 승인 전 견적 수정/차단 판단',
+        draftPayload: { source: row, action: 'PRICE_ADJUSTMENT_RECOMMENDATION' }
+      });
+    });
+
+    syncPaymentSchedules(createdAt);
+    updatePaymentOverdues(createdAt);
+    const cashflow = syncCashflowSnapshot(createdAt);
+    const overdueCustomer = db.project.prepare(`
+      SELECT *
+      FROM customer_payments
+      WHERE payment_status = 'OVERDUE'
+      ORDER BY scheduled_amount DESC, due_date ASC
+      LIMIT 5
+    `).all();
+    if (Number(cashflow?.seven_day_net_cashflow || 0) < 0 || overdueCustomer.length) {
+      pushTask('CASHFLOW_RISK', {
+        taskType: 'CASHFLOW_REVIEW_REQUEST',
+        priority: Number(cashflow?.seven_day_net_cashflow || 0) < 0 ? 'RED' : 'ORANGE',
+        relatedEntityType: 'CashflowSnapshot',
+        relatedEntityId: cashflow?.snapshot_id || `CASH-${createdAt.slice(0, 10)}`,
+        projectId: 'COMPANY',
+        financialImpact: Math.abs(Number(cashflow?.seven_day_net_cashflow || 0)) + overdueCustomer.reduce((sum, row) => sum + Number(row.scheduled_amount || 0), 0),
+        detectedRisk: overdueCustomer.length ? `연체 입금 ${overdueCustomer.length}건 감지` : '7일 현금흐름 음수 예측',
+        recommendation: '입금 리마인더 초안을 확인하고 지급 일정을 대표가 조정하세요.',
+        titleKo: 'AI 감지: 현금흐름 위험',
+        requiredActionKo: '입금 회수/지급 일정 검토',
+        draftPayload: { cashflow, overdueCustomerIds: overdueCustomer.map((row) => row.payment_id) }
+      });
+    }
+
+    const shortage = db.project.prepare(`
+      SELECT *
+      FROM material_receiving_logs
+      WHERE missing_quantity > 0 OR damage_or_missing = 1
+      ORDER BY created_at DESC
+      LIMIT 5
+    `).all();
+    const failedInspection = db.project.prepare(`
+      SELECT *
+      FROM inspection_checklist_items
+      WHERE result_status = 'FAIL'
+      ORDER BY created_at DESC
+      LIMIT 5
+    `).all();
+    [...shortage, ...failedInspection].slice(0, 5).forEach((row) => {
+      pushTask('SCHEDULE_DELAY', {
+        taskType: 'SCHEDULE_DELAY_DRAFT',
+        priority: row.critical_flag || row.damage_or_missing ? 'RED' : 'ORANGE',
+        relatedEntityType: row.receiving_log_id ? 'MaterialReceiving' : 'InspectionChecklistItem',
+        relatedEntityId: row.receiving_log_id || row.item_id,
+        projectId: row.project_id,
+        financialImpact: 0,
+        detectedRisk: row.receiving_log_id ? `${row.item_name_ko} 입고 부족 ${row.missing_quantity}${row.unit || ''}` : `${row.process_name_ko} 검수 FAIL`,
+        recommendation: '공정표 수정 초안과 고객 일정 안내 초안을 준비하세요.',
+        titleKo: 'AI Draft: 일정 지연 대응',
+        requiredActionKo: '수정 공정표/지연 안내 검토',
+        draftPayload: { source: row, draftType: 'REVISED_SCHEDULE_AND_NOTICE' }
+      });
+    });
+
+    const vendorAlerts = db.master.prepare(`
+      SELECT *
+      FROM vendor_price_alerts
+      WHERE status = 'OPEN'
+      ORDER BY CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END, created_at DESC
+      LIMIT 5
+    `).all();
+    const riskyVendors = db.master.prepare(`
+      SELECT *
+      FROM vendor_reliability_scores
+      WHERE reliability_level IN ('주의', '위험')
+      ORDER BY vendor_score ASC, updated_at DESC
+      LIMIT 5
+    `).all();
+    [...vendorAlerts, ...riskyVendors].slice(0, 5).forEach((row) => {
+      pushTask('VENDOR_RISK', {
+        taskType: 'VENDOR_RISK_RECOMMENDATION',
+        priority: row.severity === 'CRITICAL' || row.reliability_level === '위험' ? 'RED' : 'ORANGE',
+        relatedEntityType: row.alert_type ? 'VendorPriceAlert' : 'VendorReliabilityScore',
+        relatedEntityId: row.id,
+        projectId: 'VENDOR',
+        financialImpact: Math.abs(Number(row.current_price || 0) - Number(row.previous_price || 0)),
+        detectedRisk: row.alert_type ? `${row.material_name} ${row.vendor_name} 단가 변동 ${((Number(row.variance_rate || 0)) * 100).toFixed(1)}%` : `${row.vendor_name} 신뢰도 ${row.reliability_level}`,
+        recommendation: '대체 업체 검토, 견적 버퍼 반영, 발주 전 경고를 승인 대기 상태로 올리세요.',
+        titleKo: 'AI 추천: 협력업체 위험 대응',
+        requiredActionKo: '업체 교체/버퍼 반영 승인',
+        draftPayload: { source: row, action: 'VENDOR_REPLACEMENT_OR_BUFFER' }
+      });
+    });
+
+    const defectGroups = db.project.prepare(`
+      SELECT defect_type_ko, COUNT(*) AS occurrence_count, SUM(estimated_cost) AS estimated_cost
+      FROM defect_reports
+      GROUP BY defect_type_ko
+      HAVING COUNT(*) >= 1
+      ORDER BY COUNT(*) DESC, SUM(estimated_cost) DESC
+      LIMIT 5
+    `).all();
+    defectGroups.forEach((row) => {
+      const rule = createAIPreventionRule({
+        ruleName: `${row.defect_type_ko} 예방 체크 강화`,
+        triggerPattern: `DEFECT:${row.defect_type_ko}`,
+        recommendedAction: '다음 현장 검수 체크리스트에 예방 항목을 추가하고 사진 확인을 강화하세요.',
+        severity: Number(row.occurrence_count || 0) >= 2 ? 'RED' : 'ORANGE',
+        sourceAgent: 'DEFECT_PREVENTION',
+        status: 'INACTIVE'
+      }, createdAt);
+      pushTask('DEFECT_PREVENTION', {
+        taskType: 'DEFECT_PREVENTION_RULE',
+        priority: Number(row.occurrence_count || 0) >= 2 ? 'RED' : 'ORANGE',
+        relatedEntityType: 'AIPreventionRule',
+        relatedEntityId: rule.id,
+        projectId: 'QUALITY',
+        financialImpact: Number(row.estimated_cost || 0),
+        detectedRisk: `${row.defect_type_ko} 하자 ${row.occurrence_count}건`,
+        recommendation: rule.recommended_action,
+        titleKo: 'AI 추천: 하자 예방 룰 승인',
+        requiredActionKo: '예방 룰 승인/반려',
+        draftPayload: { preventionRuleId: rule.id, source: row }
+      });
+    });
+
+    const calibrationCandidates = db.project.prepare(`
+      SELECT *
+      FROM project_cost_leaks
+      ORDER BY risk_score DESC, created_at DESC
+      LIMIT 5
+    `).all();
+    const pendingCalibrationRules = db.project.prepare(`
+      SELECT *
+      FROM estimate_calibration_rules
+      WHERE status IN ('PENDING_APPROVAL', 'TESTING')
+      ORDER BY created_at DESC
+      LIMIT 5
+    `).all();
+    [...calibrationCandidates, ...pendingCalibrationRules].slice(0, 5).forEach((row) => {
+      pushTask('ESTIMATE_CALIBRATION', {
+        taskType: 'ESTIMATE_CALIBRATION_DRAFT',
+        priority: Number(row.risk_score || 0) >= 80 || Number(row.variance_rate || 0) >= 0.15 ? 'ORANGE' : 'YELLOW',
+        relatedEntityType: row.project_id ? 'ProjectCostLeak' : 'EstimateCalibrationRule',
+        relatedEntityId: row.id,
+        projectId: row.project_id || row.source_project_id || 'ESTIMATE',
+        financialImpact: row.variance_amount || 0,
+        detectedRisk: row.category_ko || row.source_category || row.rule_type,
+        recommendation: row.prevention_rule || row.reason || '다음 견적 보정 룰을 대표 승인 후 반영하세요.',
+        titleKo: 'AI Draft: 견적 보정안',
+        requiredActionKo: '보정 룰 테스트/승인',
+        draftPayload: { source: row, action: 'CALIBRATION_RULE_DRAFT' }
+      });
+    });
+
+    overdueCustomer.slice(0, 5).forEach((row) => {
+      const draft = createCommunicationDraft({
+        messageId: `COMM-AI-PAYMENT-${row.payment_id}`,
+        messageType: 'CLIENT_PAYMENT_REQUEST',
+        relatedEntityType: 'CustomerPayment',
+        relatedEntityId: row.payment_id,
+        targetName: row.customer_name,
+        status: 'DRAFT',
+        data: {
+          customerName: row.customer_name,
+          siteName: row.site_name,
+          amountKo: formatWon(Math.max(0, Number(row.scheduled_amount || 0) - Number(row.actual_received_amount || 0))),
+          dueDate: row.due_date,
+          notesKo: 'AI가 연체 입금 리마인더 초안을 준비했습니다. 발송 전 대표 확인이 필요합니다.'
+        },
+        createdAt
+      });
+      pushTask('CLIENT_COMMUNICATION', {
+        taskType: 'CLIENT_PAYMENT_DRAFT_REVIEW',
+        priority: 'ORANGE',
+        relatedEntityType: 'CommunicationMessage',
+        relatedEntityId: draft.messageId,
+        projectId: row.project_id,
+        financialImpact: Math.max(0, Number(row.scheduled_amount || 0) - Number(row.actual_received_amount || 0)),
+        detectedRisk: `${row.customer_name} ${row.payment_type} 연체`,
+        recommendation: '고객 결제 요청 메시지 초안을 검토 후 수동 발송 처리하세요.',
+        titleKo: 'AI Draft: 고객 결제 안내',
+        requiredActionKo: '메시지 검토 후 발송 여부 결정',
+        draftPayload: { communicationMessageId: draft.messageId, paymentId: row.payment_id }
+      });
+    });
+
+    syncFranchiseRiskAlerts(createdAt);
+    const franchiseAlerts = db.master.prepare(`
+      SELECT *
+      FROM franchise_risk_alerts
+      WHERE status = 'OPEN'
+      ORDER BY CASE severity WHEN 'RED' THEN 0 WHEN 'ORANGE' THEN 1 ELSE 2 END, created_at DESC
+      LIMIT 5
+    `).all();
+    const blockCount = db.project.prepare("SELECT COUNT(*) AS count FROM profit_decisions WHERE decision = 'BLOCK'").get().count;
+    if (franchiseAlerts.length === 0 && Number(blockCount || 0) > 0) {
+      franchiseAlerts.push({ id: 'FRA-PCE-BLOCK-PATTERN', branch_id: 'HEADQUARTERS', alert_type: 'PCE_BLOCK_PATTERN', severity: 'ORANGE', title: 'PCE BLOCK 반복 패턴', description: '지점/본사 견적에서 BLOCK 패턴이 발생했습니다.' });
+    }
+    franchiseAlerts.forEach((row) => {
+      pushTask('FRANCHISE_MONITORING', {
+        taskType: 'FRANCHISE_HQ_REVIEW',
+        priority: row.severity === 'RED' ? 'RED' : 'ORANGE',
+        relatedEntityType: 'FranchiseRiskAlert',
+        relatedEntityId: row.id,
+        projectId: row.branch_id || 'HEADQUARTERS',
+        detectedRisk: row.title || row.alert_type,
+        recommendation: row.description || '본사 기준과 지점 운영 데이터를 검토하세요.',
+        titleKo: 'AI 감지: 지점 운영 위험',
+        requiredActionKo: '본사 검토/지점 개선 요청',
+        draftPayload: { source: row, action: 'HQ_BRANCH_REVIEW' }
+      });
+    });
+
+    insertNotification({
+      level: tasks.some((task) => task.priority === 'RED') ? 'RED' : tasks.length ? 'WARNING' : 'INFO',
+      messageKo: `AI 운영 자동화 점검 완료: ${tasks.length}건 작업 큐 확인`,
+      relatedProjectId: 'AI_AUTOMATION',
+      actionKo: actor === 'AI_SYSTEM' ? 'AI 점검' : `${actor} 점검`,
+      createdAt
+    });
+
+    return { taskCount: tasks.length, tasks, summary: getAIAutomationSummary() };
+  }
+
+  function mapAITask(row) {
+    return {
+      ...row,
+      draftPayload: fromJson(row.draft_payload_json, {}),
+      requiresHumanApproval: Boolean(row.requires_human_approval),
+      priorityRank: aiTaskPriorityRank(row.priority)
+    };
+  }
+
+  function getAIAutomationSummary() {
+    const enabledAgentCount = Number(db.project.prepare('SELECT COUNT(*) AS count FROM ai_agents WHERE is_enabled = 1').get().count || 0);
+    const pendingTaskCount = Number(db.project.prepare("SELECT COUNT(*) AS count FROM ai_task_queue WHERE status = 'PENDING'").get().count || 0);
+    const approvalRequiredCount = Number(db.project.prepare("SELECT COUNT(*) AS count FROM ai_task_queue WHERE status = 'PENDING' AND requires_human_approval = 1").get().count || 0);
+    const redTaskCount = Number(db.project.prepare("SELECT COUNT(*) AS count FROM ai_task_queue WHERE status = 'PENDING' AND priority = 'RED'").get().count || 0);
+    const preventionRuleCount = Number(db.project.prepare('SELECT COUNT(*) AS count FROM ai_prevention_rules').get().count || 0);
+    const activePreventionRuleCount = Number(db.project.prepare("SELECT COUNT(*) AS count FROM ai_prevention_rules WHERE status = 'ACTIVE'").get().count || 0);
+    const learningLogCount = Number(db.project.prepare('SELECT COUNT(*) AS count FROM ai_learning_logs').get().count || 0);
+    return {
+      enabledAgentCount,
+      pendingTaskCount,
+      approvalRequiredCount,
+      redTaskCount,
+      preventionRuleCount,
+      activePreventionRuleCount,
+      learningLogCount,
+      displayStatusKo: pendingTaskCount ? '승인 필요 AI 작업 있음' : '대기 중인 AI 작업 없음'
+    };
+  }
+
+  function getAIAutomationCenterData({ runAgents = true } = {}) {
+    const createdAt = nowIso();
+    ensureAIAgents(createdAt);
+    if (runAgents) runAIAgentAutomation({ createdAt });
+    const tasks = db.project.prepare(`
+      SELECT *
+      FROM ai_task_queue
+      ORDER BY
+        CASE priority WHEN 'RED' THEN 0 WHEN 'ORANGE' THEN 1 WHEN 'YELLOW' THEN 2 ELSE 3 END,
+        CASE status WHEN 'PENDING' THEN 0 WHEN 'APPROVED' THEN 1 WHEN 'EXECUTED' THEN 2 ELSE 3 END,
+        created_at DESC
+      LIMIT 100
+    `).all().map(mapAITask);
+    const agents = db.project.prepare('SELECT * FROM ai_agents ORDER BY agent_name').all();
+    const learningLogs = db.project.prepare('SELECT * FROM ai_learning_logs ORDER BY created_at DESC LIMIT 60').all();
+    const preventionRules = db.project.prepare("SELECT * FROM ai_prevention_rules ORDER BY CASE status WHEN 'INACTIVE' THEN 0 ELSE 1 END, created_at DESC LIMIT 60").all();
+    return {
+      snapshotDate: createdAt.slice(0, 10),
+      summary: getAIAutomationSummary(),
+      agents,
+      tasks,
+      approvalQueue: tasks.filter((task) => task.status === 'PENDING' && task.requiresHumanApproval),
+      learningLogs,
+      preventionRules,
+      automationLogs: learningLogs,
+      emptyState: tasks.length === 0,
+      emptyMessageKo: '대기 중인 AI 작업이 없습니다.'
+    };
+  }
+
+  function decideAIAgentTask({ taskId, decision, actor = 'CEO', reasonKo = '' }) {
+    if (!['APPROVED', 'REJECTED', 'EXECUTED', 'FAILED'].includes(decision)) {
+      throw new Error('AI task decision must be APPROVED, REJECTED, EXECUTED, or FAILED');
+    }
+    const createdAt = nowIso();
+    const task = db.project.prepare('SELECT * FROM ai_task_queue WHERE id = ?').get(taskId);
+    if (!task) throw new Error(`AI task not found: ${taskId}`);
+    const payload = fromJson(task.draft_payload_json, {});
+
+    db.project.prepare('UPDATE ai_task_queue SET status = ?, executed_at = ? WHERE id = ?').run(decision, ['EXECUTED', 'APPROVED', 'REJECTED', 'FAILED'].includes(decision) ? createdAt : null, taskId);
+    db.project.prepare('UPDATE approval_requests SET status = ?, decision_reason_ko = ? WHERE request_id = ?').run(decision === 'APPROVED' ? 'APPROVED' : decision === 'REJECTED' ? 'REJECTED' : 'PENDING', reasonKo || `${actor} ${decision}`, `APR-${taskId}`);
+    db.project.prepare('UPDATE ceo_decision_queue SET status = ?, updated_at = ? WHERE decision_id = ?').run(decision, createdAt, `CEO-${taskId}`);
+
+    if (decision === 'APPROVED' && task.task_type === 'DEFECT_PREVENTION_RULE' && payload.preventionRuleId) {
+      db.project.prepare('UPDATE ai_prevention_rules SET status = ? WHERE id = ?').run('ACTIVE', payload.preventionRuleId);
+    }
+
+    if (decision === 'APPROVED' && task.task_type === 'CLIENT_PAYMENT_DRAFT_REVIEW' && payload.communicationMessageId) {
+      db.project.prepare('UPDATE communication_messages SET status = ? WHERE id = ? AND status = ?').run('READY', payload.communicationMessageId, 'DRAFT');
+    }
+
+    writeAILearningLog({
+      agentType: task.agent_type,
+      eventType: 'HUMAN_DECISION',
+      inputSummary: task.detected_risk,
+      detectedPattern: task.task_type,
+      generatedAction: task.recommendation,
+      finalResult: `${decision}:${reasonKo || 'NO_REASON'}`,
+      successScore: decision === 'APPROVED' ? 0.8 : decision === 'REJECTED' ? 0.2 : 0.5,
+      createdAt
+    });
+
+    writeOperationalLog({
+      actionType: `AI_TASK_${decision}`,
+      actor,
+      projectId: task.related_entity_id,
+      messageKo: `AI 작업 ${decision}: ${task.detected_risk}`,
+      actionKo: decision === 'APPROVED' ? 'AI 추천 승인' : decision === 'REJECTED' ? 'AI 추천 반려' : 'AI 작업 처리',
+      level: decision === 'REJECTED' || decision === 'FAILED' ? 'WARNING' : 'INFO',
+      payload: { taskId, agentType: task.agent_type, taskType: task.task_type },
+      reasonKo,
+      createdAt
+    });
+
+    return { taskId, decision, aiAutomationData: getAIAutomationCenterData({ runAgents: false }), dashboardData: getDashboardData() };
+  }
+
   function getDashboardData() {
     syncCostLeakRootCauses(null, nowIso());
     runAutomationScheduler('EVENT_SWEEP_5M');
@@ -11136,6 +11683,7 @@ function createSqliteService({ app }) {
       vendorPriceIntelligenceSummary: getVendorPriceIntelligenceSummary(),
       franchiseSummary: getFranchiseSummary(),
       analyticsSummary: getAnalyticsSummary(),
+      aiAutomationSummary: getAIAutomationSummary(),
       profitAlerts,
       profitTemplates,
       estimateVsActualTop,
@@ -18812,6 +19360,10 @@ function createSqliteService({ app }) {
       analyticsSnapshotCount: countRows(db.project, 'analytics_snapshots'),
       analyticsPredictionCount: countRows(db.project, 'analytics_predictions'),
       analyticsExportLogCount: countRows(db.project, 'analytics_export_logs'),
+      aiAgentCount: countRows(db.project, 'ai_agents'),
+      aiTaskQueueCount: countRows(db.project, 'ai_task_queue'),
+      aiLearningLogCount: countRows(db.project, 'ai_learning_logs'),
+      aiPreventionRuleCount: countRows(db.project, 'ai_prevention_rules'),
       communicationMessageCount: countRows(db.project, 'communication_messages'),
       communicationTemplateCount: countRows(db.project, 'communication_templates'),
       communicationSendLogCount: countRows(db.project, 'communication_send_logs'),
@@ -19030,6 +19582,9 @@ function createSqliteService({ app }) {
     runAutomationScheduler,
     getAnalyticsCenterData,
     exportAnalyticsReport,
+    getAIAutomationCenterData,
+    runAIAgentAutomation,
+    decideAIAgentTask,
     getPermissionAdminData,
     assertUserPermission,
     getPortfolioDashboardData,

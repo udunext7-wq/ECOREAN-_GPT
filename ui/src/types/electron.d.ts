@@ -128,6 +128,9 @@ declare global {
         applyReplicationTemplateToBranch: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getAnalyticsCenterData: () => Promise<Record<string, unknown>>;
         exportAnalyticsReport: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getAIAutomationCenterData: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        runAIAgentAutomation: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        decideAIAgentTask: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getPermissionAdminData: () => Promise<Record<string, unknown>>;
         getPortfolioDashboardData: () => Promise<Record<string, unknown>>;
         getCrewDashboardData: () => Promise<Record<string, unknown>>;

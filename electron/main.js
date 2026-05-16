@@ -116,6 +116,9 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:franchise:template:apply', (_event, payload) => sqliteService.applyReplicationTemplateToBranch(payload));
   ipcMain.handle('boc:analytics:get', () => sqliteService.getAnalyticsCenterData());
   ipcMain.handle('boc:analytics:export', (_event, payload = {}) => sqliteService.exportAnalyticsReport(payload));
+  ipcMain.handle('boc:ai-automation:get', (_event, payload = {}) => sqliteService.getAIAutomationCenterData(payload));
+  ipcMain.handle('boc:ai-automation:run', (_event, payload = {}) => sqliteService.runAIAgentAutomation(payload));
+  ipcMain.handle('boc:ai-automation:decide', (_event, payload) => sqliteService.decideAIAgentTask(payload));
   ipcMain.handle('boc:permissions:get', () => sqliteService.getPermissionAdminData());
   ipcMain.handle('boc:portfolio:get', () => sqliteService.getPortfolioDashboardData());
   ipcMain.handle('boc:crew:get', () => sqliteService.getCrewDashboardData());
