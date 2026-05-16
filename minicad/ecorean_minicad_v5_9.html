@@ -1,0 +1,676 @@
+﻿<!DOCTYPE html>
+<!--
+================================================================================
+ ECOREAN MiniCAD v5.9
+ Copyright (c) 2026 ECOREAN. All Rights Reserved.
+
+ 蹂??뚰봽?몄썾??諛?紐⑤뱺 援ъ꽦 ?붿냼(?뚯뒪肄붾뱶, UI, ?뚭퀬由ъ쬁, ?곗씠??援ъ“, JSON ?ㅽ궎留?
+ ?쇱씠釉뚮윭由??뺤쓽, ?붿옄???먯썝)????묎텒踰뺤쑝濡?蹂댄샇?섎뒗 ECOREAN???낆젏 ?먯궛?대ŉ
+ ?곸뾽鍮꾨?(Trade Secret)???대떦?⑸땲??
+
+ PROHIBITED ???ㅼ쓬 ?됱쐞瑜?紐낆떆?곸쑝濡?湲덉??⑸땲??
+   1. 臾대떒 蹂듭젣쨌諛고룷쨌?꾩넚쨌怨듭쨷?≪떊
+   2. ??났??Reverse Engineering), ?붿뺨?뚯씪, ?붿뒪?댁뀍釉?   3. ?뚯깮??묐Ъ ?묒꽦, 2李⑥쟻 ??묐Ъ ?묒꽦
+   4. ?쇱씠?좎뒪 ?? ?뚰꽣留덊겕, ??묎텒 ?쒖떆???쒓굅쨌?고쉶쨌蹂寃?   5. 沅뚰븳 ?녿뒗 ?????묐룄, ?꾨?, ?щ씪?댁꽑??   6. 肄붾뱶 ?쇰???異붿텧쨌諛쒖톸쨌?몄슜 (?숈닠 ?몄슜 ?ы븿, ?ъ쟾 ?쒕㈃ ?숈쓽 ?꾩닔)
+
+ APPLICABLE LAW ???꾨컲 ???ㅼ쓬 踰뺣졊???곕씪 誘셋룻삎??梨낆엫??遺?댄빀?덈떎:
+   쨌 ??묎텒踰?짠136 (沅뚮━移⑦빐二?: 5???댄븯 吏뺤뿭 ?먮뒗 5泥쒕쭔???댄븯 踰뚭툑
+   쨌 ??묎텒踰?짠137 (遺?뺣컻????: 1???댄븯 吏뺤뿭 ?먮뒗 1泥쒕쭔???댄븯 踰뚭툑
+   쨌 ??묎텒踰?짠104議곗쓽2 (湲곗닠??蹂댄샇議곗튂 臾대젰??湲덉?)
+   쨌 遺?뺢꼍?곷갑吏諛륁쁺?낅퉬諛蹂댄샇?먭??쒕쾿瑜?짠18 (?곸뾽鍮꾨? 移⑦빐二?
+   쨌 ?뺣낫?듭떊留??댁슜珥됱쭊 諛??뺣낫蹂댄샇 ?깆뿉 愿??踰뺣쪧 짠48 (?뺣낫?듭떊留?移⑦빐)
+   쨌 ?뺣쾿 짠347議곗쓽2 (而댄벂?????ъ슜?ш린), 짠314議곗쓽2 (?낅Т諛⑺빐)
+
+ NOTICE OF MONITORING ??蹂??뚰봽?몄썾?대뒗 ?ъ슜 ?대젰쨌?쇱씠?좎뒪 ?ㅒ룹깮?깅맂 JSON?? ?ъ슜???앸퀎 ?뚰꽣留덊겕瑜??먮룞 ?쎌엯?섎ŉ, 臾대떒 諛고룷 ??異쒖쿂 異붿쟻??媛?ν빀?덈떎.
+
+ Contact: udunext7@gmail.com
+================================================================================
+-->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="copyright" content="짤 2026 ECOREAN. All Rights Reserved.">
+<meta name="author" content="ECOREAN">
+<meta name="license" content="Proprietary ??臾대떒 蹂듭젣쨌諛고룷쨌??났??湲덉? (??묎텒踰?짠136)">
+<title>ECOREAN MiniCAD v5.9 ??怨듦컙 蹂 ?ㅻ깄 + ?쇱씠釉뚮윭由??쒕옒洹?+ 踰??먮룞 遺꾪븷 + 怨듭젙蹂?遺꾨쪟 + ?먯옱 ?좎젙</title>
+<script src="js/konva.min.js"></script>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=space_esc">
+</head>
+<body>
+<div id="loading"><div class="spinner"></div><div class="msg">ECOREAN MiniCAD v5.9 濡쒕뵫??/div></div>
+
+
+<div class="topbar">
+  <div class="brand">ECOREAN <span class="em">MiniCAD</span><span class="brand-sub">v5.9</span></div>
+  <div class="topbar-mid">
+    <button class="btn sm icon-only" id="btn-undo" title="?ㅽ뻾痍⑥냼 (Ctrl+Z)">??/button>
+    <button class="btn sm icon-only" id="btn-redo" title="?ъ떎??(Ctrl+Y)">??/button>
+    <button class="btn sm" id="btn-grid" title="洹몃━??>??Grid</button>
+    <button class="btn sm" id="btn-dim" title="移섏닔 ?쒖떆">?뱪 移섏닔</button>
+    <button class="btn sm" id="btn-2_5d" title="2.5D ?곸뾽 紐⑤뱶 (湲곕낯 OFF, ?몄뇙쨌JSON 媛뺤젣 OFF)">??2.5D</button>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn sm icon-only" id="btn-theme" title="?뚮쭏 ?꾪솚 ??Lime(?ㅽ겕) ??Architect(?쇱씠??" aria-label="?뚮쭏 ?꾪솚">?뙔</button>
+    <button class="btn sm" id="btn-help">?⑥텞??/button>
+    <button class="btn sm" id="btn-print">?몄뇙</button>
+    <button class="btn sm" id="btn-load">遺덈윭?ㅺ린</button>
+    <button class="btn sm" id="btn-save">???/button>
+    <button class="btn sm" id="btn-ai-bundle" title="AI ?앹꽦 踰덈뱾 ?ㅼ슫濡쒕뱶 (PNG?됰㈃+JSON+?대?吏?꾨＼?꾪듃+?곸긽?꾨＼?꾪듃)">?쨼 AI 踰덈뱾</button>
+    <button class="btn sm" id="btn-dxf-export" title="DXF ?대낫?닿린 ??AutoCAD R12 ?명솚 (?몄＜ ?낆껜 ?멸퀎??">??DXF</button>
+    <button class="btn sm" id="btn-dxf-import" title="媛?몄삤湲???DXF / DWG(媛?대뱶) / SVG / PNG / JPG">??媛?몄삤湲?/button>
+    <input type="file" id="dxf-file-input" name="dxf-file-input" aria-label="?꾨㈃/?대?吏 ?뚯씪 ?좏깮" accept=".dxf,.dwg,.svg,.png,.jpg,.jpeg" style="display:none">
+    <button class="btn sm danger" id="btn-clear-all">?꾩껜??젣</button>
+    <button class="btn gold" id="btn-export">??寃ъ쟻</button>
+  </div>
+</div>
+
+<div class="kpi-bar">
+  <div class="kpi-item"><span class="kpi-item-label">FLOOR</span><span class="kpi-item-val" id="t-floor">0</span><span class="kpi-item-unit">??/span><span class="kpi-item-unit kpi-pyeong">/ <span id="t-floor-pyeong">0</span>py</span></div>
+  <div class="kpi-item"><span class="kpi-item-label">WALL</span><span class="kpi-item-val" id="t-wall">0</span><span class="kpi-item-unit">??/span></div>
+  <div class="kpi-item"><span class="kpi-item-label">PERIM</span><span class="kpi-item-val" id="t-peri">0</span><span class="kpi-item-unit">m</span></div>
+  <div class="kpi-item"><span class="kpi-item-label">W/PROOF</span><span class="kpi-item-val" id="t-water">0</span><span class="kpi-item-unit">??/span></div>
+  <div class="kpi-item"><span class="kpi-item-label">DOOR</span><span class="kpi-item-val" id="t-door">0</span><span class="kpi-item-unit">ea</span></div>
+  <div class="kpi-item"><span class="kpi-item-label">WINDOW</span><span class="kpi-item-val" id="t-window">0</span><span class="kpi-item-unit">ea</span></div>
+  <span id="t-open" style="display:none"></span>
+  <span id="t-ceiling" style="display:none"></span>
+</div>
+
+<div class="main">
+  <div class="panel-left">
+    <div>
+      <div class="psec-head" onclick="toggleSection(this)"><div class="psec-label">?꾨줈?앺듃</div><span class="psec-chevron">??/span></div>
+      <div class="field"><label class="field-label" for="project-name">?꾨줈?앺듃紐?/label><input type="text" id="project-name" value="?좉퇋 ?명뀒由ъ뼱"></div>
+      <div class="field"><label class="field-label" for="ceiling-height">湲곕낯 泥쒖옣怨?(mm)</label>
+        <input type="number" id="ceiling-height" value="2400" min="2000" max="4000" step="50"></div>
+      <div class="field"><label class="field-label" for="wall-thickness">踰쎌껜 ?먭퍡 (mm)</label>
+        <div class="field-row" style="gap:4px;margin-top:2px">
+          <select id="wall-thickness" name="wall-thickness" style="flex:1.4">
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="150">150</option>
+            <option value="200">200</option>
+            <option value="250">250</option>
+          </select>
+          <input type="number" id="wall-thickness-input" name="wall-thickness-input" aria-label="踰쎌껜 ?먭퍡 吏곸젒 ?낅젰 (mm)" value="50" min="10" max="1000" step="10" style="flex:1;min-width:0" placeholder="吏곸젒?낅젰">
+        </div></div>
+      <div class="field"><label class="field-label" for="bearing-thickness-select">?대젰踰??먭퍡 (mm)</label>
+        <div class="field-row" style="gap:4px;margin-top:2px">
+          <select id="bearing-thickness-select" name="bearing-thickness-select" style="flex:1.4">
+            <option value="100">100</option>
+            <option value="150">150</option>
+            <option value="200" selected>200</option>
+            <option value="250">250</option>
+            <option value="300">300</option>
+            <option value="350">350</option>
+            <option value="400">400</option>
+            <option value="450">450</option>
+          </select>
+          <input type="number" id="bearing-thickness" name="bearing-thickness" aria-label="?대젰踰??먭퍡 吏곸젒 ?낅젰 (mm)" value="200" min="50" max="800" step="10" style="flex:1;min-width:0" placeholder="吏곸젒?낅젰">
+        </div></div>
+      <div class="field"><label class="field-label">湲곕뫁 (Q) ???대┃?쇰줈 諛곗튂</label>
+        <div class="field-row" style="gap:4px;margin-top:2px">
+          <select id="pillar-shape" name="pillar-shape" style="flex:1.4">
+            <option value="rect" selected>?ш컖</option>
+            <option value="circle">?먰삎 (횠)</option>
+            <option value="L">L??(肄붾꼫)</option>
+          </select>
+        </div>
+        <div class="field-row" style="gap:4px;margin-top:4px">
+          <input type="number" id="pillar-w" name="pillar-w" aria-label="湲곕뫁 ?덈퉬/吏由? value="500" min="100" max="3000" step="50" style="flex:1;min-width:0" placeholder="?덈퉬(W/횠)">
+          <input type="number" id="pillar-h" name="pillar-h" aria-label="湲곕뫁 ?믪씠" value="500" min="100" max="3000" step="50" style="flex:1;min-width:0" placeholder="?믪씠(H)">
+        </div>
+        <div class="field-row" style="gap:4px;margin-top:4px">
+          <input type="number" id="pillar-t" name="pillar-t" aria-label="L?????먭퍡" value="200" min="50" max="600" step="10" style="flex:1;min-width:0" placeholder="L???먭퍡">
+          <input type="number" id="pillar-rot" name="pillar-rot" aria-label="?뚯쟾 (??" value="0" min="-360" max="360" step="15" style="flex:1;min-width:0" placeholder="?뚯쟾째">
+        </div>
+      </div>
+      <div class="field"><label class="field-label">踰??뺣젹 (踰승룸궡?λ꼍 怨듯넻)</label>
+        <div class="align-toggle" id="align-toggle" role="group" aria-label="踰??뺣젹 ?좏깮">
+          <button type="button" class="align-btn" data-align="interior" title="?대꼍 ?뺣젹 ??洹몃┛ ??= ?ㅻ궡履?硫? ?먭퍡??諛붽묑?쇰줈 (?쒓뎅 ?됰㈃???쒖?)">?대꼍</button>
+          <button type="button" class="align-btn" data-align="center" title="以묒떖???뺣젹 ???먭퍡媛 ?묒そ?쇰줈 遺꾨같 (CAD 湲곕낯)">以묒떖</button>
+          <button type="button" class="align-btn" data-align="exterior" title="?몃꼍 ?뺣젹 ??洹몃┛ ??= ?몃?履?硫? ?먭퍡???덉そ?쇰줈">?몃꼍</button>
+        </div>
+      </div>
+      <div id="bg-image-panel" style="display:none;border-top:1px solid var(--stroke-1);padding-top:8px;margin-top:8px">
+        <div class="field-label" style="margin-bottom:6px">諛곌꼍 ?대?吏 (?몃젅?댁떛)</div>
+        <div id="bg-image-name" style="font-size:9px;color:var(--ink-3);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+        <div class="field"><label class="field-label" for="bg-opacity">?щ챸??/label>
+          <input type="range" id="bg-opacity" min="0" max="100" value="50" step="5" style="width:100%"></div>
+        <div class="field"><label class="field-label" for="bg-scale">?ㅼ???(%)</label>
+          <input type="number" id="bg-scale" value="100" min="1" max="2000" step="5"></div>
+        <div class="field-row" style="gap:4px">
+          <button type="button" class="btn sm" id="bg-lock" style="flex:1" title="?좉툑/?댁젣">?뵑 ?좉툑?댁젣</button>
+          <button type="button" class="btn sm danger" id="bg-remove" style="flex:1" title="?쒓굅">?쒓굅</button>
+        </div>
+        <button type="button" class="btn sm gold" id="bg-scale-cal" style="width:100%;margin-top:6px" title="?뚮젮吏??????대┃ + ?ㅼ젣 mm ?낅젰">?뱪 ?ㅼ???蹂댁젙</button>
+        <button type="button" class="btn sm" id="bg-ai-scale" style="width:100%;margin-top:4px;opacity:0.65" title="AI Vision?쇰줈 ?꾨㈃ 移섏닔 ?먮룞 ?몄떇 (API ???꾩슂)">?쨼 AI ?먮룞 ?ㅼ???/button>
+      </div>
+    </div>
+    <div>
+      <div class="psec-head" onclick="toggleSection(this)"><div class="psec-label">?ㅻ깄 ?ㅼ젙</div><span class="psec-chevron">??/span></div>
+      <div class="snap-list" id="snap-list"></div>
+      <div class="field" style="margin-top:8px"><label class="field-label" for="snap-unit">?ㅻ깄 嫄곕━</label>
+        <select id="snap-unit"><option value="1" selected>1mm</option><option value="10">10mm</option><option value="50">50mm</option><option value="100">100mm</option><option value="200">200mm</option><option value="500">500mm</option></select></div>
+    </div>
+    <div>
+      <div class="psec-head" onclick="toggleSection(this)"><div class="psec-label">?꾧뎄</div><span class="psec-chevron">??/span></div>
+      <div class="tool-grid">
+        <button class="tool-btn active" data-tool="select"><span class="ti">??/span><span>?좏깮</span><span class="tk">V</span></button>
+        <button class="tool-btn" data-tool="rect"><span class="ti">??/span><span>?ш컖怨듦컙</span><span class="tk">R</span></button>
+        <button class="tool-btn" data-tool="circlespace"><span class="ti">燧?/span><span>?먰삎怨듦컙</span><span class="tk">C</span></button>
+        <button class="tool-btn" data-tool="polygon"><span class="ti">燧?/span><span>?ㅺ컖怨듦컙</span><span class="tk">P</span></button>
+        <button class="tool-btn" data-tool="wall"><span class="ti">??/span><span>踰?/span><span class="tk">B</span></button>
+        <button class="tool-btn" data-tool="gabyeok" title="?대젰踰????쇰컲 踰쎄낵 ?먮룞 遺꾪븷/怨듦컙 寃쎄퀎 ?곹뼢 ?놁쓬"><span class="ti">??/span><span>?대젰踰?/span><span class="tk">S</span></button>
+        <button class="tool-btn" data-tool="pillar" title="湲곕뫁 (RC) ??醫뚯륫 ?⑤꼸?먯꽌 ?뺥깭/?ш린 ?ㅼ젙"><span class="ti">??/span><span>湲곕뫁</span><span class="tk">Q</span></button>
+        <button class="tool-btn" data-tool="line"><span class="ti">??/span><span>??/span><span class="tk">L</span></button>
+        <button class="tool-btn" data-tool="door"><span class="ti">??/span><span>臾?/span><span class="tk">D</span></button>
+        <button class="tool-btn" data-tool="window"><span class="ti">??/span><span>李?/span><span class="tk">W</span></button>
+        <button class="tool-btn" data-tool="text"><span class="ti">T</span><span>?띿뒪??/span><span class="tk">T</span></button>
+        <button class="tool-btn" data-tool="measure"><span class="ti">?뱩</span><span>以꾩옄</span><span class="tk">M</span></button>
+        <button class="tool-btn" data-tool="dimwall"><span class="ti">??/span><span>踰쎌튂??/span><span class="tk">I</span></button>
+        <button class="tool-btn" data-tool="circle"><span class="ti">??/span><span>??/span><span class="tk">G</span></button>
+        <button class="tool-btn" data-tool="arc"><span class="ti">??/span><span>怨≪꽑</span><span class="tk">A</span></button>
+        <button class="tool-btn" data-tool="offset"><span class="ti">漱?/span><span>?듭뀑</span><span class="tk">O</span></button>
+        <button class="tool-btn" data-tool="mirror" id="btn-mirror"><span class="ti">??/span><span>誘몃윭</span><span class="tk">mi</span></button>
+        <button class="tool-btn" data-tool="trim"><span class="ti">??/span><span>?몃┝</span><span class="tk">X</span></button>
+        <button class="tool-btn" data-tool="break"><span class="ti">??/span><span>遺꾪븷</span><span class="tk">Z</span></button>
+        <button class="tool-btn" data-tool="leader"><span class="ti">??/span><span>吏?쒖꽑</span><span class="tk">`</span></button>
+        <button class="tool-btn" data-tool="eraser"><span class="ti">??/span><span>吏?곌컻</span><span class="tk">E</span></button>
+        <button class="tool-btn" data-tool="pan"><span class="ti">??/span><span>?붾㈃</span><span class="tk">H</span></button>
+      </div>
+    </div>
+    <div>
+      <div class="psec-head" onclick="toggleSection(this)"><div class="psec-label">?쇱씠釉뚮윭由?/div><span class="psec-chevron">??/span></div>
+      <div class="lib-cat-tabs">
+        <button class="libcat-btn" data-cat="furniture" onclick="setTool('furniture');setLibCategory('furniture')"><span class="ti">?썘</span><span>媛援?/span><span class="tk">1</span></button>
+        <button class="libcat-btn" data-cat="fixture" onclick="setTool('fixture');setLibCategory('fixture')"><span class="ti">?슺</span><span>?꾩깮</span><span class="tk">2</span></button>
+        <button class="libcat-btn" data-cat="light" onclick="setTool('light');setLibCategory('light')"><span class="ti">??/span><span>議곕챸</span><span class="tk">3</span></button>
+        <button class="libcat-btn" data-cat="electric" onclick="setTool('electric');setLibCategory('electric')"><span class="ti">??/span><span>?꾧린</span><span class="tk">4</span></button>
+        <button class="libcat-btn" data-cat="hvac" onclick="setTool('hvac');setLibCategory('hvac')"><span class="ti">??/span><span>怨듭“</span><span class="tk">5</span></button>
+      </div>
+      <div class="lib-panel-list" id="lib-panel"></div>
+    </div>
+    <div>
+      <div class="psec-head" onclick="toggleSection(this)"><div class="psec-label">怨듦컙 ???/div><span class="psec-chevron">??/span></div>
+      <div class="stype-grid" id="stype-grid"></div>
+    </div>
+    <div>
+      <div class="psec-head" onclick="toggleSection(this)"><div class="psec-label">?덉씠??/div><span class="psec-chevron">??/span></div>
+      <div class="layer-list" id="layer-list"></div>
+    </div>
+  </div>
+
+  <div class="canvas-area">
+    <div id="canvas-container"></div>
+    <div class="zoom-ctrl">
+      <button class="zoom-btn" id="zoom-in" title="?뺣?">+</button>
+      <button class="zoom-btn" id="zoom-fit" title="?붾㈃ 留욎땄">搜?/button>
+      <button class="zoom-btn" id="zoom-out" title="異뺤냼">??/button>
+    </div>
+    <div class="canvas-status hidden" id="canvas-status"></div>
+    <div class="canvas-info">
+      <span><span class="gold">XY:</span> <span id="cursor-pos">0,0</span></span>
+      <span><span class="gold">Zoom:</span> <span id="zoom-pct">100%</span></span>
+      <span><span class="gold">怨듦컙:</span> <span id="space-count">0</span></span>
+      <span><span class="gold">媛앹껜:</span> <span id="object-count">0</span></span>
+    </div>
+    <div class="lib-popup" id="lib-popup">
+      <h4 id="lib-popup-title">?쇱씠釉뚮윭由?/h4>
+      <div class="lib-pop-grid" id="lib-popup-grid"></div>
+    </div>
+  </div>
+
+  <div class="panel-right">
+    <div class="panel-tabs">
+      <button class="tab-btn active" data-tab="space">怨듦컙</button>
+      <button class="tab-btn" data-tab="estimate">寃ъ쟻</button>
+      <button class="tab-btn" data-tab="material">?먯옱</button>
+      <button class="tab-btn" data-tab="json">JSON</button>
+    </div>
+
+    <div class="tab-content active" data-tab-content="space">
+      <div id="sp-empty" style="text-align:center;padding:30px 16px;color:var(--text-tertiary)">
+        <p style="font-size:12px;margin-bottom:6px">怨듦컙 ?먮뒗 媛앹껜瑜?洹몃젮二쇱꽭??/p>
+        <p style="font-size:10px">?쇱そ ?꾧뎄?먯꽌 ?ш컖/?ㅺ컖/踰??좏깮 ??罹붾쾭?ㅼ뿉 洹몃━?몄슂</p>
+      </div>
+      <div id="sp-detail" style="display:none">
+        <div class="card"><h4>?좏깮 媛앹껜</h4><div id="detail-content"></div></div>
+        <div class="card" id="detail-stats-card" style="display:none"><h4>?먮룞 怨꾩궛</h4>
+          <div class="stats-grid">
+            <div class="stat-cell"><div class="stat-cell-label">諛붾떏</div><div class="stat-cell-value"><span id="cell-floor">0</span><span class="stat-cell-unit">??/span></div></div>
+            <div class="stat-cell"><div class="stat-cell-label">踰?/div><div class="stat-cell-value"><span id="cell-wall">0</span><span class="stat-cell-unit">??/span></div></div>
+            <div class="stat-cell"><div class="stat-cell-label">泥쒖옣</div><div class="stat-cell-value"><span id="cell-ceiling">0</span><span class="stat-cell-unit">??/span></div></div>
+            <div class="stat-cell"><div class="stat-cell-label">?섎젅</div><div class="stat-cell-value"><span id="cell-peri">0</span><span class="stat-cell-unit">m</span></div></div>
+          </div>
+        </div>
+        <div class="card" id="detail-warn-card" style="display:none"><h4>寃쎄퀬 / ?뺤씤</h4><div id="detail-warns"></div></div>
+      </div>
+      <div class="card"><h4>紐⑤뱺 怨듦컙</h4><div class="space-list" id="space-list"></div></div>
+    </div>
+
+    <div class="tab-content" data-tab-content="estimate">
+      <div class="card"><h4>怨듭젙蹂??⑹궛 (怨듭젙蹂?遺꾨쪟)</h4>
+        <table class="tbl"><thead><tr><th>怨듭젙</th><th>移댄뀒怨좊━</th><th style="text-align:right">?섎웾</th><th style="text-align:right">?곸슜怨듦컙</th></tr></thead><tbody id="t-table"></tbody></table>
+        <div class="hint" style="margin-top:6px">??怨듦컙蹂?遺꾨쪟 ???怨듭젙蹂??⑹궛. ?④???NEEDS_RESEARCH濡?BOC ?꾩넚.</div>
+      </div>
+      <div class="card"><h4>怨듭젙蹂?寃ъ쟻 ?낅젰 (?먮룞 ?곗텧 + ?먯옱 ?듭뀡)</h4>
+        <div id="t-catalog"></div>
+        <div class="hint" style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px">
+          ???④? = NEEDS_RESEARCH (?뚮쾿 ?덈? 洹쒖튃). ?먯옱 ?듭뀡 ?좏깮 ??BOC EstimateEngine?쇰줈 ?꾩넚.
+        </div>
+      </div>
+      <div class="card"><h4>NEEDS_CONFIRMATION</h4><div id="t-warns"></div></div>
+    </div>
+
+    <div class="tab-content" data-tab-content="material">
+      <div class="card"><h4>?먯옱 / 而щ윭 ?곸슜</h4>
+        <p class="hint" style="margin-bottom:10px">?좏깮??怨듦컙???먯옱 而щ윭瑜??곸슜?⑸땲??</p>
+        <div id="material-detail"></div>
+      </div>
+      <div class="card"><h4>而щ윭 ?붾젅??(60-30-10)</h4>
+        <div id="color-palette"></div>
+        <p class="hint" style="margin-top:8px">Primary 60% 쨌 Secondary 30% 쨌 Accent 10%</p>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab-content="json">
+      <div class="card" style="border:1px solid #C9A961;background:rgba(201,169,97,0.05)"><h4 style="color:#C9A961">?쨼 AI ?앹꽦 ?뚯씠?꾨씪??(v5.7 SSoT)</h4>
+        <p class="hint" style="margin-bottom:10px">JSON ??T2I 紐⑤뜽 ???대?吏 ??T2V 紐⑤뜽 ???곸긽. 5媛??뚰듃媛 ?꾨＼?꾪듃 ?먮룞 議곕┰??湲곕컲.</p>
+        <div style="display:grid;grid-template-columns:80px 1fr;gap:6px;align-items:center;font-size:12px">
+          <label for="ai-style">?ㅽ???/label>
+          <select id="ai-style" style="padding:4px;background:#0A0A0A;color:#F5F1EB;border:1px solid #2A2A2A;border-radius:3px">
+            <option value="modern_luxury">modern_luxury (紐⑤뜕 ??뀛由?</option>
+            <option value="scandinavian">scandinavian (?ㅼ뭏??</option>
+            <option value="industrial">industrial (?몃뜑?ㅽ듃由ъ뼹)</option>
+            <option value="wabi_sabi">wabi_sabi (?鍮꾩궗鍮?</option>
+            <option value="korean_modern">korean_modern (?쒓뎅 紐⑤뜕)</option>
+            <option value="minimal">minimal (誘몃땲硫)</option>
+            <option value="classic">classic (?대옒??</option>
+            <option value="bohemian">bohemian (蹂댄뿤誘몄븞)</option>
+            <option value="mid_century">mid_century (誘몃뱶?쇱텛由?</option>
+            <option value="art_deco">art_deco (?꾨Ⅴ?곗퐫)</option>
+            <option value="contemporary">contemporary (而⑦뀥?щ윭由?</option>
+            <option value="rustic">rustic (?ъ뒪??</option>
+            <option value="hotel_lux">hotel_lux (?명뀛 ??뀛由?</option>
+            <option value="natural_organic">natural_organic (?댁텛???ㅺ???</option>
+          </select>
+          <label for="ai-mood">遺꾩쐞湲?/label>
+          <select id="ai-mood" style="padding:4px;background:#0A0A0A;color:#F5F1EB;border:1px solid #2A2A2A;border-radius:3px">
+            <option value="warm_sophisticated">warm_sophisticated</option>
+            <option value="cool_calm">cool_calm</option>
+            <option value="bright_airy">bright_airy</option>
+            <option value="cozy_intimate">cozy_intimate</option>
+            <option value="dramatic">dramatic</option>
+            <option value="serene">serene</option>
+            <option value="energetic">energetic</option>
+          </select>
+          <label for="ai-light">議곕챸</label>
+          <select id="ai-light" style="padding:4px;background:#0A0A0A;color:#F5F1EB;border:1px solid #2A2A2A;border-radius:3px">
+            <option value="natural_warm_3000K">natural_warm_3000K</option>
+            <option value="bright_daylight_5000K">bright_daylight_5000K</option>
+            <option value="cool_4000K">cool_4000K</option>
+            <option value="golden_hour">golden_hour</option>
+            <option value="evening_ambient">evening_ambient</option>
+          </select>
+          <label for="ai-camera">移대찓??/label>
+          <select id="ai-camera" style="padding:4px;background:#0A0A0A;color:#F5F1EB;border:1px solid #2A2A2A;border-radius:3px">
+            <option value="isometric_eye_level">isometric_eye_level</option>
+            <option value="top_down">top_down (?꾨㈃??</option>
+            <option value="wide_angle">wide_angle</option>
+            <option value="dolly_in">dolly_in</option>
+            <option value="orbit">orbit</option>
+          </select>
+          <label for="ai-palette">?붾젅??/label>
+          <input type="text" id="ai-palette" style="padding:4px;background:#0A0A0A;color:#F5F1EB;border:1px solid #2A2A2A;border-radius:3px;font-size:11px" placeholder="walnut, white_oak, brass, beige_paint" />
+        </div>
+        <button class="btn sm gold" id="btn-ai-bundle-side" style="width:100%;margin-top:10px">?쨼 AI 踰덈뱾 ?ㅼ슫濡쒕뱶 (PNG+JSON+?대?吏?꾨＼?꾪듃+?곸긽?꾨＼?꾪듃)</button>
+      </div>
+      <div class="card" id="video-seq-card">
+        <h4>?곸긽 ?숈꽑 ?쒖꽌 ?몄쭛 (v5.8)</h4>
+        <p class="hint" style="margin-bottom:8px">?쒕옒洹몃줈 珥ъ쁺 ?쒖꽌 蹂寃???JSON videoSequence??利됱떆 諛섏쁺. <span id="video-seq-hint" style="color:var(--gold)"></span></p>
+        <div id="video-seq-list" style="display:flex;flex-direction:column;gap:4px"></div>
+        <button class="btn sm" id="btn-video-seq-reset" style="width:100%;margin-top:6px">???먮룞 ?쒖꽌 (硫댁쟻??</button>
+      </div>
+      <div class="card"><h4>FloorPlan JSON v5.8 (SSoT)</h4>
+        <p class="hint" style="margin-bottom:6px">EstimateEngine ?낅젰 + AI ?앹꽦 ?뚯씠?꾨씪???⑥씪 吏꾩떎 ?뚯뒪 + ?먯옱 ?좎젙</p>
+        <div class="json-out" id="json-out"></div>
+        <button class="btn sm gold" id="btn-copy-json" style="width:100%;margin-top:6px">???대┰蹂대뱶 蹂듭궗</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AutoCAD ?ㅽ???紐낅졊???낅젰 諛?-->
+<div class="cmd-bar">
+  <span class="cmd-prompt" id="cmd-prompt">??/span>
+  <input type="text" id="cmd-input" name="cmd-input" aria-label="紐낅졊???낅젰" autocomplete="off" spellcheck="false" placeholder="紐낅졊?????꾧뎄 ?좏깮 ??罹붾쾭???대┃?섎㈃ ?④퀎蹂??낅젰 / @W,H / r 90 / del / ?" />
+  <span class="cmd-hint" id="cmd-hint">?ш컖怨듦컙: ?대┃ ??@W,H ?낅젰</span>
+  <button class="cmd-help-btn" id="btn-cmd-help" title="紐낅졊???꾩?留?>?</button>
+</div>
+
+<div class="cmd-toast hidden" id="cmd-toast"></div>
+
+<!-- Boolean ?곗궛 ?앹뾽 硫붾돱 -->
+<div id="bool-menu" style="display:none;position:fixed;z-index:9999;background:#1A1B2E;border:1px solid #3D4466;border-radius:10px;padding:8px 10px;box-shadow:0 6px 28px rgba(0,0,0,0.6);flex-direction:column;gap:6px;min-width:160px;">
+  <div style="font-size:10px;color:#7B82B5;margin-bottom:2px;font-weight:600;letter-spacing:.5px">怨듦컙 Boolean ?곗궛</div>
+  <button class="bool-btn" data-op="union"     style="background:#2B6CB0;color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:12px;text-align:left;display:flex;align-items:center;gap:8px"><span>?뵕</span><span>蹂묓빀 (Union)</span></button>
+  <button class="bool-btn" data-op="subtract"  style="background:#276749;color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:12px;text-align:left;display:flex;align-items:center;gap:8px"><span>??/span><span>李④컧 (Subtract)</span></button>
+  <button class="bool-btn" data-op="intersect" style="background:#744210;color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:12px;text-align:left;display:flex;align-items:center;gap:8px"><span>??/span><span>援먯쭛??(Intersect)</span></button>
+  <button class="bool-btn" data-op="absorb"    style="background:#553C9A;color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:12px;text-align:left;display:flex;align-items:center;gap:8px" id="bool-absorb-btn"><span>燧?/span><span>?≪닔 (Absorb)</span></button>
+  <button class="bool-btn" data-op="cancel"    style="background:#2D3748;color:#9CA3AF;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:11px;text-align:center">痍⑥냼 (Esc)</button>
+</div>
+
+<!-- v5.2: ?뚮줈???≪뀡 踰꾪듉 (紐⑤컮???곗뒪?ы넲 怨듭슜) -->
+<div id="fab-stack" style="position:fixed;right:14px;bottom:60px;display:flex;flex-direction:column;gap:8px;z-index:40;pointer-events:none;">
+  <button id="ortho-fab" class="fab-btn" style="pointer-events:auto" title="吏곴탳 (F8 / Ctrl+L)">吏곴탳 OFF</button>
+  <button id="align-fab" class="fab-btn" style="pointer-events:auto" title="踰??뺣젹 ?좉?: ?대꼍 ??以묒떖 ???몃꼍">?뺣젹: ?대꼍</button>
+  <button id="polyclose-fab" class="fab-btn hidden" style="pointer-events:auto" title="?ㅺ컖???リ린">殊??リ린</button>
+</div>
+
+<!-- v5.2: 鍮좊Ⅸ 移섏닔移?(cmdMode ?쒖꽦 ???깆옣) -->
+<div id="quick-chips" class="hidden" style="position:fixed;left:50%;transform:translateX(-50%);bottom:60px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:90vw;z-index:35;pointer-events:none;">
+  <!-- ?숈쟻 ?앹꽦 -->
+</div>
+
+<!-- 留덇컧???고겢由?而⑦뀓?ㅽ듃 硫붾돱 -->
+<div id="finish-ctx-menu" style="display:none;position:fixed;z-index:9999;background:#1e2130;border:1px solid #3a3f55;border-radius:7px;padding:4px 0;min-width:190px;box-shadow:0 8px 28px rgba(0,0,0,.7);font-family:Inter,sans-serif;font-size:12px;">
+  <div id="finish-ctx-title" style="padding:7px 13px 6px;color:#C9A961;font-size:11px;font-weight:600;border-bottom:1px solid #2e3347;letter-spacing:0.04em;"></div>
+  <div id="finish-ctx-items" style="max-height:340px;overflow-y:auto;padding:3px 0;"></div>
+</div>
+
+<!-- ===== ?⑥텞??紐⑤떖 ===== -->
+<div class="sc-overlay" id="canvas-help">
+  <div class="sc-modal">
+    <div class="sc-header">
+      <div class="sc-title">???⑥텞??&amp; 紐낅졊???덊띁?곗뒪</div>
+      <button class="sc-close" id="shortcut-close">??/button>
+    </div>
+    <div class="sc-body">
+
+      <div class="sc-col">
+        <div class="sc-cat">怨듦컙 쨌 洹몃━湲??꾧뎄</div>
+        <div class="sc-row"><kbd>V</kbd><span>?좏깮</span></div>
+        <div class="sc-row"><kbd>R</kbd><span>?ш컖 怨듦컙 <span class="sc-dim">/ 媛앹껜 ?뚯쟾(?좏깮 ??</span></span></div>
+        <div class="sc-row"><kbd>C</kbd><span>?먰삎 怨듦컙</span></div>
+        <div class="sc-row"><kbd>P</kbd><span>?ㅺ컖 怨듦컙</span></div>
+        <div class="sc-row"><kbd>B</kbd><span>踰?/span></div>
+        <div class="sc-row"><kbd>S</kbd><span>?대젰踰?/span></div>
+        <div class="sc-row"><kbd>Q</kbd><span>湲곕뫁 (RC) ???ш컖/?먰삎/L??/span></div>
+        <div class="sc-row"><kbd>L</kbd><span>??/span></div>
+        <div class="sc-row"><kbd>D</kbd><span>臾?/span></div>
+        <div class="sc-row"><kbd>W</kbd><span>李?/span></div>
+        <div class="sc-row"><kbd>G</kbd><span>??/span></div>
+        <div class="sc-row"><kbd>A</kbd><span>怨≪꽑 (吏곸꽑?묪ezier 蹂??媛??</span></div>
+        <div class="sc-cat" style="margin-top:12px">?몄쭛 쨌 遺꾩꽍</div>
+        <div class="sc-row"><kbd>O</kbd><span>?듭뀑</span></div>
+        <div class="sc-row"><kbd>X</kbd><span>?몃┝</span></div>
+        <div class="sc-row"><kbd>Z</kbd><span>遺꾪븷 (Break)</span></div>
+        <div class="sc-row"><kbd>E</kbd><span>吏?곌컻</span></div>
+        <div class="sc-row"><kbd>H</kbd><span>?붾㈃ ?대룞 (Pan)</span></div>
+        <div class="sc-row"><kbd>???대┃+?쒕옒洹?/kbd><span>?⑤떇</span></div>
+        <div class="sc-cat" style="margin-top:12px">二쇱꽍 쨌 痢≪젙</div>
+        <div class="sc-row"><kbd>I</kbd><span>踰?移섏닔</span></div>
+        <div class="sc-row"><kbd>M</kbd><span>以꾩옄</span></div>
+        <div class="sc-row"><kbd>T</kbd><span>?띿뒪??/span></div>
+        <div class="sc-row"><kbd>`</kbd><span>吏?쒖꽑 (Leader)</span></div>
+        <div class="sc-row"><kbd>F</kbd><span>洹몃━???좉?</span></div>
+        <div class="sc-cat" style="margin-top:12px">?쇱씠釉뚮윭由?/div>
+        <div class="sc-row"><kbd>1</kbd><span>媛援?/span></div>
+        <div class="sc-row"><kbd>2</kbd><span>?꾩깮 / 二쇰갑</span></div>
+        <div class="sc-row"><kbd>3</kbd><span>議곕챸</span></div>
+        <div class="sc-row"><kbd>4</kbd><span>?꾧린</span></div>
+        <div class="sc-row"><kbd>5</kbd><span>怨듭“ / ?뚮갑</span></div>
+      </div>
+
+      <div class="sc-col">
+        <div class="sc-cat">?좏깮 쨌 ?대룞</div>
+        <div class="sc-row"><kbd>?대┃</kbd><span>?⑥씪 媛앹껜 ?좏깮</span></div>
+        <div class="sc-row"><kbd>鍮덉쁺??醫뚢넂???쒕옒洹?/kbd><span>諛뺤뒪 ?좏깮 (Window, ?꾩쟾?ы븿)</span></div>
+        <div class="sc-row"><kbd>鍮덉쁺???겸넂醫??쒕옒洹?/kbd><span>諛뺤뒪 ?좏깮 (Crossing, ?쇰?嫄몄묠)</span></div>
+        <div class="sc-row"><kbd>媛앹껜 ?쒕옒洹?/kbd><span>?대룞</span></div>
+        <div class="sc-row"><kbd>Alt + ?쒕옒洹?/kbd><span>蹂듭젣 ???대룞 (?쒖옄由??щ낯)</span></div>
+        <div class="sc-row"><kbd>Shift + ?쒕옒洹?鍮덉쁺??</kbd><span>諛뺤뒪 ?좏깮 (湲곗〈 ?좏깮??異붽?)</span></div>
+        <div class="sc-row"><kbd>諛뺤뒪?좏깮 媛앹껜 ?쒕옒洹?/kbd><span>?ㅼ쨷 媛앹껜 ?쒓볼踰덉뿉 ?대룞</span></div>
+        <div class="sc-row"><kbd>怨듦컙 ?쒕옒洹?/kbd><span>?덉쓽 ?꾩뼱/媛援щ룄 ?④퍡 ?대룞</span></div>
+        <div class="sc-row"><kbd>????????/kbd><span>1mm 誘몄꽭 ?대룞</span></div>
+        <div class="sc-row"><kbd>Shift + 諛⑺뼢??/kbd><span>10mm ?대룞</span></div>
+        <div class="sc-row"><kbd>Del / Backspace</kbd><span>?좏깮 媛앹껜 ??젣</span></div>
+        <div class="sc-cat" style="margin-top:12px">Vertex ?몄쭛 (?좏깮??怨듦컙)</div>
+        <div class="sc-row"><kbd>肄붾꼫 ???쒕옒洹?/kbd><span>洹??먮쭔 ?대룞 (?꾪삎 蹂??</span></div>
+        <div class="sc-row"><kbd>Shift + ???쒕옒洹?/kbd><span>吏곴탳 (?섑룊쨌?섏쭅)留?/span></div>
+        <div class="sc-row"><kbd>???뚯쟾 ?몃뱾</kbd><span>怨듦컙 ?뚯쟾 (?쒕옒洹??먮뒗 R ??</span></div>
+        <div class="sc-cat" style="margin-top:12px">?먯꽍 ?ㅻ깄</div>
+        <div class="sc-row"><kbd>留덉슦???몃쾭</kbd><span>肄붾꼫쨌?앹젏쨌以묒젏 ?먮룞 ?≪갑</span></div>
+        <div class="sc-row"><kbd>Ctrl (?꾨Ⅴ???숈븞)</kbd><span>?먯꽍 ?ㅻ깄 ?쇱떆 OFF (?먯쑀 醫뚰몴)</span></div>
+        <div class="sc-row"><kbd>F8 / Ctrl+L</kbd><span>吏곴탳 (Ortho) ?좉?</span></div>
+        <div class="sc-row"><kbd>Shift (吏곴탳 OFF ??</kbd><span>吏곴탳 ?쇱떆 ON</span></div>
+        <div class="sc-row"><kbd>Shift (吏곴탳 ON ??</kbd><span>吏곴탳 ?쇱떆 OFF</span></div>
+      </div>
+
+      <div class="sc-col">
+        <div class="sc-cat">洹몃━湲?紐⑤뱶 (踰승룹꽑쨌?꾧뎄)</div>
+        <div class="sc-row"><kbd>泥??대┃</kbd><span>?쒖옉??/span></div>
+        <div class="sc-row"><kbd>??踰덉㎏ ?대┃</kbd><span>?앹젏 ??媛앹껜 ?앹꽦</span></div>
+        <div class="sc-row"><kbd>Shift + ??踰덉㎏ ?대┃</kbd><span>?섑룊쨌?섏쭅留?(吏곴탳)</span></div>
+        <div class="sc-row"><kbd>Ctrl + ?대┃</kbd><span>?먯꽍 ?ㅻ깄 臾댁떆 (?먯쑀 醫뚰몴)</span></div>
+        <div class="sc-row"><kbd>?レ옄 ?낅젰 + Enter</kbd><span>?뺥솗??湲몄씠 (洹몃━湲?以?</span></div>
+        <div class="sc-row"><kbd>@W,H</kbd><span>?곷? 醫뚰몴 (?ш컖怨듦컙 ??</span></div>
+        <div class="sc-row"><kbd>r 90</kbd><span>?뚯쟾 90째 (rect 洹몃━湲???</span></div>
+        <div class="sc-cat" style="margin-top:12px">?쇱씠釉뚮윭由?諛곗튂 (怨좎뒪??紐⑤뱶)</div>
+        <div class="sc-row"><kbd>留덉슦???대룞</kbd><span>怨좎뒪??誘몃━蹂닿린 + 踰쎄퉴吏 嫄곕━ ?쒖떆</span></div>
+        <div class="sc-row"><kbd>R</kbd><span>怨좎뒪??90째 ?뚯쟾</span></div>
+        <div class="sc-row"><kbd>Shift + R</kbd><span>怨좎뒪??-90째 ?뚯쟾</span></div>
+        <div class="sc-row"><kbd>F</kbd><span>怨좎뒪??誘몃윭 (醫뚯슦 諛섏쟾)</span></div>
+        <div class="sc-row"><kbd>?대┃</kbd><span>洹??꾩튂??諛곗튂 (?곗냽 媛??</span></div>
+        <div class="sc-row"><kbd>Esc</kbd><span>諛곗튂 紐⑤뱶 醫낅즺</span></div>
+        <div class="sc-cat" style="margin-top:12px">吏?쒖꽑 쨌 ?ㅺ컖怨듦컙</div>
+        <div class="sc-row"><kbd>???대┃</kbd><span>瑗????異붽?</span></div>
+        <div class="sc-row"><kbd>Shift + ?대┃</kbd><span>吏곴탳 (?섑룊쨌?섏쭅留?</span></div>
+        <div class="sc-row"><kbd>Enter / ?붾툝?대┃ / ?고겢由?/kbd><span>?꾨즺</span></div>
+        <div class="sc-row"><kbd>Esc</kbd><span>痍⑥냼</span></div>
+        <div class="sc-cat" style="margin-top:12px">紐낅졊李?(CMD)</div>
+        <div class="sc-row"><kbd>le</kbd><span>吏?쒖꽑</span></div>
+        <div class="sc-row"><kbd>mi</kbd><span>誘몃윭</span></div>
+        <div class="sc-row"><kbd>tr</kbd><span>?몃┝</span></div>
+        <div class="sc-row"><kbd>br</kbd><span>遺꾪븷</span></div>
+        <div class="sc-row"><kbd>o</kbd><span>?듭뀑</span></div>
+        <div class="sc-row"><kbd>di</kbd><span>移섏닔</span></div>
+        <div class="sc-row"><kbd>del</kbd><span>?좏깮 ??젣</span></div>
+        <div class="sc-row"><kbd>cv / curve</kbd><span>?좏깮 ?꾪겕 ???먯쑀怨≪꽑 (踰좎???</span></div>
+        <div class="sc-row"><kbd>怨듦컙 2媛? ?좏깮 ???고겢由?/kbd><span>蹂묓빀 硫붾돱 (怨듭쑀 蹂 湲곗?)</span></div>
+        <div class="sc-row"><kbd>?</kbd><span>?꾩?留?/span></div>
+      </div>
+
+      <div class="sc-col">
+        <div class="sc-cat sc-ctrl">Ctrl / ??(Mac)</div>
+        <div class="sc-row"><kbd>Ctrl+Z</kbd><span>?ㅽ뻾 痍⑥냼</span></div>
+        <div class="sc-row"><kbd>Ctrl+Y</kbd><span>?ㅼ떆 ?ㅽ뻾</span></div>
+        <div class="sc-row"><kbd>Ctrl+Shift+Z</kbd><span>?ㅼ떆 ?ㅽ뻾 (?泥?</span></div>
+        <div class="sc-row"><kbd>Ctrl+L</kbd><span>吏곴탳 ?좉?</span></div>
+        <div class="sc-row"><kbd>Ctrl (?꾨쫫)</kbd><span>?먯꽍 ?ㅻ깄 ?쇱떆 OFF</span></div>
+        <div class="sc-row"><kbd>Ctrl + ?고겢由?/kbd><span>?먯옱 ?ㅼ젙 硫붾돱 (踰승룸컮?Β룹쿇??</span></div>
+        <div class="sc-cat sc-alt" style="margin-top:12px">Alt</div>
+        <div class="sc-row"><kbd>Alt (?좏깮 ?꾧뎄)</kbd><span>而ㅼ꽌 ??蹂듭궗 紐⑥뼇</span></div>
+        <div class="sc-row"><kbd>Alt + ?쒕옒洹?/kbd><span>媛앹껜 蹂듭젣 + ?대룞</span></div>
+        <div class="sc-cat sc-shift" style="margin-top:12px">??Shift (?대룞 쨌 洹몃━湲?</div>
+        <div class="sc-row"><kbd>Shift</kbd><span>吏곴탳 紐⑤뱶 ON/OFF (?꾩옱 ortho 諛섎?)</span></div>
+        <div class="sc-row"><kbd>Shift + 諛⑺뼢??/kbd><span>10mm ?대룞 (?⑤룆: 1mm)</span></div>
+        <div class="sc-row"><kbd>Shift + 媛앹껜 ?대┃</kbd><span>諛뺤뒪 ?좏깮???좉? 異붽?</span></div>
+        <div class="sc-row"><kbd>Shift + 鍮덉쁺???쒕옒洹?/kbd><span>諛뺤뒪 ?좏깮 (湲곗〈??異붽?)</span></div>
+        <div class="sc-cat" style="margin-top:12px">?뱀닔 ??/div>
+        <div class="sc-row"><kbd>F8</kbd><span>吏곴탳 ?좉?</span></div>
+        <div class="sc-row"><kbd>Esc / Space</kbd><span>?꾧뎄쨌洹몃━湲걔룸찓??痍⑥냼 / ?좏깮 ?댁젣 (Space = Esc ?숈씪)</span></div>
+        <div class="sc-row"><kbd>Enter</kbd><span>?꾨즺 / 紐낅졊 ?ㅽ뻾</span></div>
+        <div class="sc-row"><kbd>?고겢由?/kbd><span>(怨듦컙 2+) Boolean / (?먃룰끝?? 蹂?샕룹깋?겶룻뀓?ㅽ듃 / (紐⑤뱺 媛앹껜) ?뵏 ?좉툑 ?좉?</span></div>
+        <div class="sc-row"><kbd>?뵏 ?좉툑</kbd><span>諛뺤뒪 ?좏깮 ???고겢由????좉툑 ???쒕옒洹맞룸갑?ν궎쨌?몃뱾 ?몄쭛 李⑤떒 (諛섑닾紐끒룹젏??</span></div>
+        <div class="sc-row"><kbd>???묅넃</kbd><span>以???/ ?꾩썐 (留덉슦???꾩튂 湲곗?)</span></div>
+        <div class="sc-cat" style="margin-top:12px">?ㅻ깄 ?ㅼ젙 (醫뚯륫 ?⑤꼸)</div>
+        <div class="sc-row"><kbd>洹몃━???ㅻ깄</kbd><span>洹몃━???⑥쐞(1쨌10쨌50쨌100쨌200쨌500mm)???≪갑</span></div>
+        <div class="sc-row"><kbd>?앹젏 ?ㅻ깄</kbd><span>肄붾꼫쨌?앹젏쨌以묒젏쨌援먯감?먃룸씪?대툕?щ━ 以묒떖</span></div>
+        <div class="sc-row"><kbd>怨좎뒪???ㅻ깄</kbd><span>紐⑤뱺 蹂 ???좎옱 ?ㅻ깄??誘몃━ ?쒖떆</span></div>
+        <div class="sc-row"><kbd>吏곴탳 (Shift)</kbd><span>?섑룊쨌?섏쭅 媛뺤젣 (?쒕줈???대룞)</span></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- v5.9: ??묎텒 ?명꽣 (?곗륫 ?섎떒 怨좎젙) -->
+<div id="copyright-footer" style="position:fixed;right:8px;bottom:6px;z-index:9000;font-size:9px;color:rgba(168,168,184,0.55);font-family:'JetBrains Mono',monospace;pointer-events:auto;user-select:none;letter-spacing:0.3px">
+  짤 2026 ECOREAN 쨌 MiniCAD v5.9 쨌 <a href="#" id="copyright-link" style="color:inherit;text-decoration:underline dotted">All Rights Reserved</a>
+</div>
+
+<!-- v5.9: EULA / ??묎텒 ?덈궡 紐⑤떖 (泥??ㅽ뻾 ???쒖떆, localStorage濡??숈쓽 ??? -->
+<div id="eula-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.78);align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+  <div style="max-width:640px;width:92%;max-height:84vh;overflow-y:auto;background:#1A1B2E;border:1px solid #3D4466;border-radius:14px;padding:24px 28px;box-shadow:0 8px 60px rgba(0,0,0,0.7);color:#F5F1EB;font-family:'Inter Tight','Inter',sans-serif">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <span style="font-size:24px">?뵏</span>
+      <h2 style="margin:0;font-size:18px;font-weight:700;letter-spacing:0.3px">ECOREAN MiniCAD ???ъ슜 ?쎄? (EULA)</h2>
+    </div>
+    <div style="font-size:11px;color:#7B82B5;margin-bottom:14px">v5.9 쨌 Copyright 짤 2026 ECOREAN</div>
+    <div style="font-size:12px;line-height:1.65;color:#D8D5CB;max-height:46vh;overflow-y:auto;padding:14px 16px;background:#0F101A;border:1px solid #2D3050;border-radius:8px;margin-bottom:16px">
+      <p style="margin:0 0 10px 0;font-weight:600;color:#FFE066">蹂??뚰봽?몄썾?대뒗 ECOREAN???낆젏 ?먯궛?낅땲??</p>
+      <p style="margin:0 0 8px 0"><strong style="color:#E2725B">湲덉? ?됱쐞:</strong></p>
+      <ul style="margin:0 0 12px 18px;padding:0">
+        <li>臾대떒 蹂듭젣쨌諛고룷쨌?꾩넚 (?뚯뒪肄붾뱶 諛?而댄뙆?쇰맂 ?뺥깭 紐⑤몢)</li>
+        <li>??났??Reverse Engineering), ?붿뺨?뚯씪, ?붿뒪?댁뀍釉?/li>
+        <li>?뚯깮??묐Ъ ?묒꽦 (?섏젙쨌蹂?빧룸쾲???ы븿)</li>
+        <li>??묎텒 ?쒖떆쨌?뚰꽣留덊겕쨌?쇱씠?좎뒪 ?ㅼ쓽 ?쒓굅 ?먮뒗 蹂寃?/li>
+        <li>???먯뿉寃??묐룄, ?꾨?, ?щ씪?댁꽑??/li>
+        <li>寃쎌웳 ?쒗뭹 媛쒕컻???꾪븳 ?뺣낫 異붿텧</li>
+      </ul>
+      <p style="margin:0 0 8px 0"><strong style="color:#5BA0D4">?곸슜 踰뺣졊:</strong></p>
+      <ul style="margin:0 0 12px 18px;padding:0">
+        <li>??묎텒踰?짠136 (沅뚮━移⑦빐二?: 5???댄븯 吏뺤뿭 ?먮뒗 5泥쒕쭔???댄븯 踰뚭툑</li>
+        <li>??묎텒踰?짠104議곗쓽2 (湲곗닠??蹂댄샇議곗튂 臾대젰??湲덉?)</li>
+        <li>遺?뺢꼍?곷갑吏諛륁쁺?낅퉬諛蹂댄샇?먭??쒕쾿瑜?짠18</li>
+        <li>?뺣낫?듭떊留앸쾿 짠48 (?뺣낫?듭떊留?移⑦빐)</li>
+      </ul>
+      <p style="margin:0 0 8px 0"><strong style="color:#7BA05B">異붿쟻 怨좎?:</strong></p>
+      <p style="margin:0 0 12px 0">蹂??뚰봽?몄썾?닿? ?앹꽦?섎뒗 JSON 異쒕젰 諛??대?吏 ?뚯씪?먮뒗 ?ъ슜???앸퀎 ?뚰꽣留덊겕媛 ?먮룞 ?쎌엯?섎ŉ, 臾대떒 諛고룷 ??異쒖쿂媛 異붿쟻?????덉뒿?덈떎.</p>
+      <p style="margin:0 0 0 0;font-size:11px;color:#7B82B5">"?숈쓽" ?대┃ ??蹂??쎄???踰뺤쟻 援ъ냽?μ쓣 媛뽯뒗 ?숈쓽濡?媛꾩＜?⑸땲?? ?숈쓽瑜?泥좏쉶?섎젮硫?蹂??뚰봽?몄썾???ъ슜??利됱떆 以묒???二쇱떗?쒖삤.</p>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center">
+      <button id="eula-decline" style="background:#2D3748;color:#9CA3AF;border:none;border-radius:6px;padding:9px 18px;cursor:pointer;font-size:12px">?숈쓽?섏? ?딆쓬 (醫낅즺)</button>
+      <button id="eula-accept" style="background:#C9A961;color:#0A0A0A;border:none;border-radius:6px;padding:9px 22px;cursor:pointer;font-size:12px;font-weight:700">?숈쓽?섍퀬 怨꾩냽</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/lightbim/core/schema.js?v=lightbim_01"></script>
+<script src="js/lightbim/core/geometryCore.js?v=lightbim_01"></script>
+<script src="js/lightbim/core/openingEngine.js?v=lightbim_01"></script>
+<script src="js/lightbim/core/wallEngine.js?v=lightbim_01"></script>
+<script src="js/lightbim/core/spaceEngine.js?v=lightbim_01"></script>
+<script src="js/lightbim/core/quantityEngine.js?v=lightbim_01"></script>
+<script src="js/lightbim/adapters/miniCadStateAdapter.js?v=lightbim_01"></script>
+<script src="js/lightbim/adapters/bocEstimateAdapter.js?v=lightbim_01"></script>
+<script src="js/lightbim/adapters/aiPromptAdapter.js?v=lightbim_01"></script>
+<script src="js/lightbim/adapters/dxfAdapter.js?v=lightbim_01"></script>
+<script src="js/state.js?v=space_esc"></script>
+<script src="js/data.js?v=space_esc"></script>
+<script src="js/library.js?v=space_esc"></script>
+<script src="js/engine.js?v=space_esc"></script>
+<script src="js/tools.js?v=space_esc"></script>
+<script src="js/ui.js?v=space_esc"></script>
+<script src="js/tests.js?v=space_esc"></script>
+<script src="js/lightbim/tests/lightbim-core.smoke.js?v=lightbim_01"></script>
+<script src="js/lightbim/lightbimInspector.js?v=lightbim_01"></script>
+<script>
+'use strict';
+// ===== v5.9: ??묎텒 蹂댄샇 ??EULA, ?고겢由?李⑤떒, ?뚰꽣留덊겕, 肄섏넄 寃쎄퀬 =====
+const LICENSE_INFO={
+  copyright:'짤 2026 ECOREAN. All Rights Reserved.',
+  owner:'ECOREAN',
+  product:'ECOREAN MiniCAD',
+  version:'v5.9',
+  license:'Proprietary ??臾대떒 蹂듭젣쨌諛고룷쨌??났??湲덉?',
+  contact:'udunext7@gmail.com',
+  year:2026,
+};
+// 肄섏넄 寃쎄퀬 ??媛쒕컻?먮룄援щ? ?댁뼱 蹂대뒗 ?щ엺?먭쾶 1李?寃쎄퀬
+function _printLicenseBanner(){
+  const css1='color:#E2725B;font-size:18px;font-weight:bold;padding:4px';
+  const css2='color:#FFE066;font-size:12px;padding:2px';
+  const css3='color:#7B82B5;font-size:10px;padding:2px';
+  console.log('%c????묎텒 寃쎄퀬 / Copyright Notice','color:#E03030;font-size:22px;font-weight:bold;padding:6px');
+  console.log('%c'+LICENSE_INFO.copyright,css1);
+  console.log('%c蹂??뚰봽?몄썾?댁쓽 臾대떒 蹂듭젣쨌諛고룷쨌??났?숈? ??묎텒踰?짠136???섑빐\n5???댄븯 吏뺤뿭 ?먮뒗 5泥쒕쭔???댄븯 踰뚭툑??泥섑빐吏????덉뒿?덈떎.',css2);
+  console.log('%c遺?뺢꼍?곷갑吏踰?짠18 ?곸뾽鍮꾨? 移⑦빐 ??異붽? ?뺤궗梨낆엫 諛쒖깮.',css2);
+  console.log('%c?ъ슜 ?대젰 諛?異쒕젰 JSON???앸퀎 ?뚰꽣留덊겕媛 ?먮룞 湲곕줉?⑸땲??\nContact: '+LICENSE_INFO.contact,css3);
+}
+_printLicenseBanner();
+// ?고겢由?李⑤떒 ??罹붾쾭???곸뿭 ?쒖쇅 (罹붾쾭?ㅻ뒗 ?먯껜 而⑦뀓?ㅽ듃 硫붾돱 ?ъ슜)
+document.addEventListener('contextmenu',e=>{
+  if(!e.target.closest('#canvas-container')) e.preventDefault();
+});
+// ?띿뒪???좏깮 李⑤떒 (UI ?곸뿭) ??罹붾쾭???낅젰?/?쎄?? ?쒖쇅
+document.addEventListener('selectstart',e=>{
+  const t=e.target;
+  if(t.closest('#canvas-container')) return;
+  if(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT') return;
+  if(t.closest('#eula-modal')) return;
+  if(t.isContentEditable) return;
+  e.preventDefault();
+});
+// ?쒕옒洹?李⑤떒 (?대?吏 ???먯썝 蹂듭궗 諛⑹?)
+document.addEventListener('dragstart',e=>{
+  if(e.target.tagName==='IMG'||e.target.tagName==='CANVAS') e.preventDefault();
+});
+// EULA 紐⑤떖 ??localStorage???숈쓽 湲곕줉 ?덉쑝硫??ㅽ궢
+function _showEulaIfNeeded(){
+  const KEY='ecorean_eula_accepted_v5_9';
+  const accepted=localStorage.getItem(KEY);
+  if(accepted){return true;}
+  const modal=document.getElementById('eula-modal');
+  if(!modal) return true;
+  modal.style.display='flex';
+  document.getElementById('eula-accept').addEventListener('click',()=>{
+    localStorage.setItem(KEY,JSON.stringify({at:new Date().toISOString(),v:LICENSE_INFO.version}));
+    modal.style.display='none';
+  });
+  document.getElementById('eula-decline').addEventListener('click',()=>{
+    modal.innerHTML='<div style="background:#1A1B2E;color:#F5F1EB;padding:40px;border-radius:12px;font-family:Inter Tight;text-align:center;max-width:420px"><div style="font-size:48px;margin-bottom:12px">?뵏</div><h2 style="margin:0 0 8px 0">?ъ슜 嫄곕???/h2><p style="color:#9CA3AF;margin:0 0 16px 0;font-size:13px">?쎄????숈쓽?섏? ?딆쑝?⑥뒿?덈떎. 蹂??뚰봽?몄썾?대? ?ъ슜?????놁뒿?덈떎.</p><p style="font-size:11px;color:#7B82B5">??쓣 ?レ븘 二쇱떗?쒖삤.</p></div>';
+    // 罹붾쾭??鍮꾪솢?깊솕
+    const c=document.getElementById('canvas-container');
+    if(c){c.style.pointerEvents='none';c.style.opacity='0.15';c.style.filter='blur(3px)';}
+  });
+  return false;
+}
+// ?명꽣 짤 留곹겕 ??EULA ?ㅼ떆 ?닿린
+document.addEventListener('DOMContentLoaded',()=>{
+  const lnk=document.getElementById('copyright-link');
+  if(lnk) lnk.addEventListener('click',e=>{
+    e.preventDefault();
+    const modal=document.getElementById('eula-modal');
+    if(modal) modal.style.display='flex';
+  });
+});
+
+window.addEventListener('load',()=>setTimeout(initApp,50));
+function initApp(){
+  if(typeof Konva==='undefined'){
+    document.getElementById('loading').innerHTML='<div style="color:#E2725B;font-family:monospace;font-size:12px;text-align:center;padding:20px">Konva 濡쒕뱶 ?ㅽ뙣</div>';
+    return;
+  }
+  Konva.showWarnings=false;
+  try{
+    _showEulaIfNeeded();
+    initKonva();
+    initTools();
+    initUI();
+  }catch(e){
+    console.error('[ECOREAN] ?ㅻ쪟:',e);
+    document.getElementById('loading').innerHTML='<div style="color:#E2725B;font-family:monospace;font-size:11px;text-align:center;padding:20px">?ㅻ쪟: '+e.message+'</div>';
+  }
+}
+</script>
+
+</body>
+</html>
+
