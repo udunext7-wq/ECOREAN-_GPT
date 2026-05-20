@@ -23,6 +23,14 @@ const releaseChecks = [
     script: 'lightbim-e2e-validation.smoke.js'
   },
   {
+    label: 'MiniCAD 실제 LightBIM 내보내기',
+    script: 'export-real-minicad-lightbim.smoke.js'
+  },
+  {
+    label: 'MiniCAD 실제 LightBIM BOC 가져오기',
+    script: 'lightbim-real-minicad-import.smoke.js'
+  },
+  {
     label: '견적 출력',
     script: 'estimate-export.smoke.js'
   },

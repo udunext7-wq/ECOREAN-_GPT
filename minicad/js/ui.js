@@ -1117,8 +1117,7 @@ function exportLightBIMJSON(){
 function downloadLightBIMJSON(){
   try{
     const bundle=exportLightBIMJSON();
-    const safe=(STATE.projectName||'ecorean_minicad').replace(/[^a-z0-9가-힣_-]+/gi,'_');
-    downloadText(JSON.stringify(bundle,null,2),safe+'_lightbim.json','application/json');
+    downloadText(JSON.stringify(bundle,null,2),'lightbim_export_'+Date.now()+'.json','application/json');
     showStatus('LightBIM JSON 내보내기 완료');
   }catch(error){
     console.error('[LightBIM] export failed',error);
@@ -1935,6 +1934,8 @@ document.getElementById('btn-grid').addEventListener('click',toggleGrid);
 document.getElementById('btn-dim').addEventListener('click',toggleDim);
 document.getElementById('btn-2_5d').addEventListener('click',toggle2_5D); // v5.7
 document.getElementById('btn-ai-bundle').addEventListener('click',exportAIBundle); // v5.7
+const lightBimExportBtn=document.getElementById('btn-lightbim-export');
+if(lightBimExportBtn) lightBimExportBtn.addEventListener('click',downloadLightBIMJSON);
 document.getElementById('btn-print').addEventListener('click',printPlan);
 // v5.8 Task 3: DXF
 document.getElementById('btn-dxf-export').addEventListener('click',exportDXF);
