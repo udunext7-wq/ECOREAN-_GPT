@@ -80,7 +80,8 @@ export function CeoDashboard() {
       openProjectClosing: 'closing',
       openCalibration: 'calibration',
       openFloorplanCenter: 'floorplanCenter',
-      openAIVisualization: 'aiVisualization'
+      openAIVisualization: 'aiVisualization',
+      openLightBIMImport: 'lightbimImport'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
@@ -290,6 +291,7 @@ export function CeoDashboard() {
       <div className="floating-actions">
         <button onClick={() => openView('bathroomEstimate', 'click')}>새 견적</button>
         <button onClick={() => openView('ontology', 'click')}>3D Ontology View</button>
+        <button onClick={() => openView('lightbimImport', 'confirm')}>LightBIM 도면 가져오기</button>
         <button onClick={() => openView('floorplanCenter', 'click')}>평면도 / 아이소메트릭</button>
         <button onClick={() => openView('aiVisualization', 'click')}>AI 투시도 생성</button>
         <button onClick={() => openView('project', 'click')}>Project Drill Down</button>

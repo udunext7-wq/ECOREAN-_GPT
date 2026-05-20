@@ -28,6 +28,10 @@ declare global {
         saveEstimateDraft: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; savedDraft: Record<string, unknown> }>;
         loadEstimateDraftForProject: (payload: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
         updateEstimateDraft: (payload: Record<string, unknown>) => Promise<{ dashboardData: DashboardData; savedDraft: Record<string, unknown> }>;
+        selectLightBIMJSONFile: () => Promise<Record<string, unknown>>;
+        importLightBIMJSON: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        importLightBIMPayload: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createEstimateFromLightBIM: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         calculateBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         saveBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         exportBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

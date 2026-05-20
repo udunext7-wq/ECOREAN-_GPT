@@ -10,6 +10,7 @@ import {
   type KitchenEstimateInput,
   type KitchenEstimatePreview
 } from '../../services/kitchen-estimate-service/kitchenEstimateService';
+import { formatLightBIMSource, getLightBIMSource, readLightBIMInitialInput } from './lightBimDraft';
 
 const steps = ['기본 정보', '가구 사양', '설비/전기', '마감', '자동 산출', '출력'];
 
@@ -119,13 +120,14 @@ function optionLabel(input: KitchenEstimateInput) {
 
 export function KitchenEstimateWizardView() {
   const [step, setStep] = useState(0);
-  const [input, setInput] = useState<KitchenEstimateInput>(initialInput);
+  const [input, setInput] = useState<KitchenEstimateInput>(() => readLightBIMInitialInput('KITCHEN', initialInput));
   const [preview, setPreview] = useState<KitchenEstimatePreview | null>(null);
   const [activeOutput, setActiveOutput] = useState<'customer' | 'internal'>('customer');
   const [messageKo, setMessageKo] = useState('주방 조건을 입력하고 자동 산출을 실행하세요.');
   const [isBusy, setIsBusy] = useState(false);
   const [savedEstimateId, setSavedEstimateId] = useState<string | null>(null);
   const [generatedContractId, setGeneratedContractId] = useState<string | null>(null);
+  const lightBimSource = getLightBIMSource(input);
 
   const groupedCustomerRows = useMemo(() => {
     return ((preview?.customerView?.groups as Array<{ category: string; customerTotal: number }> | undefined) || []);
@@ -278,7 +280,17 @@ export function KitchenEstimateWizardView() {
         <button className="primary-entry-button" onClick={handleCalculate} disabled={isBusy}>
           자동 산출
         </button>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimImport' }))} disabled={isBusy}>
+          LightBIM 도면 가져오기
+        </button>
       </div>
+
+      {lightBimSource ? (
+        <section className="drawer-block">
+          <strong>LightBIM 도면 데이터가 적용되었습니다.</strong>
+          <p>{formatLightBIMSource(lightBimSource)}</p>
+        </section>
+      ) : null}
 
       <div className="wizard-stepper">
         {steps.map((label, index) => (

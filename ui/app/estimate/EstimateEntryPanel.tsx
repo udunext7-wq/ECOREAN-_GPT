@@ -49,6 +49,14 @@ const primaryActions: EntryAction[] = [
     primary: true
   },
   {
+    title: 'LightBIM 도면 가져오기',
+    headline: 'MiniCAD 도면 JSON으로 견적 초안 생성',
+    note: '도면 가져오기',
+    view: 'lightbimImport',
+    tone: 'confirm',
+    primary: true
+  },
+  {
     title: '저장된 견적 불러오기',
     headline: '저장된 견적과 프로젝트를 다시 확인',
     note: '프로젝트 목록',

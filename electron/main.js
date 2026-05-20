@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const { createSqliteService } = require('./services/sqliteService');
 const { createBackupService } = require('./services/backupService');
@@ -16,6 +16,19 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:estimate-draft:save', (_event, payload) => sqliteService.saveEstimateDraft(payload));
   ipcMain.handle('boc:estimate-draft:load', (_event, payload) => sqliteService.loadEstimateDraftForProject(payload));
   ipcMain.handle('boc:estimate-draft:update', (_event, payload) => sqliteService.updateEstimateDraft(payload));
+  ipcMain.handle('boc:lightbim:select-json', async (event) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    const result = await dialog.showOpenDialog(owner, {
+      title: 'LightBIM JSON 파일 선택',
+      properties: ['openFile'],
+      filters: [{ name: 'LightBIM JSON', extensions: ['json'] }]
+    });
+    if (result.canceled || !result.filePaths.length) return { canceled: true };
+    return { canceled: false, filePath: result.filePaths[0] };
+  });
+  ipcMain.handle('boc:lightbim:import-file', (_event, payload) => sqliteService.importLightBIMJSONFile(payload));
+  ipcMain.handle('boc:lightbim:import-payload', (_event, payload) => sqliteService.importLightBIMPayload(payload));
+  ipcMain.handle('boc:lightbim:create-estimate', (_event, payload) => sqliteService.createEstimateFromLightBIM(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));

@@ -11,6 +11,7 @@ import {
   type BathroomEstimatePreview
 } from '../../services/bathroom-estimate-service/bathroomEstimateService';
 import { AIEstimateAssistantPanel } from './AIEstimateAssistantPanel';
+import { formatLightBIMSource, getLightBIMSource, readLightBIMInitialInput } from './lightBimDraft';
 
 const steps = ['기본 정보', '시공 방식', '옵션', '자동 산출', '출력'];
 
@@ -88,7 +89,7 @@ const fixtureGradeKo: Record<string, string> = {
 
 export function BathroomEstimateWizardView() {
   const [step, setStep] = useState(0);
-  const [input, setInput] = useState<BathroomEstimateInput>(initialInput);
+  const [input, setInput] = useState<BathroomEstimateInput>(() => readLightBIMInitialInput('BATHROOM', initialInput));
   const [preview, setPreview] = useState<BathroomEstimatePreview | null>(null);
   const [activeOutput, setActiveOutput] = useState<'customer' | 'internal'>('customer');
   const [messageKo, setMessageKo] = useState('입력값을 넣고 자동 산출을 실행하세요.');
@@ -96,6 +97,7 @@ export function BathroomEstimateWizardView() {
   const [savedEstimateId, setSavedEstimateId] = useState<string | null>(null);
   const [generatedContractId, setGeneratedContractId] = useState<string | null>(null);
   const [estimateNumber] = useState(() => `BATH-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${Math.floor(Math.random() * 900 + 100)}`);
+  const lightBimSource = getLightBIMSource(input);
 
   const groupedCustomerRows = useMemo(() => {
     const groups = (preview?.customerView?.groups as Array<{ category: string; customerTotal: number }> | undefined) || [];
@@ -268,7 +270,17 @@ export function BathroomEstimateWizardView() {
         <button className="primary-entry-button" onClick={handleCalculate} disabled={isBusy}>
           자동 산출
         </button>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimImport' }))} disabled={isBusy}>
+          LightBIM 도면 가져오기
+        </button>
       </div>
+
+      {lightBimSource ? (
+        <section className="drawer-block">
+          <strong>LightBIM 도면 데이터가 적용되었습니다.</strong>
+          <p>{formatLightBIMSource(lightBimSource)}</p>
+        </section>
+      ) : null}
 
       <div className="wizard-step-tabs">
         {steps.map((label, index) => (

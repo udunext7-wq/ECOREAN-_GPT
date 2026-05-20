@@ -20,6 +20,11 @@ const {
   buildFullScheduleFromEstimate,
   buildFullPurchaseOrderFromEstimate
 } = require('./fullRemodelingEstimateService');
+const {
+  validateLightBIMJSON,
+  parseLightBIMJSON,
+  createEstimateDraftFromLightBIM
+} = require('./lightBimImportService');
 const { exportEstimateDocument } = require('./estimateExportService');
 const { buildContractFromEstimate, exportContractPdf } = require('./contractService');
 const { buildScheduleFromEstimate } = require('./scheduleService');
@@ -180,6 +185,23 @@ function createSqliteService({ app }) {
         estimate_type TEXT NOT NULL,
         amount_text TEXT NOT NULL,
         payload_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS lightbim_imports (
+        id TEXT PRIMARY KEY,
+        source_file_name TEXT NOT NULL,
+        schema_version TEXT NOT NULL,
+        project_name TEXT NOT NULL,
+        detected_estimate_type TEXT NOT NULL,
+        total_area_m2 REAL NOT NULL,
+        space_count INTEGER NOT NULL,
+        raw_json TEXT NOT NULL,
+        normalized_summary_json TEXT NOT NULL,
+        created_estimate_type TEXT,
+        created_estimate_id TEXT,
+        status TEXT NOT NULL,
+        error_message TEXT,
         created_at TEXT NOT NULL
       );
 
@@ -4283,6 +4305,124 @@ function createSqliteService({ app }) {
       createdAt
     });
     return { id, estimateId, originalDecision, overrideDecision, reason, createdBy, createdAt };
+  }
+
+  function insertLightBIMImportRecord({ sourceFileName = '', payload = null, draft = null, status = 'SUCCESS', errorMessage = '' }) {
+    const createdAt = nowIso();
+    const importId = `LIGHTBIM-IMPORT-${Date.now()}`;
+    const summary = draft?.summary || {};
+    db.project.prepare(`
+      INSERT INTO lightbim_imports (
+        id, source_file_name, schema_version, project_name, detected_estimate_type,
+        total_area_m2, space_count, raw_json, normalized_summary_json,
+        created_estimate_type, created_estimate_id, status, error_message, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      importId,
+      sourceFileName || '',
+      summary.schemaVersion || payload?.project?.schema_version || '0.1',
+      summary.projectName || payload?.project?.name || '',
+      draft?.estimateType || '',
+      Number(summary.totalAreaM2 || 0),
+      Number(summary.spaceCount || 0),
+      toJson(payload),
+      toJson(summary),
+      draft?.estimateType || null,
+      draft?.estimateId || null,
+      status,
+      errorMessage || null,
+      createdAt
+    );
+    return importId;
+  }
+
+  function importLightBIMPayload({ payload, sourceFileName = '' } = {}) {
+    try {
+      const parsed = parseLightBIMJSON(payload);
+      const validation = validateLightBIMJSON(parsed);
+      if (!validation.ok) {
+        const importId = insertLightBIMImportRecord({ sourceFileName, payload: parsed || payload, status: 'FAILED', errorMessage: validation.errorMessage });
+        return { ok: false, importId, errorMessage: validation.errorMessage };
+      }
+      const draft = createEstimateDraftFromLightBIM(parsed);
+      const importId = insertLightBIMImportRecord({ sourceFileName, payload: parsed, draft, status: 'SUCCESS' });
+      return { ok: true, importId, payload: parsed, draft, summary: draft.summary, messageKo: 'LightBIM 도면 데이터를 불러왔습니다.' };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'LightBIM JSON 형식이 올바르지 않습니다.';
+      const importId = insertLightBIMImportRecord({ sourceFileName, payload, status: 'FAILED', errorMessage: message });
+      return { ok: false, importId, errorMessage: message };
+    }
+  }
+
+  function importLightBIMJSONFile({ filePath } = {}) {
+    if (!filePath) return { ok: false, errorMessage: 'LightBIM JSON 형식이 올바르지 않습니다.' };
+    try {
+      const raw = fs.readFileSync(filePath, 'utf8');
+      return importLightBIMPayload({ payload: raw, sourceFileName: path.basename(filePath) });
+    } catch (error) {
+      console.error('[LightBIM] import file failed', error);
+      return { ok: false, errorMessage: 'LightBIM JSON 형식이 올바르지 않습니다.' };
+    }
+  }
+
+  function createEstimateFromLightBIM({ importId, payload, estimateTypeOverride = '' } = {}) {
+    let parsed = payload;
+    let activeImportId = importId;
+    if (importId) {
+      const row = db.project.prepare('SELECT * FROM lightbim_imports WHERE id = ?').get(importId);
+      if (!row) return { ok: false, errorMessage: 'LightBIM JSON 형식이 올바르지 않습니다.' };
+      parsed = fromJson(row.raw_json, null);
+    }
+    if (!parsed) {
+      const imported = importLightBIMPayload({ payload });
+      if (!imported.ok) return imported;
+      parsed = imported.payload;
+      activeImportId = imported.importId;
+    }
+
+    try {
+      const draft = createEstimateDraftFromLightBIM(parsed, estimateTypeOverride);
+      const estimateId = `LIGHTBIM-DRAFT-${draft.estimateType}-${Date.now()}`;
+      let preview;
+      let targetView;
+      if (draft.estimateType === 'BATHROOM') {
+        preview = calculateBathroomEstimatePreview({ ...draft.input, estimateId });
+        targetView = 'bathroomEstimate';
+      } else if (draft.estimateType === 'KITCHEN') {
+        preview = calculateKitchenEstimatePreview({ ...draft.input, estimateId });
+        targetView = 'kitchenEstimate';
+      } else {
+        preview = calculateFullRemodelingEstimatePreview({ ...draft.input, estimateId });
+        targetView = 'fullRemodelingEstimate';
+      }
+
+      if (activeImportId) {
+        db.project.prepare(`
+          UPDATE lightbim_imports
+          SET created_estimate_type = ?, created_estimate_id = ?, status = ?, error_message = NULL
+          WHERE id = ?
+        `).run(draft.estimateType, estimateId, 'SUCCESS', activeImportId);
+      }
+
+      return {
+        ok: true,
+        importId: activeImportId,
+        estimateId,
+        estimateType: draft.estimateType,
+        targetView,
+        input: draft.input,
+        preview,
+        summary: draft.summary,
+        aiPromptHints: draft.aiPromptHints,
+        bannerKo: 'LightBIM 도면 데이터가 적용되었습니다.'
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '견적 초안 생성에 실패했습니다.';
+      if (activeImportId) {
+        db.project.prepare('UPDATE lightbim_imports SET status = ?, error_message = ? WHERE id = ?').run('FAILED', message, activeImportId);
+      }
+      return { ok: false, importId: activeImportId, errorMessage: message };
+    }
   }
 
   function calculateBathroomEstimatePreview(payload = {}) {
@@ -19481,6 +19621,9 @@ function createSqliteService({ app }) {
     saveEstimateDraft,
     loadEstimateDraftForProject,
     updateEstimateDraft,
+    importLightBIMPayload,
+    importLightBIMJSONFile,
+    createEstimateFromLightBIM,
     calculateBathroomEstimatePreview,
     saveBathroomEstimate,
     exportBathroomEstimateDocument,

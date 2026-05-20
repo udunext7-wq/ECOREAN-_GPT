@@ -10,6 +10,7 @@ import {
   type FullRemodelingEstimateInput,
   type FullRemodelingEstimatePreview
 } from '../../services/full-remodeling-estimate-service/fullRemodelingEstimateService';
+import { formatLightBIMSource, getLightBIMSource, readLightBIMInitialInput } from './lightBimDraft';
 
 const steps = ['기본 정보', '철거/폐기물', '주요 공정', '공정별 옵션', '자동 산출', 'AI 검토', '출력'];
 
@@ -105,13 +106,14 @@ const processLabels: Record<string, string> = {
 
 export function FullRemodelingEstimateWizardView() {
   const [step, setStep] = useState(0);
-  const [input, setInput] = useState<FullRemodelingEstimateInput>(initialInput);
+  const [input, setInput] = useState<FullRemodelingEstimateInput>(() => readLightBIMInitialInput('FULL_REMODELING', initialInput));
   const [preview, setPreview] = useState<FullRemodelingEstimatePreview | null>(null);
   const [activeOutput, setActiveOutput] = useState<'customer' | 'internal'>('customer');
   const [messageKo, setMessageKo] = useState('전체 리모델링 조건을 입력하고 자동 산출을 실행하세요.');
   const [isBusy, setIsBusy] = useState(false);
   const [savedEstimateId, setSavedEstimateId] = useState<string | null>(null);
   const [generatedContractId, setGeneratedContractId] = useState<string | null>(null);
+  const lightBimSource = getLightBIMSource(input);
 
   const groupedInternalRows = useMemo(() => {
     return ((preview?.estimate.process_summary as Array<{ category: string; customerTotal: number; internalTotal: number; margin: number; marginRate: number }> | undefined) || []);
@@ -257,7 +259,17 @@ export function FullRemodelingEstimateWizardView() {
           <p>욕실, 주방, 바닥, 도배, 목공, 전기, 조명, 필름, 창호, 가구까지 하나의 견적 흐름으로 산출합니다.</p>
         </div>
         <button className="primary-entry-button" onClick={handleCalculate} disabled={isBusy}>자동 산출</button>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimImport' }))} disabled={isBusy}>
+          LightBIM 도면 가져오기
+        </button>
       </div>
+
+      {lightBimSource ? (
+        <section className="drawer-block">
+          <strong>LightBIM 도면 데이터가 적용되었습니다.</strong>
+          <p>{formatLightBIMSource(lightBimSource)}</p>
+        </section>
+      ) : null}
 
       <div className="wizard-stepper">
         {steps.map((label, index) => (
