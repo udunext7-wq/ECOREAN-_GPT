@@ -19,8 +19,8 @@ const releaseChecks = [
     script: 'full-remodeling-estimate-wizard.smoke.js'
   },
   {
-    label: 'LightBIM 도면 가져오기',
-    script: 'lightbim-import.smoke.js'
+    label: 'LightBIM E2E 검증',
+    script: 'lightbim-e2e-validation.smoke.js'
   },
   {
     label: '견적 출력',

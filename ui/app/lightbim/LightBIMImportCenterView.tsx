@@ -37,6 +37,7 @@ export function LightBIMImportCenterView() {
   }, [importResult, estimateResult]);
   const estimateType = String(estimateResult?.estimateType || summary.detectedEstimateType || importResult?.draft?.['estimateType'] || '');
   const spaces = Array.isArray(summary.spaces) ? summary.spaces as Array<Record<string, unknown>> : [];
+  const pceDecision = String((estimateResult?.preview?.['pce'] as Record<string, unknown> | undefined)?.decision || '');
 
   async function handleElectronPick() {
     setIsBusy(true);
@@ -132,8 +133,19 @@ export function LightBIMImportCenterView() {
             <div><span>욕실 수</span><strong>{formatNumber(summary.bathroomCount, '개')}</strong></div>
             <div><span>주방 여부</span><strong>{summary.kitchenExists ? '있음' : '없음'}</strong></div>
             <div><span>추천 견적 유형</span><strong>{estimateTypeKo[estimateType] || '판단 대기'}</strong></div>
+            <div><span>생성된 견적 ID</span><strong>{String(estimateResult?.estimateId || '생성 전')}</strong></div>
+            <div><span>PCE 결과</span><strong>{pceDecision || '검증 전'}</strong></div>
           </div>
         )}
+      </section>
+
+      <section className="drawer-block">
+        <h3>가져오기 상태</h3>
+        <div className="internal-kpi-grid">
+          <div><span>JSON 검증</span><strong>{importResult?.ok ? '가져오기 성공' : importResult ? '오류 발생' : '대기'}</strong></div>
+          <div><span>견적 초안</span><strong>{estimateResult?.ok ? '견적 초안 생성 완료' : '생성 전'}</strong></div>
+          <div><span>수익성 검증</span><strong>{pceDecision ? '수익성 검증 완료' : '검증 전'}</strong></div>
+        </div>
       </section>
 
       <section className="drawer-block">

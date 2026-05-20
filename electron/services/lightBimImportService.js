@@ -181,7 +181,13 @@ function createKitchenDraft(payload, summary) {
   const kitchenSpaces = spaces.filter(isKitchenSpace);
   const kitchenArea = kitchenSpaces.reduce((sum, space) => sum + getArea(space), 0) || summary.totalAreaM2 || 6;
   const kitchenPerimeter = kitchenSpaces.reduce((sum, space) => sum + safeNumber(space.perimeter_m ?? space.perimeterM, 0), 0) || summary.totalPerimeterM;
-  const estimatedLengthMm = Math.max(1800, Math.round(((kitchenPerimeter || Math.sqrt(kitchenArea) * 2) / 2) * 1000));
+  const suppliedLengthMm = safeNumber(
+    payload?.quantities?.process_quantities?.estimated_kitchen_length_mm ??
+    payload?.bocEstimateInput?.estimated_kitchen_length_mm ??
+    kitchenSpaces[0]?.estimated_kitchen_length_mm,
+    0
+  );
+  const estimatedLengthMm = Math.max(1800, suppliedLengthMm || Math.round(((kitchenPerimeter || Math.sqrt(kitchenArea) * 2) / 2) * 1000));
   return {
     customerName: '',
     siteName: summary.projectName || '',
@@ -218,6 +224,7 @@ function createKitchenDraft(payload, summary) {
       kitchenAreaM2: Number(kitchenArea.toFixed(2)),
       wallAreaM2: summary.totalWallAreaM2,
       perimeterM: kitchenPerimeter,
+      estimatedKitchenLengthMm: estimatedLengthMm,
       doorCount: summary.doorCount,
       windowCount: summary.windowCount
     }
@@ -287,7 +294,8 @@ function createFullDraft(payload, summary) {
       perimeterM: summary.totalPerimeterM,
       doorCount: summary.doorCount,
       windowCount: summary.windowCount,
-      spaces: summary.spaces
+      spaces: summary.spaces,
+      processQuantities: summary.processQuantities
     }
   };
 }

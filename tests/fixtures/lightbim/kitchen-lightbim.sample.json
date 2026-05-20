@@ -1,0 +1,60 @@
+{
+  "schema": "ECOREAN.LightBIM.v0.1",
+  "project": {
+    "schema_version": "0.1",
+    "project_id": "LBIM-KITCHEN-SAMPLE",
+    "name": "LightBIM 주방 샘플",
+    "unit": "mm"
+  },
+  "quantities": {
+    "total_floor_area_m2": 7.5,
+    "total_ceiling_area_m2": 7.5,
+    "total_wall_area_m2": 28.8,
+    "total_net_wall_area_m2": 25.9,
+    "total_perimeter_m": 12,
+    "door_count": 1,
+    "window_count": 1,
+    "space_quantities": [
+      {
+        "space_id": "SPACE-KITCHEN-01",
+        "space_name": "주방",
+        "area_m2": 7.5,
+        "perimeter_m": 12,
+        "ceiling_area_m2": 7.5,
+        "floor_area_m2": 7.5
+      }
+    ],
+    "process_quantities": {
+      "flooring_area_m2": 7.5,
+      "wallpaper_area_m2": 18,
+      "painting_area_m2": 0,
+      "ceiling_area_m2": 7.5,
+      "baseboard_length_m": 8,
+      "molding_length_m": 12,
+      "tile_area_m2": 4.5,
+      "estimated_kitchen_length_mm": 3200
+    }
+  },
+  "bocEstimateInput": {
+    "estimate_type": "KITCHEN",
+    "area_m2": 7.5,
+    "spaces": [
+      {
+        "id": "SPACE-KITCHEN-01",
+        "name": "주방",
+        "type": "KITCHEN",
+        "area_m2": 7.5,
+        "perimeter_m": 12,
+        "wall_area_m2": 25.9,
+        "ceiling_area_m2": 7.5,
+        "estimated_kitchen_length_mm": 3200
+      }
+    ]
+  },
+  "aiPromptHints": {
+    "room_list": ["주방"],
+    "geometry_consistency_notes": ["Preserve one straight kitchen wall and one window opening."],
+    "opening_constraints": ["One door and one window."],
+    "negative_constraints": ["Do not invent extra windows.", "Do not invent island unless selected."]
+  }
+}

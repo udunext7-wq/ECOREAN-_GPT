@@ -1,0 +1,58 @@
+{
+  "schema": "ECOREAN.LightBIM.v0.1",
+  "project": {
+    "schema_version": "0.1",
+    "project_id": "LBIM-BATH-SAMPLE",
+    "name": "LightBIM 욕실 샘플",
+    "unit": "mm"
+  },
+  "quantities": {
+    "total_floor_area_m2": 4.8,
+    "total_ceiling_area_m2": 4.8,
+    "total_wall_area_m2": 22.4,
+    "total_net_wall_area_m2": 20.8,
+    "total_perimeter_m": 9.4,
+    "door_count": 1,
+    "window_count": 0,
+    "space_quantities": [
+      {
+        "space_id": "SPACE-BATH-01",
+        "space_name": "욕실1",
+        "area_m2": 4.8,
+        "perimeter_m": 9.4,
+        "ceiling_area_m2": 4.8,
+        "floor_area_m2": 4.8
+      }
+    ],
+    "process_quantities": {
+      "flooring_area_m2": 4.8,
+      "wallpaper_area_m2": 0,
+      "painting_area_m2": 0,
+      "ceiling_area_m2": 4.8,
+      "baseboard_length_m": 0,
+      "molding_length_m": 0,
+      "tile_area_m2": 25.6
+    }
+  },
+  "bocEstimateInput": {
+    "estimate_type": "BATHROOM",
+    "area_m2": 4.8,
+    "spaces": [
+      {
+        "id": "SPACE-BATH-01",
+        "name": "욕실1",
+        "type": "BATHROOM",
+        "area_m2": 4.8,
+        "perimeter_m": 9.4,
+        "wall_area_m2": 20.8,
+        "ceiling_area_m2": 4.8
+      }
+    ]
+  },
+  "aiPromptHints": {
+    "room_list": ["욕실1"],
+    "geometry_consistency_notes": ["Preserve one compact bathroom layout."],
+    "opening_constraints": ["One door, no windows."],
+    "negative_constraints": ["Do not invent windows.", "Do not invent furniture."]
+  }
+}

@@ -12,9 +12,11 @@ export type LightBIMSourceSummary = {
   ceilingAreaM2?: number;
   perimeterM?: number;
   tileAreaM2?: number;
+  estimatedKitchenLengthMm?: number;
   doorCount?: number;
   windowCount?: number;
   spaces?: Array<Record<string, unknown>>;
+  processQuantities?: Record<string, unknown>;
 };
 
 function readStoredDraft(): LightBIMDraft | null {
@@ -45,5 +47,28 @@ export function formatLightBIMSource(source: LightBIMSourceSummary | null) {
   const perimeter = Number(source.perimeterM || 0).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
   const doorCount = Number(source.doorCount || 0).toLocaleString('ko-KR');
   const windowCount = Number(source.windowCount || 0).toLocaleString('ko-KR');
-  return `바닥 면적 ${floorArea}㎡ / 벽 면적 ${wallArea}㎡ / 천장 면적 ${ceilingArea}㎡ / 둘레 ${perimeter}m / 문 ${doorCount}개 / 창 ${windowCount}개`;
+  const details = [
+    `바닥 면적 ${floorArea}㎡`,
+    `벽 면적 ${wallArea}㎡`,
+    `천장 면적 ${ceilingArea}㎡`,
+    `둘레 ${perimeter}m`,
+    `문 ${doorCount}개`,
+    `창 ${windowCount}개`
+  ];
+  if (source.tileAreaM2) details.push(`타일 면적 ${Number(source.tileAreaM2).toLocaleString('ko-KR', { maximumFractionDigits: 2 })}㎡`);
+  if (source.estimatedKitchenLengthMm) details.push(`예상 주방 길이 ${Number(source.estimatedKitchenLengthMm).toLocaleString('ko-KR')}mm`);
+  if (source.spaces?.length) details.push(`공간 목록 ${source.spaces.length}개`);
+  const processQuantities = source.processQuantities || {};
+  const processLabels: Array<[string, string]> = [
+    ['flooring_area_m2', '바닥'],
+    ['wallpaper_area_m2', '도배'],
+    ['painting_area_m2', '도장'],
+    ['ceiling_area_m2', '천장'],
+    ['tile_area_m2', '타일']
+  ];
+  const processSummary = processLabels
+    .filter(([key]) => Number(processQuantities[key] || 0) > 0)
+    .map(([key, label]) => `${label} ${Number(processQuantities[key] || 0).toLocaleString('ko-KR', { maximumFractionDigits: 2 })}㎡`);
+  if (processSummary.length) details.push(`선택 공정 수량: ${processSummary.join(', ')}`);
+  return details.join(' / ');
 }
