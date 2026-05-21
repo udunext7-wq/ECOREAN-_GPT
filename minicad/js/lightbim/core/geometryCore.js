@@ -5,6 +5,13 @@
 
   function number(value){ return Number.isFinite(Number(value)) ? Number(value) : 0; }
   function safeNumber(value, fallback){ return Number.isFinite(Number(value)) ? Number(value) : (Number(fallback) || 0); }
+  function mmToM(mm){ return number(mm) / 1000; }
+  function mm2ToM2(mm2){ return number(mm2) / 1000000; }
+  function roundQuantity(value, precision){
+    const digits = Number.isFinite(Number(precision)) ? Number(precision) : 4;
+    const factor = Math.pow(10, digits);
+    return Math.round(number(value) * factor) / factor;
+  }
   function distance(a, b){
     const dx = number((b || {}).x) - number((a || {}).x);
     const dy = number((b || {}).y) - number((a || {}).y);
@@ -56,6 +63,6 @@
   }
   function segmentLength(v1, v2){ return distance(v1, v2); }
 
-  LB.geometryCore = { polygonArea, polygonPerimeter, distance, roundMm, getBounds, pointInPolygon, segmentLength, safeNumber };
+  LB.geometryCore = { polygonArea, polygonPerimeter, distance, roundMm, getBounds, pointInPolygon, segmentLength, safeNumber, mmToM, mm2ToM2, roundQuantity };
   LB.core.geometryCore = LB.geometryCore;
 })(window);

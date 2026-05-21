@@ -117,12 +117,20 @@ function buildSummary(payload, estimateType) {
     projectName: getProjectName(payload),
     detectedEstimateType: estimateType,
     totalAreaM2: safeNumber(quantities.total_floor_area_m2 ?? payload.bocEstimateInput?.area_m2, spaces.reduce((sum, space) => sum + getArea(space), 0)),
+    floorAreaM2: safeNumber(quantities.total_floor_area_m2 ?? processQuantities.flooring_area_m2, 0),
     totalWallAreaM2: safeNumber(quantities.total_net_wall_area_m2 ?? quantities.total_wall_area_m2, 0),
+    grossWallAreaM2: safeNumber(quantities.total_wall_area_m2, 0),
+    openingAreaM2: safeNumber(quantities.opening_area_m2 ?? processQuantities.opening_area_m2, 0),
     totalCeilingAreaM2: safeNumber(quantities.total_ceiling_area_m2, 0),
     totalPerimeterM: safeNumber(quantities.total_perimeter_m, 0),
     tileAreaM2: safeNumber(processQuantities.tile_area_m2, 0),
+    wallpaperAreaM2: safeNumber(processQuantities.wallpaper_area_m2, 0),
+    paintingAreaM2: safeNumber(processQuantities.painting_area_m2, 0),
+    baseboardLengthM: safeNumber(processQuantities.baseboard_length_m, 0),
+    moldingLengthM: safeNumber(processQuantities.molding_length_m, 0),
     doorCount: safeNumber(quantities.door_count, 0),
     windowCount: safeNumber(quantities.window_count, 0),
+    warnings: Array.isArray(quantities.warnings) ? quantities.warnings : Array.isArray(payload?.bocEstimateInput?.quantity_basis?.warnings) ? payload.bocEstimateInput.quantity_basis.warnings : [],
     spaceCount: spaces.length,
     bathroomCount: bathroomSpaces.length,
     kitchenExists: kitchenSpaces.length > 0,
@@ -170,6 +178,7 @@ function createBathroomDraft(payload, summary) {
       ceilingAreaM2: summary.totalCeilingAreaM2,
       perimeterM: summary.totalPerimeterM,
       tileAreaM2: summary.tileAreaM2,
+      warnings: summary.warnings,
       doorCount: summary.doorCount,
       windowCount: summary.windowCount
     }
@@ -225,6 +234,8 @@ function createKitchenDraft(payload, summary) {
       wallAreaM2: summary.totalWallAreaM2,
       perimeterM: kitchenPerimeter,
       estimatedKitchenLengthMm: estimatedLengthMm,
+      tileAreaM2: summary.tileAreaM2,
+      warnings: summary.warnings,
       doorCount: summary.doorCount,
       windowCount: summary.windowCount
     }
@@ -295,7 +306,8 @@ function createFullDraft(payload, summary) {
       doorCount: summary.doorCount,
       windowCount: summary.windowCount,
       spaces: summary.spaces,
-      processQuantities: summary.processQuantities
+      processQuantities: summary.processQuantities,
+      warnings: summary.warnings
     }
   };
 }

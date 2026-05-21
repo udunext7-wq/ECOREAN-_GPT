@@ -21,7 +21,7 @@
     const normalized = LB.schema.createSpace({
       id: space.id || 'space_' + index,
       name: space.name || space.label || 'Space ' + (index + 1),
-      type: space.type || space.spaceType || 'OTHER',
+      type: LB.quantityEngine && LB.quantityEngine.normalizeSpaceType ? LB.quantityEngine.normalizeSpaceType(space) : (space.type || space.spaceType || 'OTHER'),
       vertexIds,
       floor_finish: space.floor_finish || space.floorMaterial || null,
       wall_finish: space.wall_finish || space.wallMaterial || null,

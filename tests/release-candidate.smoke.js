@@ -31,6 +31,10 @@ const releaseChecks = [
     script: 'lightbim-real-minicad-import.smoke.js'
   },
   {
+    label: 'LightBIM 수량 정확도',
+    script: 'lightbim-quantity-accuracy.smoke.js'
+  },
+  {
     label: '견적 출력',
     script: 'estimate-export.smoke.js'
   },

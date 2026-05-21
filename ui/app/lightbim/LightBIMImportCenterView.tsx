@@ -38,6 +38,7 @@ export function LightBIMImportCenterView() {
   const estimateType = String(estimateResult?.estimateType || summary.detectedEstimateType || importResult?.draft?.['estimateType'] || '');
   const spaces = Array.isArray(summary.spaces) ? summary.spaces as Array<Record<string, unknown>> : [];
   const pceDecision = String((estimateResult?.preview?.['pce'] as Record<string, unknown> | undefined)?.decision || '');
+  const warnings = Array.isArray(summary.warnings) ? summary.warnings as Array<Record<string, unknown>> : [];
 
   async function handleElectronPick() {
     setIsBusy(true);
@@ -151,14 +152,37 @@ export function LightBIMImportCenterView() {
       <section className="drawer-block">
         <h3>수량 요약</h3>
         <div className="internal-kpi-grid">
-          <div><span>바닥 면적</span><strong>{formatNumber(summary.totalAreaM2, '㎡')}</strong></div>
-          <div><span>벽 면적</span><strong>{formatNumber(summary.totalWallAreaM2, '㎡')}</strong></div>
+          <div><span>바닥 면적</span><strong>{formatNumber(summary.floorAreaM2 || summary.totalAreaM2, '㎡')}</strong></div>
           <div><span>천장 면적</span><strong>{formatNumber(summary.totalCeilingAreaM2, '㎡')}</strong></div>
+          <div><span>벽체 총면적</span><strong>{formatNumber(summary.grossWallAreaM2, '㎡')}</strong></div>
+          <div><span>개구부 공제</span><strong>{formatNumber(summary.openingAreaM2, '㎡')}</strong></div>
+          <div><span>순벽면적</span><strong>{formatNumber(summary.totalWallAreaM2, '㎡')}</strong></div>
+          <div><span>도배 면적</span><strong>{formatNumber(summary.wallpaperAreaM2, '㎡')}</strong></div>
+          <div><span>도장 면적</span><strong>{formatNumber(summary.paintingAreaM2, '㎡')}</strong></div>
+          <div><span>타일 면적</span><strong>{formatNumber(summary.tileAreaM2, '㎡')}</strong></div>
+          <div><span>걸레받이 길이</span><strong>{formatNumber(summary.baseboardLengthM, 'm')}</strong></div>
+          <div><span>몰딩 길이</span><strong>{formatNumber(summary.moldingLengthM, 'm')}</strong></div>
           <div><span>둘레</span><strong>{formatNumber(summary.totalPerimeterM, 'm')}</strong></div>
-          <div><span>문</span><strong>{formatNumber(summary.doorCount, '개')}</strong></div>
-          <div><span>창</span><strong>{formatNumber(summary.windowCount, '개')}</strong></div>
+          <div><span>문 개수</span><strong>{formatNumber(summary.doorCount, '개')}</strong></div>
+          <div><span>창 개수</span><strong>{formatNumber(summary.windowCount, '개')}</strong></div>
         </div>
       </section>
+
+      {warnings.length ? (
+        <section className="drawer-block">
+          <h3>수량 검토 필요</h3>
+          <div className="simple-table">
+            <div className="simple-table-row simple-table-head"><span>등급</span><span>코드</span><span>내용</span></div>
+            {warnings.slice(0, 8).map((warning, index) => (
+              <div className="simple-table-row" key={`${String(warning.code || 'warning')}-${index}`}>
+                <span>{String(warning.severity || 'INFO')}</span>
+                <span>{String(warning.code || '')}</span>
+                <span>{String(warning.message || '')}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="drawer-block">
         <h3>공간 목록</h3>

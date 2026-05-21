@@ -297,8 +297,8 @@
           "v8"
         ],
         "area_m2": 13.5,
-        "perimeter_m": 15.16227766016838,
-        "wall_area_m2": 36.38946638440411,
+        "perimeter_m": 15.1623,
+        "wall_area_m2": 36.38952,
         "ceiling_area_m2": 13.5,
         "floor_finish": "engineered_wood",
         "wall_finish": "wallpaper_silk",
@@ -446,66 +446,374 @@
     "quantities": {
       "total_floor_area_m2": 48.5,
       "total_ceiling_area_m2": 48.5,
-      "total_wall_area_m2": 108.39,
-      "total_net_wall_area_m2": 99.99,
-      "total_perimeter_m": 59.16,
+      "total_wall_area_m2": 108.3895,
+      "total_net_wall_area_m2": 99.9895,
+      "opening_area_m2": 8.4,
+      "total_perimeter_m": 59.1623,
       "door_count": 3,
       "window_count": 2,
+      "opening_count": 5,
+      "opening_by_space": {
+        "space-entry": [
+          {
+            "id": "door-entry",
+            "type": "door",
+            "spaceId": "space-entry",
+            "wallId": "w-east-entry",
+            "width": 900,
+            "height": 2100,
+            "sillHeight": 0,
+            "x": 8000,
+            "y": 3900
+          }
+        ],
+        "space-bedroom": [
+          {
+            "id": "door-bedroom",
+            "type": "door",
+            "spaceId": "space-bedroom",
+            "wallId": "w-living-bedroom",
+            "width": 800,
+            "height": 2100,
+            "sillHeight": 0,
+            "x": 2500,
+            "y": 4000
+          }
+        ],
+        "space-bath": [
+          {
+            "id": "door-bath",
+            "type": "door",
+            "spaceId": "space-bath",
+            "wallId": "w-bath-living",
+            "width": 700,
+            "height": 2100,
+            "sillHeight": 0,
+            "x": 5000,
+            "y": 4100
+          }
+        ],
+        "space-living": [
+          {
+            "id": "window-living",
+            "type": "window",
+            "spaceId": "space-living",
+            "wallId": "w-west",
+            "width": 1800,
+            "height": 1200,
+            "sillHeight": 900,
+            "x": 0,
+            "y": 1800
+          }
+        ],
+        "space-kitchen": [
+          {
+            "id": "window-kitchen",
+            "type": "window",
+            "spaceId": "space-kitchen",
+            "wallId": "w-north-kitchen",
+            "width": 1200,
+            "height": 1000,
+            "sillHeight": 1000,
+            "x": 6500,
+            "y": 0
+          }
+        ]
+      },
+      "opening_by_wall": {
+        "w-east-entry": [
+          {
+            "id": "door-entry",
+            "type": "door",
+            "spaceId": "space-entry",
+            "wallId": "w-east-entry",
+            "width": 900,
+            "height": 2100,
+            "sillHeight": 0,
+            "x": 8000,
+            "y": 3900
+          }
+        ],
+        "w-living-bedroom": [
+          {
+            "id": "door-bedroom",
+            "type": "door",
+            "spaceId": "space-bedroom",
+            "wallId": "w-living-bedroom",
+            "width": 800,
+            "height": 2100,
+            "sillHeight": 0,
+            "x": 2500,
+            "y": 4000
+          }
+        ],
+        "w-bath-living": [
+          {
+            "id": "door-bath",
+            "type": "door",
+            "spaceId": "space-bath",
+            "wallId": "w-bath-living",
+            "width": 700,
+            "height": 2100,
+            "sillHeight": 0,
+            "x": 5000,
+            "y": 4100
+          }
+        ],
+        "w-west": [
+          {
+            "id": "window-living",
+            "type": "window",
+            "spaceId": "space-living",
+            "wallId": "w-west",
+            "width": 1800,
+            "height": 1200,
+            "sillHeight": 900,
+            "x": 0,
+            "y": 1800
+          }
+        ],
+        "w-north-kitchen": [
+          {
+            "id": "window-kitchen",
+            "type": "window",
+            "spaceId": "space-kitchen",
+            "wallId": "w-north-kitchen",
+            "width": 1200,
+            "height": 1000,
+            "sillHeight": 1000,
+            "x": 6500,
+            "y": 0
+          }
+        ]
+      },
       "space_quantities": [
         {
-          "space_id": "space-living",
-          "space_name": "거실",
-          "space_type": "LIVING",
           "area_m2": 20,
           "perimeter_m": 18,
           "ceiling_area_m2": 20,
-          "floor_area_m2": 20
+          "floor_area_m2": 20,
+          "room_bounds": {
+            "minX": 0,
+            "minY": 0,
+            "maxX": 5000,
+            "maxY": 4000,
+            "width": 5000,
+            "height": 4000
+          },
+          "space_type": "LIVING",
+          "room_name": "거실",
+          "warnings": [],
+          "space_id": "space-living",
+          "space_name": "거실",
+          "wall_area_m2": 41.04,
+          "net_wall_area_m2": 41.04
         },
         {
-          "space_id": "space-kitchen",
-          "space_name": "주방",
-          "space_type": "KITCHEN",
           "area_m2": 9,
           "perimeter_m": 12,
           "ceiling_area_m2": 9,
-          "floor_area_m2": 9
+          "floor_area_m2": 9,
+          "room_bounds": {
+            "minX": 5000,
+            "minY": 0,
+            "maxX": 8000,
+            "maxY": 3000,
+            "width": 3000,
+            "height": 3000
+          },
+          "space_type": "KITCHEN",
+          "room_name": "주방",
+          "warnings": [],
+          "space_id": "space-kitchen",
+          "space_name": "주방",
+          "wall_area_m2": 27.6,
+          "net_wall_area_m2": 27.6
         },
         {
+          "area_m2": 3,
+          "perimeter_m": 7,
+          "ceiling_area_m2": 3,
+          "floor_area_m2": 3,
+          "room_bounds": {
+            "minX": 5000,
+            "minY": 3000,
+            "maxX": 6500,
+            "maxY": 5000,
+            "width": 1500,
+            "height": 2000
+          },
+          "space_type": "BATHROOM",
+          "room_name": "욕실",
+          "warnings": [],
           "space_id": "space-bath",
           "space_name": "욕실",
-          "space_type": "BATHROOM",
-          "area_m2": 3,
-          "perimeter_m": 7,
-          "ceiling_area_m2": 3,
-          "floor_area_m2": 3
+          "wall_area_m2": 15.33,
+          "net_wall_area_m2": 15.33
         },
         {
+          "area_m2": 13.5,
+          "perimeter_m": 15.1623,
+          "ceiling_area_m2": 13.5,
+          "floor_area_m2": 13.5,
+          "room_bounds": {
+            "minX": 0,
+            "minY": 4000,
+            "maxX": 5000,
+            "maxY": 7000,
+            "width": 5000,
+            "height": 3000
+          },
+          "space_type": "BEDROOM",
+          "room_name": "침실",
+          "warnings": [],
           "space_id": "space-bedroom",
           "space_name": "침실",
-          "space_type": "BEDROOM",
-          "area_m2": 13.5,
-          "perimeter_m": 15.16,
-          "ceiling_area_m2": 13.5,
-          "floor_area_m2": 13.5
+          "wall_area_m2": 34.7095,
+          "net_wall_area_m2": 34.7095
         },
         {
-          "space_id": "space-entry",
-          "space_name": "현관",
-          "space_type": "ENTRANCE",
           "area_m2": 3,
           "perimeter_m": 7,
           "ceiling_area_m2": 3,
-          "floor_area_m2": 3
+          "floor_area_m2": 3,
+          "room_bounds": {
+            "minX": 6500,
+            "minY": 3000,
+            "maxX": 8000,
+            "maxY": 5000,
+            "width": 1500,
+            "height": 2000
+          },
+          "space_type": "ENTRANCE",
+          "room_name": "현관",
+          "warnings": [],
+          "space_id": "space-entry",
+          "space_name": "현관",
+          "wall_area_m2": 14.91,
+          "net_wall_area_m2": 14.91
+        }
+      ],
+      "warnings": [
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-north-living"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-north-kitchen"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-east-kitchen"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-east-entry"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-south-entry"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-south-bath"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-bedroom-east"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-bedroom-south"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-west"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-living-bedroom"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-living-kitchen"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-kitchen-service"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-bath-entry"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-bath-living"
+        },
+        {
+          "code": "ESTIMATED_KITCHEN_TILE_AREA",
+          "severity": "INFO",
+          "message": "Kitchen wall tile area estimated from kitchen length x 0.6m.",
+          "entity_type": "space",
+          "entity_id": "space-kitchen"
         }
       ],
       "process_quantities": {
         "flooring_area_m2": 48.5,
-        "wallpaper_area_m2": 99.99,
-        "painting_area_m2": 99.99,
+        "wallpaper_area_m2": 118.2595,
+        "painting_area_m2": 45.5,
         "ceiling_area_m2": 48.5,
-        "baseboard_length_m": 59.16,
-        "molding_length_m": 59.16,
-        "tile_area_m2": 12
+        "baseboard_length_m": 56.7623,
+        "molding_length_m": 59.1623,
+        "tile_area_m2": 23.13,
+        "bathroom_tile_area_m2": 18.33,
+        "kitchen_wall_tile_area_m2": 1.8,
+        "door_count": 3,
+        "window_count": 2,
+        "opening_area_m2": 8.4
       }
     },
     "metadata": {
@@ -513,72 +821,380 @@
       "source_version": "v5.9",
       "ceiling_height_mm": 2400,
       "wall_thickness_mm": 150,
-      "created_at": "2026-05-20T15:08:05.679Z"
+      "created_at": "2026-05-21T11:35:32.740Z"
     }
   },
   "quantities": {
     "total_floor_area_m2": 48.5,
     "total_ceiling_area_m2": 48.5,
-    "total_wall_area_m2": 108.39,
-    "total_net_wall_area_m2": 99.99,
-    "total_perimeter_m": 59.16,
+    "total_wall_area_m2": 108.3895,
+    "total_net_wall_area_m2": 99.9895,
+    "opening_area_m2": 8.4,
+    "total_perimeter_m": 59.1623,
     "door_count": 3,
     "window_count": 2,
+    "opening_count": 5,
+    "opening_by_space": {
+      "space-entry": [
+        {
+          "id": "door-entry",
+          "type": "door",
+          "spaceId": "space-entry",
+          "wallId": "w-east-entry",
+          "width": 900,
+          "height": 2100,
+          "sillHeight": 0,
+          "x": 8000,
+          "y": 3900
+        }
+      ],
+      "space-bedroom": [
+        {
+          "id": "door-bedroom",
+          "type": "door",
+          "spaceId": "space-bedroom",
+          "wallId": "w-living-bedroom",
+          "width": 800,
+          "height": 2100,
+          "sillHeight": 0,
+          "x": 2500,
+          "y": 4000
+        }
+      ],
+      "space-bath": [
+        {
+          "id": "door-bath",
+          "type": "door",
+          "spaceId": "space-bath",
+          "wallId": "w-bath-living",
+          "width": 700,
+          "height": 2100,
+          "sillHeight": 0,
+          "x": 5000,
+          "y": 4100
+        }
+      ],
+      "space-living": [
+        {
+          "id": "window-living",
+          "type": "window",
+          "spaceId": "space-living",
+          "wallId": "w-west",
+          "width": 1800,
+          "height": 1200,
+          "sillHeight": 900,
+          "x": 0,
+          "y": 1800
+        }
+      ],
+      "space-kitchen": [
+        {
+          "id": "window-kitchen",
+          "type": "window",
+          "spaceId": "space-kitchen",
+          "wallId": "w-north-kitchen",
+          "width": 1200,
+          "height": 1000,
+          "sillHeight": 1000,
+          "x": 6500,
+          "y": 0
+        }
+      ]
+    },
+    "opening_by_wall": {
+      "w-east-entry": [
+        {
+          "id": "door-entry",
+          "type": "door",
+          "spaceId": "space-entry",
+          "wallId": "w-east-entry",
+          "width": 900,
+          "height": 2100,
+          "sillHeight": 0,
+          "x": 8000,
+          "y": 3900
+        }
+      ],
+      "w-living-bedroom": [
+        {
+          "id": "door-bedroom",
+          "type": "door",
+          "spaceId": "space-bedroom",
+          "wallId": "w-living-bedroom",
+          "width": 800,
+          "height": 2100,
+          "sillHeight": 0,
+          "x": 2500,
+          "y": 4000
+        }
+      ],
+      "w-bath-living": [
+        {
+          "id": "door-bath",
+          "type": "door",
+          "spaceId": "space-bath",
+          "wallId": "w-bath-living",
+          "width": 700,
+          "height": 2100,
+          "sillHeight": 0,
+          "x": 5000,
+          "y": 4100
+        }
+      ],
+      "w-west": [
+        {
+          "id": "window-living",
+          "type": "window",
+          "spaceId": "space-living",
+          "wallId": "w-west",
+          "width": 1800,
+          "height": 1200,
+          "sillHeight": 900,
+          "x": 0,
+          "y": 1800
+        }
+      ],
+      "w-north-kitchen": [
+        {
+          "id": "window-kitchen",
+          "type": "window",
+          "spaceId": "space-kitchen",
+          "wallId": "w-north-kitchen",
+          "width": 1200,
+          "height": 1000,
+          "sillHeight": 1000,
+          "x": 6500,
+          "y": 0
+        }
+      ]
+    },
     "space_quantities": [
       {
-        "space_id": "space-living",
-        "space_name": "거실",
-        "space_type": "LIVING",
         "area_m2": 20,
         "perimeter_m": 18,
         "ceiling_area_m2": 20,
-        "floor_area_m2": 20
+        "floor_area_m2": 20,
+        "room_bounds": {
+          "minX": 0,
+          "minY": 0,
+          "maxX": 5000,
+          "maxY": 4000,
+          "width": 5000,
+          "height": 4000
+        },
+        "space_type": "LIVING",
+        "room_name": "거실",
+        "warnings": [],
+        "space_id": "space-living",
+        "space_name": "거실",
+        "wall_area_m2": 41.04,
+        "net_wall_area_m2": 41.04
       },
       {
-        "space_id": "space-kitchen",
-        "space_name": "주방",
-        "space_type": "KITCHEN",
         "area_m2": 9,
         "perimeter_m": 12,
         "ceiling_area_m2": 9,
-        "floor_area_m2": 9
+        "floor_area_m2": 9,
+        "room_bounds": {
+          "minX": 5000,
+          "minY": 0,
+          "maxX": 8000,
+          "maxY": 3000,
+          "width": 3000,
+          "height": 3000
+        },
+        "space_type": "KITCHEN",
+        "room_name": "주방",
+        "warnings": [],
+        "space_id": "space-kitchen",
+        "space_name": "주방",
+        "wall_area_m2": 27.6,
+        "net_wall_area_m2": 27.6
       },
       {
+        "area_m2": 3,
+        "perimeter_m": 7,
+        "ceiling_area_m2": 3,
+        "floor_area_m2": 3,
+        "room_bounds": {
+          "minX": 5000,
+          "minY": 3000,
+          "maxX": 6500,
+          "maxY": 5000,
+          "width": 1500,
+          "height": 2000
+        },
+        "space_type": "BATHROOM",
+        "room_name": "욕실",
+        "warnings": [],
         "space_id": "space-bath",
         "space_name": "욕실",
-        "space_type": "BATHROOM",
-        "area_m2": 3,
-        "perimeter_m": 7,
-        "ceiling_area_m2": 3,
-        "floor_area_m2": 3
+        "wall_area_m2": 15.33,
+        "net_wall_area_m2": 15.33
       },
       {
+        "area_m2": 13.5,
+        "perimeter_m": 15.1623,
+        "ceiling_area_m2": 13.5,
+        "floor_area_m2": 13.5,
+        "room_bounds": {
+          "minX": 0,
+          "minY": 4000,
+          "maxX": 5000,
+          "maxY": 7000,
+          "width": 5000,
+          "height": 3000
+        },
+        "space_type": "BEDROOM",
+        "room_name": "침실",
+        "warnings": [],
         "space_id": "space-bedroom",
         "space_name": "침실",
-        "space_type": "BEDROOM",
-        "area_m2": 13.5,
-        "perimeter_m": 15.16,
-        "ceiling_area_m2": 13.5,
-        "floor_area_m2": 13.5
+        "wall_area_m2": 34.7095,
+        "net_wall_area_m2": 34.7095
       },
       {
-        "space_id": "space-entry",
-        "space_name": "현관",
-        "space_type": "ENTRANCE",
         "area_m2": 3,
         "perimeter_m": 7,
         "ceiling_area_m2": 3,
-        "floor_area_m2": 3
+        "floor_area_m2": 3,
+        "room_bounds": {
+          "minX": 6500,
+          "minY": 3000,
+          "maxX": 8000,
+          "maxY": 5000,
+          "width": 1500,
+          "height": 2000
+        },
+        "space_type": "ENTRANCE",
+        "room_name": "현관",
+        "warnings": [],
+        "space_id": "space-entry",
+        "space_name": "현관",
+        "wall_area_m2": 14.91,
+        "net_wall_area_m2": 14.91
+      }
+    ],
+    "warnings": [
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-north-living"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-north-kitchen"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-east-kitchen"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-east-entry"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-south-entry"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-south-bath"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-bedroom-east"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-bedroom-south"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-west"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-living-bedroom"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-living-kitchen"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-kitchen-service"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-bath-entry"
+      },
+      {
+        "code": "WALL_WITHOUT_SPACE",
+        "severity": "INFO",
+        "message": "Wall has no reliable space assignment.",
+        "entity_type": "wall",
+        "entity_id": "w-bath-living"
+      },
+      {
+        "code": "ESTIMATED_KITCHEN_TILE_AREA",
+        "severity": "INFO",
+        "message": "Kitchen wall tile area estimated from kitchen length x 0.6m.",
+        "entity_type": "space",
+        "entity_id": "space-kitchen"
       }
     ],
     "process_quantities": {
       "flooring_area_m2": 48.5,
-      "wallpaper_area_m2": 99.99,
-      "painting_area_m2": 99.99,
+      "wallpaper_area_m2": 118.2595,
+      "painting_area_m2": 45.5,
       "ceiling_area_m2": 48.5,
-      "baseboard_length_m": 59.16,
-      "molding_length_m": 59.16,
-      "tile_area_m2": 12
+      "baseboard_length_m": 56.7623,
+      "molding_length_m": 59.1623,
+      "tile_area_m2": 23.13,
+      "bathroom_tile_area_m2": 18.33,
+      "kitchen_wall_tile_area_m2": 1.8,
+      "door_count": 3,
+      "window_count": 2,
+      "opening_area_m2": 8.4
     }
   },
   "bocEstimateInput": {
@@ -590,46 +1206,55 @@
         "name": "거실",
         "type": "LIVING",
         "area_m2": 20,
-        "perimeter_m": 18
+        "perimeter_m": 18,
+        "net_wall_area_m2": 41.04
       },
       {
         "id": "space-kitchen",
         "name": "주방",
         "type": "KITCHEN",
         "area_m2": 9,
-        "perimeter_m": 12
+        "perimeter_m": 12,
+        "net_wall_area_m2": 27.6
       },
       {
         "id": "space-bath",
         "name": "욕실",
         "type": "BATHROOM",
         "area_m2": 3,
-        "perimeter_m": 7
+        "perimeter_m": 7,
+        "net_wall_area_m2": 15.33
       },
       {
         "id": "space-bedroom",
         "name": "침실",
         "type": "BEDROOM",
         "area_m2": 13.5,
-        "perimeter_m": 15.16227766016838
+        "perimeter_m": 15.1623,
+        "net_wall_area_m2": 34.7095
       },
       {
         "id": "space-entry",
         "name": "현관",
         "type": "ENTRANCE",
         "area_m2": 3,
-        "perimeter_m": 7
+        "perimeter_m": 7,
+        "net_wall_area_m2": 14.91
       }
     ],
-    "selected_processes": [
-      "flooring",
-      "wallpaper",
-      "painting",
-      "ceiling",
-      "baseboard",
-      "bathroom",
-      "kitchen"
-    ],
+    "selected_processes": {
+      "flooring": true,
+      "wallpaper": true,
+      "painting": true,
+      "ceiling": true,
+      "bathroom": true,
+      "kitchen": true,
+      "windows": true,
+      "doors": true,
+      "tile": true,
+      "baseboard": true,
+      "molding": true
+    },
     "process_options": {
       "bathroom_count": 1,
       "kitchen_count": 1,
@@ -637,17 +1262,169 @@
       "source_schema": "0.1"
     },
     "quantity_basis": {
-      "flooring_area_m2": 48.5,
-      "wallpaper_area_m2": 99.99,
-      "painting_area_m2": 99.99,
+      "total_area_m2": 48.5,
+      "floor_area_m2": 48.5,
       "ceiling_area_m2": 48.5,
-      "baseboard_length_m": 59.16,
-      "molding_length_m": 59.16,
-      "tile_area_m2": 12,
-      "total_floor_area_m2": 48.5,
-      "total_net_wall_area_m2": 99.99,
+      "net_wall_area_m2": 99.9895,
+      "wallpaper_area_m2": 118.2595,
+      "painting_area_m2": 45.5,
+      "tile_area_m2": 23.13,
+      "bathroom_tile_area_m2": 18.33,
+      "kitchen_wall_tile_area_m2": 1.8,
+      "baseboard_length_m": 56.7623,
+      "molding_length_m": 59.1623,
       "door_count": 3,
-      "window_count": 2
+      "window_count": 2,
+      "opening_area_m2": 8.4,
+      "space_summaries": [
+        {
+          "id": "space-living",
+          "name": "거실",
+          "type": "LIVING",
+          "area_m2": 20,
+          "perimeter_m": 18,
+          "net_wall_area_m2": 41.04
+        },
+        {
+          "id": "space-kitchen",
+          "name": "주방",
+          "type": "KITCHEN",
+          "area_m2": 9,
+          "perimeter_m": 12,
+          "net_wall_area_m2": 27.6
+        },
+        {
+          "id": "space-bath",
+          "name": "욕실",
+          "type": "BATHROOM",
+          "area_m2": 3,
+          "perimeter_m": 7,
+          "net_wall_area_m2": 15.33
+        },
+        {
+          "id": "space-bedroom",
+          "name": "침실",
+          "type": "BEDROOM",
+          "area_m2": 13.5,
+          "perimeter_m": 15.1623,
+          "net_wall_area_m2": 34.7095
+        },
+        {
+          "id": "space-entry",
+          "name": "현관",
+          "type": "ENTRANCE",
+          "area_m2": 3,
+          "perimeter_m": 7,
+          "net_wall_area_m2": 14.91
+        }
+      ],
+      "warnings": [
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-north-living"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-north-kitchen"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-east-kitchen"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-east-entry"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-south-entry"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-south-bath"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-bedroom-east"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-bedroom-south"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-west"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-living-bedroom"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-living-kitchen"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-kitchen-service"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-bath-entry"
+        },
+        {
+          "code": "WALL_WITHOUT_SPACE",
+          "severity": "INFO",
+          "message": "Wall has no reliable space assignment.",
+          "entity_type": "wall",
+          "entity_id": "w-bath-living"
+        },
+        {
+          "code": "ESTIMATED_KITCHEN_TILE_AREA",
+          "severity": "INFO",
+          "message": "Kitchen wall tile area estimated from kitchen length x 0.6m.",
+          "entity_type": "space",
+          "entity_id": "space-kitchen"
+        }
+      ]
     },
     "source": "LIGHTBIM"
   },

@@ -18,19 +18,35 @@
   function calculateWallLength(wall, vertices){
     const endpoints = wallEndpoints(wall || {}, vertices || []);
     if(!endpoints.a || !endpoints.b) return 0;
-    return LB.geometryCore.distance(endpoints.a, endpoints.b) / 1000;
+    return LB.geometryCore.roundQuantity(LB.geometryCore.distance(endpoints.a, endpoints.b) / 1000);
   }
   function calculateWallArea(wall, vertices){
     const heightM = (n((wall || {}).height || (wall || {}).height_mm || 2400)) / 1000;
-    return calculateWallLength(wall, vertices) * heightM;
+    return LB.geometryCore.roundQuantity(calculateWallLength(wall, vertices) * heightM);
   }
   function calculateNetWallArea(wall, vertices, openings){
     const gross = calculateWallArea(wall, vertices);
     const wallId = (wall || {}).id;
     const openingArea = (openings || []).filter(o => !wallId || o.wallId === wallId || o.wall_id === wallId).reduce((sum, opening) => sum + LB.openingEngine.calculateOpeningArea(opening), 0);
-    return { length_m: calculateWallLength(wall, vertices), gross_wall_area_m2: gross, opening_area_m2: openingArea, net_wall_area_m2: Math.max(0, gross - openingArea) };
+    return { length_m: calculateWallLength(wall, vertices), gross_wall_area_m2: gross, opening_area_m2: LB.geometryCore.roundQuantity(openingArea), net_wall_area_m2: LB.geometryCore.roundQuantity(Math.max(0, gross - openingArea)) };
+  }
+  function calculateWallQuantities(wall, vertices, openings){
+    wall = wall || {};
+    const warnings = [];
+    if(!wall.height && !wall.height_mm){
+      warnings.push({ code:'DEFAULT_WALL_HEIGHT_USED', severity:'INFO', message:'Wall missing height used 2400mm default.', entity_type:'wall', entity_id:wall.id || null });
+    }
+    if(!wall.spaceId && !wall.space_id){
+      warnings.push({ code:'WALL_WITHOUT_SPACE', severity:'INFO', message:'Wall has no reliable space assignment.', entity_type:'wall', entity_id:wall.id || null });
+    }
+    const q = calculateNetWallArea(wall, vertices, openings);
+    return Object.assign({}, q, {
+      thickness_mm: n(wall.thickness || wall.thickness_mm || 200),
+      height_mm: n(wall.height || wall.height_mm || 2400),
+      warnings
+    });
   }
   function getWallsBySpace(spaceId, walls){ return (walls || []).filter(wall => wall.spaceId === spaceId || wall.space_id === spaceId); }
-  LB.wallEngine = { calculateWallLength, calculateWallArea, calculateNetWallArea, getWallsBySpace };
+  LB.wallEngine = { calculateWallLength, calculateWallArea, calculateNetWallArea, calculateWallQuantities, getWallsBySpace };
   LB.core.wallEngine = LB.wallEngine;
 })(window);

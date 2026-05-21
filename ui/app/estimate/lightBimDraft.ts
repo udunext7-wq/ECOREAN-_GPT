@@ -17,6 +17,7 @@ export type LightBIMSourceSummary = {
   windowCount?: number;
   spaces?: Array<Record<string, unknown>>;
   processQuantities?: Record<string, unknown>;
+  warnings?: Array<Record<string, unknown>>;
 };
 
 function readStoredDraft(): LightBIMDraft | null {
