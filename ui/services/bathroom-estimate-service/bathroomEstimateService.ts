@@ -35,6 +35,13 @@ export type BathroomEstimateItem = {
   internalTotal: number;
   margin: number;
   marginRate: number;
+  quantity_source?: 'USER' | 'LIGHTBIM' | 'DEFAULT';
+  quantitySource?: 'USER' | 'LIGHTBIM' | 'DEFAULT';
+  quantitySourceKo?: string;
+  quantity_basis_key?: string;
+  quantity_note?: string;
+  original_lightbim_quantity?: number | null;
+  user_quantity_override?: number | null;
 };
 
 export type BathroomEstimateResult = {
@@ -48,6 +55,7 @@ export type BathroomEstimateResult = {
   expected_margin_rate: number;
   pce_decision: 'BLOCK' | 'MODIFY' | 'GO' | 'SCALE';
   pce_label_ko: string;
+  quantity_source_summary?: Record<string, number | string[]>;
   line_items: BathroomEstimateItem[];
 };
 

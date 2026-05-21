@@ -10,7 +10,7 @@ import {
   type FullRemodelingEstimateInput,
   type FullRemodelingEstimatePreview
 } from '../../services/full-remodeling-estimate-service/fullRemodelingEstimateService';
-import { formatLightBIMSource, getLightBIMSource, readLightBIMInitialInput } from './lightBimDraft';
+import { formatLightBIMSource, formatQuantitySourceSummary, getLightBIMSource, quantitySourceLabel, readLightBIMInitialInput } from './lightBimDraft';
 
 const steps = ['기본 정보', '철거/폐기물', '주요 공정', '공정별 옵션', '자동 산출', 'AI 검토', '출력'];
 
@@ -387,6 +387,25 @@ export function FullRemodelingEstimateWizardView() {
                         : <tr key={row.category}><td>{row.category}</td><td>{formatWon(row.customerTotal)}</td><td>{formatWon(row.internalTotal)}</td><td>{formatWon(row.margin)}</td><td>{percent(row.marginRate)}</td></tr>)}
                     </tbody>
                   </table>
+                  {activeOutput === 'internal' && preview.estimate.quantity_source_summary ? (
+                    <p className="assistant-message">수량 출처: {formatQuantitySourceSummary(preview.estimate.quantity_source_summary)}</p>
+                  ) : null}
+                  {activeOutput === 'internal' ? (
+                    <table className="data-table compact">
+                      <thead><tr><th>항목</th><th>수량</th><th>단위</th><th>수량 출처</th><th>수량 근거</th></tr></thead>
+                      <tbody>
+                        {preview.estimate.line_items.map((item) => (
+                          <tr key={`${item.category}-${item.itemName}`}>
+                            <td>{item.itemName}</td>
+                            <td>{item.quantity}</td>
+                            <td>{item.unit}</td>
+                            <td>{quantitySourceLabel(item.quantity_source || item.quantitySource)}</td>
+                            <td>{item.quantity_basis_key || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : null}
                   <div className="button-row no-print">
                     <button onClick={() => handleExport('customer', 'pdf')} disabled={isBusy}>고객 PDF 다운로드</button>
                     <button onClick={() => handleExport('customer', 'xlsx')} disabled={isBusy}>고객 Excel 다운로드</button>

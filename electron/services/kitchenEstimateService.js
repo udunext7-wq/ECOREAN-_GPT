@@ -5,6 +5,13 @@ const PCE_LABELS_KO = {
   SCALE: '고마진 복제 대상'
 };
 
+const {
+  resolveQuantity,
+  itemQuantityMeta,
+  preserveQuantityMeta,
+  summarizeQuantitySources
+} = require('./lightBimQuantityBinding');
+
 function numberOr(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -46,7 +53,9 @@ function normalizeKitchenInput(input = {}) {
       ceilingFinish: Boolean(input.options?.ceilingFinish),
       moldingFinish: input.options?.moldingFinish !== false
     },
-    customerPriceMultiplier: Math.max(0.3, numberOr(input.customerPriceMultiplier, 1))
+    customerPriceMultiplier: Math.max(0.3, numberOr(input.customerPriceMultiplier, 1)),
+    lightBimSource: input.lightBimSource && typeof input.lightBimSource === 'object' ? input.lightBimSource : null,
+    manualQuantityOverrides: input.manualQuantityOverrides || input.quantityOverrides || {}
   };
 }
 
@@ -74,7 +83,7 @@ function kitchenShapeFactor(type) {
   return { straight: 1, l_shape: 1.15, u_shape: 1.32, island: 1.45 }[type] || 1;
 }
 
-function makeItem({ category, itemName, quantity, unit, customerUnitPrice, materialCost = 0, laborCost = 0, subcontractCost = 0 }) {
+function makeItem({ category, itemName, quantity, unit, customerUnitPrice, materialCost = 0, laborCost = 0, subcontractCost = 0, quantityMeta = {} }) {
   const customerTotal = roundWon(quantity * customerUnitPrice);
   const internalTotal = roundWon(materialCost + laborCost + subcontractCost);
   const margin = customerTotal - internalTotal;
@@ -90,7 +99,8 @@ function makeItem({ category, itemName, quantity, unit, customerUnitPrice, mater
     subcontractCost: roundWon(subcontractCost),
     internalTotal,
     margin,
-    marginRate: customerTotal > 0 ? Number((margin / customerTotal).toFixed(4)) : 0
+    marginRate: customerTotal > 0 ? Number((margin / customerTotal).toFixed(4)) : 0,
+    ...quantityMeta
   };
 }
 
@@ -103,7 +113,8 @@ function applyCustomerMultiplier(items, multiplier) {
     customerUnitPrice: item.customerUnitPrice * multiplier,
     materialCost: item.materialCost,
     laborCost: item.laborCost,
-    subcontractCost: item.subcontractCost
+    subcontractCost: item.subcontractCost,
+    quantityMeta: preserveQuantityMeta(item)
   }));
 }
 
@@ -111,9 +122,25 @@ function calculateKitchenEstimate(rawInput = {}) {
   const input = normalizeKitchenInput(rawInput);
   const items = [];
   const shapeFactor = kitchenShapeFactor(input.kitchenType);
-  const lowerM = (input.lowerCabinetLengthMm / 1000) * shapeFactor;
-  const upperM = (input.upperCabinetLengthMm / 1000) * shapeFactor;
+  const defaultLowerM = (input.lowerCabinetLengthMm / 1000) * shapeFactor;
+  const defaultUpperM = (input.upperCabinetLengthMm / 1000) * shapeFactor;
+  const kitchenLengthQuantity = resolveQuantity(input, 'kitchen_length_m', defaultLowerM, {
+    lightBimNote: 'LightBIM 주방 둘레/길이 기준',
+    defaultNote: '입력 길이와 주방 형태 기본 산식 기준'
+  });
+  const lowerM = kitchenLengthQuantity.source === 'DEFAULT' ? defaultLowerM : kitchenLengthQuantity.value * shapeFactor;
+  const upperM = kitchenLengthQuantity.source === 'DEFAULT' ? defaultUpperM : kitchenLengthQuantity.value * shapeFactor;
   const counterM = lowerM + (input.island ? 1.8 : 0);
+  const counterQuantity = { ...kitchenLengthQuantity, value: counterM };
+  const kitchenTileQuantity = resolveQuantity(input, 'kitchen_wall_tile_area_m2', Math.max(3, lowerM * 1.2), {
+    lightBimNote: 'LightBIM 주방 벽타일 수량 기준'
+  });
+  const floorConnectionQuantity = resolveQuantity(input, 'floor_area_m2', 1, {
+    defaultNote: '기본 바닥 연결 마감 1식 기준'
+  });
+  const ceilingQuantity = resolveQuantity(input, 'ceiling_area_m2', 1, {
+    defaultNote: '기본 천장 마감 1식 기준'
+  });
   const door = doorFinishPrice[input.doorFinish] || doorFinishPrice.pet;
   const counter = countertopPrice[input.countertopType] || countertopPrice.artificial_marble;
 
@@ -125,16 +152,16 @@ function calculateKitchenEstimate(rawInput = {}) {
     items.push(makeItem({ category: '철거', itemName: '확장부 정리/보강', quantity: 1, unit: '식', customerUnitPrice: 900000, materialCost: 180000, laborCost: 420000, subcontractCost: 120000 }));
   }
 
-  items.push(makeItem({ category: '가구', itemName: `상부장 - ${door.labelKo}`, quantity: upperM, unit: 'm', customerUnitPrice: door.customer * 0.72, materialCost: upperM * door.cost * 0.72, laborCost: upperM * 85000 }));
-  items.push(makeItem({ category: '가구', itemName: `하부장 - ${door.labelKo}`, quantity: lowerM, unit: 'm', customerUnitPrice: door.customer, materialCost: lowerM * door.cost, laborCost: lowerM * 105000 }));
+  items.push(makeItem({ category: '가구', itemName: `상부장 - ${door.labelKo}`, quantity: upperM, unit: 'm', customerUnitPrice: door.customer * 0.72, materialCost: upperM * door.cost * 0.72, laborCost: upperM * 85000, quantityMeta: itemQuantityMeta(kitchenLengthQuantity) }));
+  items.push(makeItem({ category: '가구', itemName: `하부장 - ${door.labelKo}`, quantity: lowerM, unit: 'm', customerUnitPrice: door.customer, materialCost: lowerM * door.cost, laborCost: lowerM * 105000, quantityMeta: itemQuantityMeta(kitchenLengthQuantity) }));
   if (input.tallCabinet) items.push(makeItem({ category: '가구', itemName: '키큰장', quantity: 1, unit: '개', customerUnitPrice: 850000, materialCost: 520000, laborCost: 90000 }));
   if (input.pantry) items.push(makeItem({ category: '가구', itemName: '팬트리장', quantity: 1, unit: '개', customerUnitPrice: 780000, materialCost: 480000, laborCost: 85000 }));
   if (input.island) items.push(makeItem({ category: '가구', itemName: '아일랜드장', quantity: 1, unit: '식', customerUnitPrice: 1250000, materialCost: 760000, laborCost: 160000 }));
   if (input.handleType === 'hidden') items.push(makeItem({ category: '가구', itemName: '히든 손잡이/하드웨어', quantity: lowerM + upperM, unit: 'm', customerUnitPrice: 85000, materialCost: (lowerM + upperM) * 42000, laborCost: (lowerM + upperM) * 12000 }));
   else items.push(makeItem({ category: '가구', itemName: '노출형 손잡이/하드웨어', quantity: lowerM + upperM, unit: 'm', customerUnitPrice: 45000, materialCost: (lowerM + upperM) * 22000, laborCost: (lowerM + upperM) * 8000 }));
 
-  items.push(makeItem({ category: '상판', itemName: counter.labelKo, quantity: counterM, unit: 'm', customerUnitPrice: counter.customer, materialCost: counterM * counter.cost, laborCost: counterM * 65000 }));
-  if (input.countertopType === 'ceramic') items.push(makeItem({ category: '상판', itemName: '세라믹 상판 보강', quantity: counterM, unit: 'm', customerUnitPrice: 120000, materialCost: counterM * 52000, laborCost: counterM * 28000 }));
+  items.push(makeItem({ category: '상판', itemName: counter.labelKo, quantity: counterM, unit: 'm', customerUnitPrice: counter.customer, materialCost: counterM * counter.cost, laborCost: counterM * 65000, quantityMeta: itemQuantityMeta(counterQuantity) }));
+  if (input.countertopType === 'ceramic') items.push(makeItem({ category: '상판', itemName: '세라믹 상판 보강', quantity: counterM, unit: 'm', customerUnitPrice: 120000, materialCost: counterM * 52000, laborCost: counterM * 28000, quantityMeta: itemQuantityMeta(counterQuantity) }));
 
   if (input.options.sinkBowlReplace) items.push(makeItem({ category: '설비', itemName: '싱크볼', quantity: 1, unit: '개', customerUnitPrice: 280000, materialCost: 170000, laborCost: 50000 }));
   if (input.options.faucetReplace) items.push(makeItem({ category: '설비', itemName: '주방 수전', quantity: 1, unit: '개', customerUnitPrice: 260000, materialCost: 160000, laborCost: 45000 }));
@@ -143,13 +170,13 @@ function calculateKitchenEstimate(rawInput = {}) {
   if (input.options.hoodReplace) items.push(makeItem({ category: '전기', itemName: '후드 교체', quantity: 1, unit: '대', customerUnitPrice: 380000, materialCost: 240000, laborCost: 60000 }));
   if (input.options.cooktopReplace) items.push(makeItem({ category: '전기', itemName: '쿡탑 교체', quantity: 1, unit: '대', customerUnitPrice: 450000, materialCost: 300000, laborCost: 55000 }));
   if (input.options.outletAdd) items.push(makeItem({ category: '전기', itemName: '콘센트 추가', quantity: 2, unit: '구', customerUnitPrice: 85000, materialCost: 35000, laborCost: 90000 }));
-  if (input.options.indirectLighting) items.push(makeItem({ category: '전기', itemName: '간접조명', quantity: lowerM + upperM, unit: 'm', customerUnitPrice: 95000, materialCost: (lowerM + upperM) * 38000, laborCost: (lowerM + upperM) * 22000 }));
+  if (input.options.indirectLighting) items.push(makeItem({ category: '전기', itemName: '간접조명', quantity: lowerM + upperM, unit: 'm', customerUnitPrice: 95000, materialCost: (lowerM + upperM) * 38000, laborCost: (lowerM + upperM) * 22000, quantityMeta: itemQuantityMeta(kitchenLengthQuantity) }));
   if (input.options.electricalUpgrade) items.push(makeItem({ category: '전기', itemName: '전기 증설', quantity: 1, unit: '식', customerUnitPrice: 450000, materialCost: 120000, laborCost: 220000 }));
 
-  if (input.options.wallTile) items.push(makeItem({ category: '마감', itemName: '주방 벽타일', quantity: Math.max(3, lowerM * 1.2), unit: '㎡', customerUnitPrice: 125000, materialCost: Math.max(3, lowerM * 1.2) * 52000, laborCost: Math.max(3, lowerM * 1.2) * 36000 }));
-  if (input.options.floorFinishConnection) items.push(makeItem({ category: '마감', itemName: '바닥 연결 마감', quantity: 1, unit: '식', customerUnitPrice: 180000, materialCost: 65000, laborCost: 70000 }));
+  if (input.options.wallTile) items.push(makeItem({ category: '마감', itemName: '주방 벽타일', quantity: kitchenTileQuantity.value, unit: '㎡', customerUnitPrice: 125000, materialCost: kitchenTileQuantity.value * 52000, laborCost: kitchenTileQuantity.value * 36000, quantityMeta: itemQuantityMeta(kitchenTileQuantity) }));
+  if (input.options.floorFinishConnection) items.push(makeItem({ category: '마감', itemName: '바닥 연결 마감', quantity: floorConnectionQuantity.source === 'DEFAULT' ? 1 : floorConnectionQuantity.value, unit: floorConnectionQuantity.source === 'DEFAULT' ? '식' : '㎡', customerUnitPrice: floorConnectionQuantity.source === 'DEFAULT' ? 180000 : 32000, materialCost: floorConnectionQuantity.source === 'DEFAULT' ? 65000 : floorConnectionQuantity.value * 12000, laborCost: floorConnectionQuantity.source === 'DEFAULT' ? 70000 : floorConnectionQuantity.value * 11000, quantityMeta: itemQuantityMeta(floorConnectionQuantity) }));
   if (input.options.wallpaperConnection) items.push(makeItem({ category: '마감', itemName: '도배 연계', quantity: 1, unit: '식', customerUnitPrice: 220000, materialCost: 80000, laborCost: 95000 }));
-  if (input.options.ceilingFinish) items.push(makeItem({ category: '마감', itemName: '천장 마감', quantity: 1, unit: '식', customerUnitPrice: 360000, materialCost: 140000, laborCost: 140000 }));
+  if (input.options.ceilingFinish) items.push(makeItem({ category: '마감', itemName: '천장 마감', quantity: ceilingQuantity.source === 'DEFAULT' ? 1 : ceilingQuantity.value, unit: ceilingQuantity.source === 'DEFAULT' ? '식' : '㎡', customerUnitPrice: ceilingQuantity.source === 'DEFAULT' ? 360000 : 42000, materialCost: ceilingQuantity.source === 'DEFAULT' ? 140000 : ceilingQuantity.value * 16000, laborCost: ceilingQuantity.source === 'DEFAULT' ? 140000 : ceilingQuantity.value * 17000, quantityMeta: itemQuantityMeta(ceilingQuantity) }));
   if (input.options.moldingFinish) items.push(makeItem({ category: '마감', itemName: '몰딩 마감', quantity: 1, unit: '식', customerUnitPrice: 160000, materialCost: 55000, laborCost: 65000 }));
 
   items.push(makeItem({ category: '기타', itemName: '운반/양중', quantity: 1, unit: '식', customerUnitPrice: 260000, subcontractCost: 180000 }));
@@ -177,6 +204,7 @@ function calculateKitchenEstimate(rawInput = {}) {
     pce_decision: pceDecision,
     pce_label_ko: PCE_LABELS_KO[pceDecision],
     schedule_days: suggestKitchenDuration(input),
+    quantity_source_summary: summarizeQuantitySources(multiplied),
     line_items: multiplied
   };
 }

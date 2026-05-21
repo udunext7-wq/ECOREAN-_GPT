@@ -15,6 +15,7 @@ export type LightBIMSourceSummary = {
   estimatedKitchenLengthMm?: number;
   doorCount?: number;
   windowCount?: number;
+  quantityBasis?: Record<string, unknown>;
   spaces?: Array<Record<string, unknown>>;
   processQuantities?: Record<string, unknown>;
   warnings?: Array<Record<string, unknown>>;
@@ -72,4 +73,18 @@ export function formatLightBIMSource(source: LightBIMSourceSummary | null) {
     .map(([key, label]) => `${label} ${Number(processQuantities[key] || 0).toLocaleString('ko-KR', { maximumFractionDigits: 2 })}㎡`);
   if (processSummary.length) details.push(`선택 공정 수량: ${processSummary.join(', ')}`);
   return details.join(' / ');
+}
+
+export function quantitySourceLabel(source?: string) {
+  if (source === 'LIGHTBIM') return 'LightBIM 도면 수량';
+  if (source === 'USER') return '사용자 수정';
+  return '기본 산식';
+}
+
+export function formatQuantitySourceSummary(summary?: Record<string, unknown>) {
+  if (!summary) return '';
+  const lightBim = Number(summary.lightbim_bound_item_count || 0);
+  const defaults = Number(summary.default_item_count || 0);
+  const user = Number(summary.user_override_count || 0);
+  return `LightBIM 적용 항목 ${lightBim}개 / 기본 산식 항목 ${defaults}개 / 사용자 수정 항목 ${user}개`;
 }

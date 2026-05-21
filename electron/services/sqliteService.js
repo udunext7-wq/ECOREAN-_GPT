@@ -4397,11 +4397,20 @@ function createSqliteService({ app }) {
       }
 
       if (activeImportId) {
+        const quantitySummary = preview?.estimate?.quantity_source_summary || {};
+        const normalizedSummary = {
+          ...draft.summary,
+          applied_quantity_keys: quantitySummary.applied_quantity_keys || [],
+          created_line_item_count: Array.isArray(preview?.estimate?.line_items) ? preview.estimate.line_items.length : 0,
+          lightbim_bound_item_count: quantitySummary.lightbim_bound_item_count || 0,
+          default_item_count: quantitySummary.default_item_count || 0,
+          user_override_count: quantitySummary.user_override_count || 0
+        };
         db.project.prepare(`
           UPDATE lightbim_imports
-          SET created_estimate_type = ?, created_estimate_id = ?, status = ?, error_message = NULL
+          SET created_estimate_type = ?, created_estimate_id = ?, normalized_summary_json = ?, status = ?, error_message = NULL
           WHERE id = ?
-        `).run(draft.estimateType, estimateId, 'SUCCESS', activeImportId);
+        `).run(draft.estimateType, estimateId, toJson(normalizedSummary), 'SUCCESS', activeImportId);
       }
 
       return {

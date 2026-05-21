@@ -147,9 +147,36 @@ function buildSummary(payload, estimateType) {
   };
 }
 
+function buildQuantityBasis(summary) {
+  const processQuantities = summary.processQuantities || {};
+  return {
+    total_area_m2: summary.totalAreaM2,
+    flooring_area_m2: safeNumber(processQuantities.flooring_area_m2, summary.floorAreaM2 || summary.totalAreaM2),
+    floor_area_m2: summary.floorAreaM2 || summary.totalAreaM2,
+    bathroom_area_m2: summary.bathroomCount > 0 ? summary.spaces.filter(isBathroomSpace).reduce((sum, space) => sum + getArea(space), 0) : 0,
+    kitchen_area_m2: summary.kitchenExists ? summary.spaces.filter(isKitchenSpace).reduce((sum, space) => sum + getArea(space), 0) : 0,
+    ceiling_area_m2: summary.totalCeilingAreaM2,
+    wall_area_m2: summary.totalWallAreaM2,
+    net_wall_area_m2: summary.totalWallAreaM2,
+    wallpaper_area_m2: summary.wallpaperAreaM2,
+    painting_area_m2: summary.paintingAreaM2,
+    tile_area_m2: summary.tileAreaM2,
+    bathroom_tile_area_m2: safeNumber(processQuantities.bathroom_tile_area_m2, summary.bathroomCount > 0 ? summary.tileAreaM2 : 0),
+    kitchen_wall_tile_area_m2: safeNumber(processQuantities.kitchen_wall_tile_area_m2, 0),
+    baseboard_length_m: summary.baseboardLengthM,
+    molding_length_m: summary.moldingLengthM,
+    perimeter_m: summary.totalPerimeterM,
+    kitchen_length_m: safeNumber(processQuantities.kitchen_length_m ?? processQuantities.estimated_kitchen_length_m, 0),
+    door_count: summary.doorCount,
+    window_count: summary.windowCount,
+    warnings: summary.warnings
+  };
+}
+
 function createBathroomDraft(payload, summary) {
   const spaces = getSpaces(payload);
   const bathroomArea = sumSpaceArea(spaces, isBathroomSpace) || summary.totalAreaM2 || 4.2;
+  const quantityBasis = buildQuantityBasis(summary);
   return {
     customerName: '',
     siteName: summary.projectName || '',
@@ -173,11 +200,14 @@ function createBathroomDraft(payload, summary) {
       faucetReplace: true
     },
     lightBimSource: {
+      quantityBasis,
       floorAreaM2: summary.totalAreaM2,
+      bathroomAreaM2: quantityBasis.bathroom_area_m2 || bathroomArea,
       wallAreaM2: summary.totalWallAreaM2,
       ceilingAreaM2: summary.totalCeilingAreaM2,
       perimeterM: summary.totalPerimeterM,
       tileAreaM2: summary.tileAreaM2,
+      bathroomTileAreaM2: quantityBasis.bathroom_tile_area_m2,
       warnings: summary.warnings,
       doorCount: summary.doorCount,
       windowCount: summary.windowCount
@@ -197,6 +227,20 @@ function createKitchenDraft(payload, summary) {
     0
   );
   const estimatedLengthMm = Math.max(1800, suppliedLengthMm || Math.round(((kitchenPerimeter || Math.sqrt(kitchenArea) * 2) / 2) * 1000));
+  const quantityBasis = buildQuantityBasis(summary);
+  quantityBasis.kitchen_length_m = suppliedLengthMm ? suppliedLengthMm / 1000 : estimatedLengthMm / 1000;
+  const warnings = suppliedLengthMm
+    ? summary.warnings
+    : [
+      ...summary.warnings,
+      {
+        code: 'ESTIMATED_KITCHEN_LENGTH',
+        severity: 'INFO',
+        message: '주방 길이가 직접 입력되지 않아 둘레 기준으로 추정되었습니다.',
+        entity_type: 'SPACE',
+        entity_id: kitchenSpaces[0]?.id || ''
+      }
+    ];
   return {
     customerName: '',
     siteName: summary.projectName || '',
@@ -230,12 +274,14 @@ function createKitchenDraft(payload, summary) {
       moldingFinish: true
     },
     lightBimSource: {
+      quantityBasis,
       kitchenAreaM2: Number(kitchenArea.toFixed(2)),
       wallAreaM2: summary.totalWallAreaM2,
       perimeterM: kitchenPerimeter,
       estimatedKitchenLengthMm: estimatedLengthMm,
       tileAreaM2: summary.tileAreaM2,
-      warnings: summary.warnings,
+      kitchenWallTileAreaM2: quantityBasis.kitchen_wall_tile_area_m2,
+      warnings,
       doorCount: summary.doorCount,
       windowCount: summary.windowCount
     }
@@ -244,6 +290,7 @@ function createKitchenDraft(payload, summary) {
 
 function createFullDraft(payload, summary) {
   const processQuantities = summary.processQuantities || {};
+  const quantityBasis = buildQuantityBasis(summary);
   const spaces = summary.spaces || [];
   const bathroomCount = Math.max(1, summary.bathroomCount || 1);
   const selectedProcesses = {
@@ -299,10 +346,16 @@ function createFullDraft(payload, summary) {
     },
     customerPriceMultiplier: 1.22,
     lightBimSource: {
+      quantityBasis,
       floorAreaM2: summary.totalAreaM2,
+      bathroomAreaM2: quantityBasis.bathroom_area_m2,
+      kitchenAreaM2: quantityBasis.kitchen_area_m2,
       wallAreaM2: summary.totalWallAreaM2,
       ceilingAreaM2: summary.totalCeilingAreaM2,
       perimeterM: summary.totalPerimeterM,
+      tileAreaM2: summary.tileAreaM2,
+      bathroomTileAreaM2: quantityBasis.bathroom_tile_area_m2,
+      kitchenWallTileAreaM2: quantityBasis.kitchen_wall_tile_area_m2,
       doorCount: summary.doorCount,
       windowCount: summary.windowCount,
       spaces: summary.spaces,

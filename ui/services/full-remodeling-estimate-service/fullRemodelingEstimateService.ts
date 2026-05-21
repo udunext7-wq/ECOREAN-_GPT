@@ -29,6 +29,13 @@ export type FullRemodelingEstimateItem = {
   internalTotal: number;
   margin: number;
   marginRate: number;
+  quantity_source?: 'USER' | 'LIGHTBIM' | 'DEFAULT';
+  quantitySource?: 'USER' | 'LIGHTBIM' | 'DEFAULT';
+  quantitySourceKo?: string;
+  quantity_basis_key?: string;
+  quantity_note?: string;
+  original_lightbim_quantity?: number | null;
+  user_quantity_override?: number | null;
 };
 
 export type FullRemodelingEstimateResult = {
@@ -44,6 +51,7 @@ export type FullRemodelingEstimateResult = {
   pce_label_ko: string;
   schedule_days: number;
   process_summary: Array<Record<string, unknown>>;
+  quantity_source_summary?: Record<string, number | string[]>;
   line_items: FullRemodelingEstimateItem[];
 };
 

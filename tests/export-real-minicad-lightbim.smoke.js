@@ -74,6 +74,9 @@ loadRealExportFunctionFromMiniCadUi();
 assert.strictEqual(typeof context.window.exportLightBIMJSON, 'function', 'window.exportLightBIMJSON exists');
 
 const exported = context.window.exportLightBIMJSON();
+if (exported.project?.metadata?.created_at) {
+  exported.project.metadata.created_at = '2026-05-21T00:00:00.000Z';
+}
 assert.strictEqual(exported.schema, 'ECOREAN.LightBIM.v0.1', 'exportLightBIMJSON returns valid schema');
 assert.ok(exported.project, 'export includes project');
 assert.ok(exported.quantities, 'export includes quantities');

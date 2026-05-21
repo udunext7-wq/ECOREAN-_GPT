@@ -11,7 +11,7 @@ import {
   type BathroomEstimatePreview
 } from '../../services/bathroom-estimate-service/bathroomEstimateService';
 import { AIEstimateAssistantPanel } from './AIEstimateAssistantPanel';
-import { formatLightBIMSource, getLightBIMSource, readLightBIMInitialInput } from './lightBimDraft';
+import { formatLightBIMSource, formatQuantitySourceSummary, getLightBIMSource, quantitySourceLabel, readLightBIMInitialInput } from './lightBimDraft';
 
 const steps = ['기본 정보', '시공 방식', '옵션', '자동 산출', '출력'];
 
@@ -506,14 +506,19 @@ export function BathroomEstimateWizardView() {
                   </table>
 
                   <h4>상세 원가</h4>
+                  {preview.estimate.quantity_source_summary ? (
+                    <p className="assistant-message">수량 출처: {formatQuantitySourceSummary(preview.estimate.quantity_source_summary)}</p>
+                  ) : null}
                   <table className="estimate-line-table professional-table compact">
-                    <thead><tr><th>항목</th><th>수량</th><th>단위</th><th>고객가</th><th>자재</th><th>노무</th><th>외주</th><th>마진</th></tr></thead>
+                    <thead><tr><th>항목</th><th>수량</th><th>단위</th><th>수량 출처</th><th>수량 근거</th><th>고객가</th><th>자재</th><th>노무</th><th>외주</th><th>마진</th></tr></thead>
                     <tbody>
                       {preview.estimate.line_items.map((item) => (
                         <tr key={`${item.category}-${item.itemName}`}>
                           <td>{item.itemName}</td>
                           <td>{item.quantity}</td>
                           <td>{item.unit}</td>
+                          <td>{quantitySourceLabel(item.quantity_source || item.quantitySource)}</td>
+                          <td>{item.quantity_basis_key || '-'}</td>
                           <td>{formatWon(item.customerTotal)}</td>
                           <td>{formatWon(item.materialCost)}</td>
                           <td>{formatWon(item.laborCost)}</td>

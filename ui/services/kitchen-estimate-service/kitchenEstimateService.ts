@@ -45,6 +45,13 @@ export type KitchenEstimateItem = {
   internalTotal: number;
   margin: number;
   marginRate: number;
+  quantity_source?: 'USER' | 'LIGHTBIM' | 'DEFAULT';
+  quantitySource?: 'USER' | 'LIGHTBIM' | 'DEFAULT';
+  quantitySourceKo?: string;
+  quantity_basis_key?: string;
+  quantity_note?: string;
+  original_lightbim_quantity?: number | null;
+  user_quantity_override?: number | null;
 };
 
 export type KitchenEstimateResult = {
@@ -59,6 +66,7 @@ export type KitchenEstimateResult = {
   pce_decision: 'BLOCK' | 'MODIFY' | 'GO' | 'SCALE';
   pce_label_ko: string;
   schedule_days: number;
+  quantity_source_summary?: Record<string, number | string[]>;
   line_items: KitchenEstimateItem[];
 };
 

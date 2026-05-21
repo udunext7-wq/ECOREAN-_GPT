@@ -5,6 +5,13 @@ const PCE_LABELS_KO = {
   SCALE: '고마진 복제 대상'
 };
 
+const {
+  resolveQuantity,
+  itemQuantityMeta,
+  preserveQuantityMeta,
+  summarizeQuantitySources
+} = require('./lightBimQuantityBinding');
+
 function numberOr(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -122,7 +129,9 @@ function normalizeFullInput(input = {}) {
         storage: Boolean(input.options?.builtInFurniture?.storage)
       }
     },
-    customerPriceMultiplier: Math.max(0.3, numberOr(input.customerPriceMultiplier, 1.22))
+    customerPriceMultiplier: Math.max(0.3, numberOr(input.customerPriceMultiplier, 1.22)),
+    lightBimSource: input.lightBimSource && typeof input.lightBimSource === 'object' ? input.lightBimSource : null,
+    manualQuantityOverrides: input.manualQuantityOverrides || input.quantityOverrides || {}
   };
 }
 
@@ -133,7 +142,7 @@ function decidePce(marginRate) {
   return 'SCALE';
 }
 
-function makeItem({ category, itemName, quantity, unit, customerUnitPrice, materialCost = 0, laborCost = 0, subcontractCost = 0 }) {
+function makeItem({ category, itemName, quantity, unit, customerUnitPrice, materialCost = 0, laborCost = 0, subcontractCost = 0, quantityMeta = {} }) {
   const customerTotal = roundWon(quantity * customerUnitPrice);
   const internalTotal = roundWon(materialCost + laborCost + subcontractCost);
   const margin = customerTotal - internalTotal;
@@ -149,7 +158,8 @@ function makeItem({ category, itemName, quantity, unit, customerUnitPrice, mater
     subcontractCost: roundWon(subcontractCost),
     internalTotal,
     margin,
-    marginRate: customerTotal > 0 ? Number((margin / customerTotal).toFixed(4)) : 0
+    marginRate: customerTotal > 0 ? Number((margin / customerTotal).toFixed(4)) : 0,
+    ...quantityMeta
   };
 }
 
@@ -162,7 +172,8 @@ function applyMultiplier(items, multiplier) {
     customerUnitPrice: item.customerUnitPrice * multiplier,
     materialCost: item.materialCost,
     laborCost: item.laborCost,
-    subcontractCost: item.subcontractCost
+    subcontractCost: item.subcontractCost,
+    quantityMeta: preserveQuantityMeta(item)
   }));
 }
 
@@ -183,10 +194,40 @@ function addDemolition(items, input) {
 function addBathroom(items, input) {
   if (!input.selectedProcesses.bathroom) return;
   const count = input.options.bathroom.count;
-  items.push(makeItem({ category: '욕실', itemName: '방수', quantity: count, unit: '실', customerUnitPrice: 520000, materialCost: count * 130000, laborCost: count * 220000 }));
-  items.push(makeItem({ category: '욕실', itemName: '타일', quantity: count, unit: '실', customerUnitPrice: 1450000, materialCost: count * 520000, laborCost: count * 520000 }));
+  const bathroomArea = resolveQuantity(input, 'bathroom_area_m2', count);
+  const bathroomTile = resolveQuantity(input, 'bathroom_tile_area_m2', count, { lightBimNote: 'LightBIM 욕실 타일 수량 기준' });
+  const bathroomCeiling = resolveQuantity(input, 'ceiling_area_m2', count, { lightBimNote: 'LightBIM 천장 면적 기준' });
+  items.push(makeItem({
+    category: '욕실',
+    itemName: '방수',
+    quantity: bathroomArea.source === 'DEFAULT' ? count : bathroomArea.value,
+    unit: bathroomArea.source === 'DEFAULT' ? '실' : 'm2',
+    customerUnitPrice: bathroomArea.source === 'DEFAULT' ? 520000 : 72000,
+    materialCost: bathroomArea.source === 'DEFAULT' ? count * 130000 : bathroomArea.value * 21000,
+    laborCost: bathroomArea.source === 'DEFAULT' ? count * 220000 : bathroomArea.value * 28000,
+    quantityMeta: itemQuantityMeta(bathroomArea)
+  }));
+  items.push(makeItem({
+    category: '욕실',
+    itemName: '타일',
+    quantity: bathroomTile.source === 'DEFAULT' ? count : bathroomTile.value,
+    unit: bathroomTile.source === 'DEFAULT' ? '실' : 'm2',
+    customerUnitPrice: bathroomTile.source === 'DEFAULT' ? 1450000 : 98000,
+    materialCost: bathroomTile.source === 'DEFAULT' ? count * 520000 : bathroomTile.value * 39000,
+    laborCost: bathroomTile.source === 'DEFAULT' ? count * 520000 : bathroomTile.value * 31000,
+    quantityMeta: itemQuantityMeta(bathroomTile)
+  }));
   items.push(makeItem({ category: '욕실', itemName: '도기/수전', quantity: count, unit: '실', customerUnitPrice: 1250000, materialCost: count * 760000, laborCost: count * 170000 }));
-  items.push(makeItem({ category: '욕실', itemName: '천장/환풍기', quantity: count, unit: '실', customerUnitPrice: 850000, materialCost: count * 430000, laborCost: count * 160000 }));
+  items.push(makeItem({
+    category: '욕실',
+    itemName: '천장/환풍기',
+    quantity: bathroomCeiling.source === 'DEFAULT' ? count : bathroomCeiling.value,
+    unit: bathroomCeiling.source === 'DEFAULT' ? '실' : 'm2',
+    customerUnitPrice: bathroomCeiling.source === 'DEFAULT' ? 850000 : 155000,
+    materialCost: bathroomCeiling.source === 'DEFAULT' ? count * 430000 : bathroomCeiling.value * 62000,
+    laborCost: bathroomCeiling.source === 'DEFAULT' ? count * 160000 : bathroomCeiling.value * 41000,
+    quantityMeta: itemQuantityMeta(bathroomCeiling)
+  }));
   if (input.options.bathroom.showerBooth) items.push(makeItem({ category: '욕실', itemName: '샤워부스', quantity: count, unit: '실', customerUnitPrice: 520000, materialCost: count * 310000, laborCost: count * 70000 }));
   if (input.options.bathroom.bathtub) items.push(makeItem({ category: '욕실', itemName: '욕조', quantity: count, unit: '실', customerUnitPrice: 650000, materialCost: count * 390000, laborCost: count * 85000 }));
   if (input.options.bathroom.zenda) items.push(makeItem({ category: '욕실', itemName: '젠다이', quantity: count, unit: '실', customerUnitPrice: 420000, materialCost: count * 160000, laborCost: count * 150000 }));
@@ -194,38 +235,51 @@ function addBathroom(items, input) {
 
 function addKitchen(items, input) {
   if (!input.selectedProcesses.kitchen) return;
-  const lengthM = input.options.kitchen.lengthMm / 1000;
+  const kitchenLength = resolveQuantity(input, 'kitchen_length_m', input.options.kitchen.lengthMm / 1000, {
+    lightBimNote: 'LightBIM 주방 길이 수량 기준'
+  });
+  const lengthM = kitchenLength.value;
   const shapeFactor = { straight: 1, l_shape: 1.15, u_shape: 1.3, island: 1.45 }[input.options.kitchen.type] || 1;
   const adjustedM = lengthM * shapeFactor;
-  items.push(makeItem({ category: '주방', itemName: '가구', quantity: adjustedM, unit: 'm', customerUnitPrice: 920000, materialCost: adjustedM * 520000, laborCost: adjustedM * 120000 }));
-  items.push(makeItem({ category: '주방', itemName: '상판', quantity: adjustedM, unit: 'm', customerUnitPrice: input.options.kitchen.countertopType === 'ceramic' ? 820000 : 430000, materialCost: adjustedM * (input.options.kitchen.countertopType === 'ceramic' ? 550000 : 245000), laborCost: adjustedM * 70000 }));
+  const adjustedKitchenLength = { ...kitchenLength, value: adjustedM };
+  items.push(makeItem({ category: '주방', itemName: '가구', quantity: adjustedM, unit: 'm', customerUnitPrice: 920000, materialCost: adjustedM * 520000, laborCost: adjustedM * 120000, quantityMeta: itemQuantityMeta(adjustedKitchenLength) }));
+  items.push(makeItem({ category: '주방', itemName: '상판', quantity: adjustedM, unit: 'm', customerUnitPrice: input.options.kitchen.countertopType === 'ceramic' ? 820000 : 430000, materialCost: adjustedM * (input.options.kitchen.countertopType === 'ceramic' ? 550000 : 245000), laborCost: adjustedM * 70000, quantityMeta: itemQuantityMeta(adjustedKitchenLength) }));
   if (input.options.kitchen.sinkBowl) items.push(makeItem({ category: '주방', itemName: '싱크볼/수전/배관', quantity: 1, unit: '식', customerUnitPrice: 680000, materialCost: 390000, laborCost: 150000 }));
   if (input.options.kitchen.hood) items.push(makeItem({ category: '주방', itemName: '후드', quantity: 1, unit: '대', customerUnitPrice: 380000, materialCost: 240000, laborCost: 60000 }));
   if (input.options.kitchen.cooktop) items.push(makeItem({ category: '주방', itemName: '쿡탑', quantity: 1, unit: '대', customerUnitPrice: 450000, materialCost: 300000, laborCost: 55000 }));
-  items.push(makeItem({ category: '주방', itemName: '주방 마감', quantity: 1, unit: '식', customerUnitPrice: 420000, materialCost: 160000, laborCost: 160000 }));
+  const kitchenTile = resolveQuantity(input, 'kitchen_wall_tile_area_m2', Math.max(3, adjustedM * 0.6), {
+    lightBimNote: 'LightBIM 주방 벽타일 수량 기준'
+  });
+  items.push(makeItem({ category: '주방', itemName: '주방 마감', quantity: kitchenTile.source === 'DEFAULT' ? 1 : kitchenTile.value, unit: kitchenTile.source === 'DEFAULT' ? '식' : 'm2', customerUnitPrice: kitchenTile.source === 'DEFAULT' ? 420000 : 125000, materialCost: kitchenTile.source === 'DEFAULT' ? 160000 : kitchenTile.value * 52000, laborCost: kitchenTile.source === 'DEFAULT' ? 160000 : kitchenTile.value * 36000, quantityMeta: itemQuantityMeta(kitchenTile) }));
 }
 
 function addFinishProcesses(items, input) {
   const area = input.areaM2;
+  const flooringArea = resolveQuantity(input, 'flooring_area_m2', area);
+  const wallpaperArea = resolveQuantity(input, 'wallpaper_area_m2', input.options.wallpaper.ceilingIncluded ? area * 2.7 : area * 2.15);
+  const paintingArea = resolveQuantity(input, 'painting_area_m2', area * 1.1);
+  const ceilingArea = resolveQuantity(input, 'ceiling_area_m2', area);
+  const baseboardLength = resolveQuantity(input, 'baseboard_length_m', area, { lightBimNote: 'LightBIM 걸레받이 길이 기준' });
+  const moldingLength = resolveQuantity(input, 'molding_length_m', area, { lightBimNote: 'LightBIM 몰딩 길이 기준' });
   if (input.selectedProcesses.flooring) {
-    if (input.options.flooring.demolitionIncluded) items.push(makeItem({ category: '바닥', itemName: '바닥 철거', quantity: area, unit: 'm2', customerUnitPrice: 12000, laborCost: area * 4200, subcontractCost: area * 3800 }));
-    items.push(makeItem({ category: '바닥', itemName: `바닥재 ${input.options.flooring.type}`, quantity: area, unit: 'm2', customerUnitPrice: 76000, materialCost: area * 39000, laborCost: area * 17000 }));
-    items.push(makeItem({ category: '바닥', itemName: '걸레받이/부자재', quantity: area, unit: 'm2', customerUnitPrice: 9000, materialCost: area * 4200, laborCost: area * 2300 }));
+    if (input.options.flooring.demolitionIncluded) items.push(makeItem({ category: '바닥', itemName: '바닥 철거', quantity: flooringArea.value, unit: 'm2', customerUnitPrice: 12000, laborCost: flooringArea.value * 4200, subcontractCost: flooringArea.value * 3800, quantityMeta: itemQuantityMeta(flooringArea) }));
+    items.push(makeItem({ category: '바닥', itemName: `바닥재 ${input.options.flooring.type}`, quantity: flooringArea.value, unit: 'm2', customerUnitPrice: 76000, materialCost: flooringArea.value * 39000, laborCost: flooringArea.value * 17000, quantityMeta: itemQuantityMeta(flooringArea) }));
+    items.push(makeItem({ category: '바닥', itemName: '걸레받이/부자재', quantity: baseboardLength.value, unit: 'm', customerUnitPrice: 9000, materialCost: baseboardLength.value * 4200, laborCost: baseboardLength.value * 2300, quantityMeta: itemQuantityMeta(baseboardLength) }));
   }
   if (input.selectedProcesses.wallpaper) {
-    const paperArea = input.options.wallpaper.ceilingIncluded ? area * 2.7 : area * 2.15;
-    items.push(makeItem({ category: '도배', itemName: input.options.wallpaper.type === 'silk' ? '실크벽지' : '합지', quantity: paperArea, unit: 'm2', customerUnitPrice: input.options.wallpaper.type === 'silk' ? 18500 : 12000, materialCost: paperArea * 7200, laborCost: paperArea * 6800 }));
-    items.push(makeItem({ category: '도배', itemName: '도배 부자재', quantity: paperArea, unit: 'm2', customerUnitPrice: 2600, materialCost: paperArea * 1400 }));
+    const paperArea = wallpaperArea.value;
+    items.push(makeItem({ category: '도배', itemName: input.options.wallpaper.type === 'silk' ? '실크벽지' : '합지', quantity: paperArea, unit: 'm2', customerUnitPrice: input.options.wallpaper.type === 'silk' ? 18500 : 12000, materialCost: paperArea * 7200, laborCost: paperArea * 6800, quantityMeta: itemQuantityMeta(wallpaperArea) }));
+    items.push(makeItem({ category: '도배', itemName: '도배 부자재', quantity: paperArea, unit: 'm2', customerUnitPrice: 2600, materialCost: paperArea * 1400, quantityMeta: itemQuantityMeta(wallpaperArea) }));
   }
   if (input.selectedProcesses.painting) {
-    const paintArea = area * 1.1;
-    items.push(makeItem({ category: '도장', itemName: '도장재/퍼티', quantity: paintArea, unit: 'm2', customerUnitPrice: 15500, materialCost: paintArea * 5200, laborCost: paintArea * 7600 }));
+    const paintArea = paintingArea.value;
+    items.push(makeItem({ category: '도장', itemName: '도장재/퍼티', quantity: paintArea, unit: 'm2', customerUnitPrice: 15500, materialCost: paintArea * 5200, laborCost: paintArea * 7600, quantityMeta: itemQuantityMeta(paintingArea) }));
   }
   if (input.selectedProcesses.carpentry) {
-    if (input.options.carpentry.ceiling) items.push(makeItem({ category: '목공', itemName: '천장 목공', quantity: area, unit: 'm2', customerUnitPrice: 42000, materialCost: area * 16000, laborCost: area * 19000 }));
+    if (input.options.carpentry.ceiling) items.push(makeItem({ category: '목공', itemName: '천장 목공', quantity: ceilingArea.value, unit: 'm2', customerUnitPrice: 42000, materialCost: ceilingArea.value * 16000, laborCost: ceilingArea.value * 19000, quantityMeta: itemQuantityMeta(ceilingArea) }));
     if (input.options.carpentry.indirectBox) items.push(makeItem({ category: '목공', itemName: '간접조명 박스', quantity: input.roomCount + 1, unit: '실', customerUnitPrice: 320000, materialCost: (input.roomCount + 1) * 120000, laborCost: (input.roomCount + 1) * 135000 }));
     if (input.options.carpentry.artWall) items.push(makeItem({ category: '목공', itemName: '아트월', quantity: 1, unit: '식', customerUnitPrice: 850000, materialCost: 350000, laborCost: 320000 }));
-    if (input.options.carpentry.molding) items.push(makeItem({ category: '목공', itemName: '몰딩', quantity: area, unit: 'm2', customerUnitPrice: 9500, materialCost: area * 4100, laborCost: area * 3200 }));
+    if (input.options.carpentry.molding) items.push(makeItem({ category: '목공', itemName: '몰딩', quantity: moldingLength.value, unit: 'm', customerUnitPrice: 9500, materialCost: moldingLength.value * 4100, laborCost: moldingLength.value * 3200, quantityMeta: itemQuantityMeta(moldingLength) }));
     if (input.options.carpentry.doorTrim) items.push(makeItem({ category: '목공', itemName: '문선', quantity: input.roomCount + 2, unit: '개소', customerUnitPrice: 95000, materialCost: (input.roomCount + 2) * 36000, laborCost: (input.roomCount + 2) * 41000 }));
   }
 }
@@ -326,6 +380,7 @@ function calculateFullRemodelingEstimate(rawInput = {}) {
     pce_label_ko: PCE_LABELS_KO[pceDecision],
     schedule_days: suggestFullDuration(input),
     process_summary: summarizeByProcess(multiplied),
+    quantity_source_summary: summarizeQuantitySources(multiplied),
     line_items: multiplied
   };
 }

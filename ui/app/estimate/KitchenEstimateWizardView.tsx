@@ -10,7 +10,7 @@ import {
   type KitchenEstimateInput,
   type KitchenEstimatePreview
 } from '../../services/kitchen-estimate-service/kitchenEstimateService';
-import { formatLightBIMSource, getLightBIMSource, readLightBIMInitialInput } from './lightBimDraft';
+import { formatLightBIMSource, formatQuantitySourceSummary, getLightBIMSource, quantitySourceLabel, readLightBIMInitialInput } from './lightBimDraft';
 
 const steps = ['기본 정보', '가구 사양', '설비/전기', '마감', '자동 산출', '출력'];
 
@@ -425,13 +425,32 @@ export function KitchenEstimateWizardView() {
                       </tbody>
                     </table>
                   ) : (
-                    <table className="data-table">
-                      <thead><tr><th>공정</th><th>고객가</th><th>원가</th><th>마진</th><th>마진율</th></tr></thead>
-                      <tbody>
-                        {groupedInternalRows.map((row) => <tr key={row.category}><td>{row.category}</td><td>{formatWon(row.customerTotal)}</td><td>{formatWon(row.internalTotal)}</td><td>{formatWon(row.margin)}</td><td>{percent(row.customerTotal ? row.margin / row.customerTotal : 0)}</td></tr>)}
-                        <tr><th>합계</th><th>{formatWon(preview.estimate.revenue)}</th><th>{formatWon(preview.estimate.total_cost)}</th><th>{formatWon(preview.estimate.expected_margin)}</th><th>{percent(preview.estimate.expected_margin_rate)}</th></tr>
-                      </tbody>
-                    </table>
+                    <>
+                      <table className="data-table">
+                        <thead><tr><th>공정</th><th>고객가</th><th>원가</th><th>마진</th><th>마진율</th></tr></thead>
+                        <tbody>
+                          {groupedInternalRows.map((row) => <tr key={row.category}><td>{row.category}</td><td>{formatWon(row.customerTotal)}</td><td>{formatWon(row.internalTotal)}</td><td>{formatWon(row.margin)}</td><td>{percent(row.customerTotal ? row.margin / row.customerTotal : 0)}</td></tr>)}
+                          <tr><th>합계</th><th>{formatWon(preview.estimate.revenue)}</th><th>{formatWon(preview.estimate.total_cost)}</th><th>{formatWon(preview.estimate.expected_margin)}</th><th>{percent(preview.estimate.expected_margin_rate)}</th></tr>
+                        </tbody>
+                      </table>
+                      {preview.estimate.quantity_source_summary ? (
+                        <p className="assistant-message">수량 출처: {formatQuantitySourceSummary(preview.estimate.quantity_source_summary)}</p>
+                      ) : null}
+                      <table className="data-table compact">
+                        <thead><tr><th>항목</th><th>수량</th><th>단위</th><th>수량 출처</th><th>수량 근거</th></tr></thead>
+                        <tbody>
+                          {preview.estimate.line_items.map((item) => (
+                            <tr key={`${item.category}-${item.itemName}`}>
+                              <td>{item.itemName}</td>
+                              <td>{item.quantity}</td>
+                              <td>{item.unit}</td>
+                              <td>{quantitySourceLabel(item.quantity_source || item.quantitySource)}</td>
+                              <td>{item.quantity_basis_key || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
                   )}
                   <div className="button-row no-print">
                     <button onClick={() => handleExport('customer', 'pdf')} disabled={isBusy}>고객 PDF 다운로드</button>

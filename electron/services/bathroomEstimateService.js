@@ -5,6 +5,13 @@ const PCE_LABELS_KO = {
   SCALE: '고마진 복제 대상'
 };
 
+const {
+  resolveQuantity,
+  itemQuantityMeta,
+  preserveQuantityMeta,
+  summarizeQuantitySources
+} = require('./lightBimQuantityBinding');
+
 function numberOr(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -37,7 +44,9 @@ function normalizeBathroomInput(input = {}) {
       lightingReplace: input.options?.lightingReplace !== false,
       faucetReplace: input.options?.faucetReplace !== false
     },
-    customerPriceMultiplier: Math.max(0.3, numberOr(input.customerPriceMultiplier, 1))
+    customerPriceMultiplier: Math.max(0.3, numberOr(input.customerPriceMultiplier, 1)),
+    lightBimSource: input.lightBimSource && typeof input.lightBimSource === 'object' ? input.lightBimSource : null,
+    manualQuantityOverrides: input.manualQuantityOverrides || input.quantityOverrides || {}
   };
 }
 
@@ -67,7 +76,7 @@ function fixtureUnitPrices(grade) {
   return map[grade] || map.basic;
 }
 
-function makeItem({ category, itemName, quantity, unit, customerUnitPrice, materialCost = 0, laborCost = 0, subcontractCost = 0 }) {
+function makeItem({ category, itemName, quantity, unit, customerUnitPrice, materialCost = 0, laborCost = 0, subcontractCost = 0, quantityMeta = {} }) {
   const customerTotal = roundWon(quantity * customerUnitPrice);
   const internalTotal = roundWon(materialCost + laborCost + subcontractCost);
   const margin = customerTotal - internalTotal;
@@ -84,7 +93,8 @@ function makeItem({ category, itemName, quantity, unit, customerUnitPrice, mater
     subcontractCost: roundWon(subcontractCost),
     internalTotal,
     margin,
-    marginRate
+    marginRate,
+    ...quantityMeta
   };
 }
 
@@ -99,16 +109,30 @@ function applyCustomerMultiplier(items, multiplier) {
       customerUnitPrice,
       materialCost: item.materialCost,
       laborCost: item.laborCost,
-      subcontractCost: item.subcontractCost
+      subcontractCost: item.subcontractCost,
+      quantityMeta: preserveQuantityMeta(item)
     });
   });
 }
 
 function calculateBathroomEstimate(rawInput = {}) {
   const input = normalizeBathroomInput(rawInput);
-  const floorArea = input.bathroomAreaM2 * input.bathroomCount;
-  const wallArea = floorArea * 3.2;
-  const tileArea = floorArea + wallArea;
+  const defaultFloorArea = input.bathroomAreaM2 * input.bathroomCount;
+  const floorAreaQuantity = resolveQuantity(input, 'bathroom_area_m2', defaultFloorArea);
+  if (floorAreaQuantity.source === 'DEFAULT') {
+    const floorAreaFallback = resolveQuantity(input, 'floor_area_m2', defaultFloorArea);
+    if (floorAreaFallback.source !== 'DEFAULT') Object.assign(floorAreaQuantity, floorAreaFallback, { basisKey: 'floor_area_m2' });
+  }
+  const floorArea = floorAreaQuantity.value;
+  const wallAreaQuantity = resolveQuantity(input, 'net_wall_area_m2', floorArea * 3.2);
+  const wallArea = wallAreaQuantity.value;
+  const ceilingAreaQuantity = resolveQuantity(input, 'ceiling_area_m2', input.bathroomCount);
+  const tileAreaQuantity = resolveQuantity(input, 'bathroom_tile_area_m2', floorArea + wallArea);
+  if (tileAreaQuantity.source === 'DEFAULT') {
+    const tileFallback = resolveQuantity(input, 'tile_area_m2', floorArea + wallArea);
+    if (tileFallback.source !== 'DEFAULT') Object.assign(tileAreaQuantity, tileFallback, { basisKey: 'tile_area_m2' });
+  }
+  const tileArea = tileAreaQuantity.value;
   const items = [];
 
   if (input.demolitionIncluded) {
@@ -144,24 +168,26 @@ function calculateBathroomEstimate(rawInput = {}) {
   }
 
   const waterproofExtra = input.waterproofMethod === 'membrane' ? 180000 : input.waterproofMethod === 'elastic' ? 260000 : 0;
-  items.push(makeItem({
-    category: '방수',
-    itemName: '바닥 방수',
-    quantity: floorArea,
-    unit: '㎡',
-    customerUnitPrice: 52000,
-    materialCost: floorArea * 15000,
-    laborCost: floorArea * 18000
-  }));
-  items.push(makeItem({
-    category: '방수',
-    itemName: '벽체 하부 방수',
-    quantity: wallArea * 0.35,
-    unit: '㎡',
-    customerUnitPrice: 36000,
-    materialCost: wallArea * 0.35 * 11000,
-    laborCost: wallArea * 0.35 * 12000
-  }));
+    items.push(makeItem({
+      category: '방수',
+      itemName: '바닥 방수',
+      quantity: floorArea,
+      unit: '㎡',
+      customerUnitPrice: 52000,
+      materialCost: floorArea * 15000,
+      laborCost: floorArea * 18000,
+      quantityMeta: itemQuantityMeta(floorAreaQuantity)
+    }));
+    items.push(makeItem({
+      category: '방수',
+      itemName: '벽체 하부 방수',
+      quantity: wallArea * 0.35,
+      unit: '㎡',
+      customerUnitPrice: 36000,
+      materialCost: wallArea * 0.35 * 11000,
+      laborCost: wallArea * 0.35 * 12000,
+      quantityMeta: itemQuantityMeta(wallAreaQuantity)
+    }));
   if (waterproofExtra > 0) {
     items.push(makeItem({
       category: '방수',
@@ -183,7 +209,8 @@ function calculateBathroomEstimate(rawInput = {}) {
     unit: '㎡',
     customerUnitPrice: wallTile.customer,
     materialCost: wallArea * wallTile.material,
-    laborCost: wallArea * wallTile.labor
+    laborCost: wallArea * wallTile.labor,
+    quantityMeta: itemQuantityMeta(wallAreaQuantity)
   }));
   items.push(makeItem({
     category: '타일',
@@ -192,7 +219,8 @@ function calculateBathroomEstimate(rawInput = {}) {
     unit: '㎡',
     customerUnitPrice: floorTile.customer,
     materialCost: floorArea * floorTile.material,
-    laborCost: floorArea * floorTile.labor
+    laborCost: floorArea * floorTile.labor,
+    quantityMeta: itemQuantityMeta(floorAreaQuantity)
   }));
   items.push(makeItem({
     category: '타일',
@@ -201,7 +229,8 @@ function calculateBathroomEstimate(rawInput = {}) {
     unit: '㎡',
     customerUnitPrice: 18000,
     materialCost: tileArea * 9500,
-    laborCost: tileArea * 1500
+    laborCost: tileArea * 1500,
+    quantityMeta: itemQuantityMeta(tileAreaQuantity)
   }));
   items.push(makeItem({
     category: '타일',
@@ -210,7 +239,8 @@ function calculateBathroomEstimate(rawInput = {}) {
     unit: '㎡',
     customerUnitPrice: 12000,
     materialCost: tileArea * 3500,
-    laborCost: tileArea * 4500
+    laborCost: tileArea * 4500,
+    quantityMeta: itemQuantityMeta(tileAreaQuantity)
   }));
 
   const fixture = fixtureUnitPrices(input.fixtureGrade);
@@ -265,11 +295,12 @@ function calculateBathroomEstimate(rawInput = {}) {
   items.push(makeItem({
     category: '천장/전기',
     itemName: '욕실 천장',
-    quantity: input.bathroomCount,
-    unit: '식',
-    customerUnitPrice: 700000,
-    materialCost: 310000,
-    laborCost: 180000
+    quantity: ceilingAreaQuantity.source === 'DEFAULT' ? input.bathroomCount : ceilingAreaQuantity.value,
+    unit: ceilingAreaQuantity.source === 'DEFAULT' ? '식' : '㎡',
+    customerUnitPrice: ceilingAreaQuantity.source === 'DEFAULT' ? 700000 : 155000,
+    materialCost: ceilingAreaQuantity.source === 'DEFAULT' ? 310000 : ceilingAreaQuantity.value * 62000,
+    laborCost: ceilingAreaQuantity.source === 'DEFAULT' ? 180000 : ceilingAreaQuantity.value * 41000,
+    quantityMeta: itemQuantityMeta(ceilingAreaQuantity)
   }));
   if (input.options.lightingReplace) {
     items.push(makeItem({
@@ -332,6 +363,7 @@ function calculateBathroomEstimate(rawInput = {}) {
     expected_margin_rate: expectedMarginRate,
     pce_decision: pceDecision,
     pce_label_ko: PCE_LABELS_KO[pceDecision],
+    quantity_source_summary: summarizeQuantitySources(adjustedItems),
     line_items: adjustedItems
   };
 }
