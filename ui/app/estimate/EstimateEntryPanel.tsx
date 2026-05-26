@@ -57,6 +57,14 @@ const primaryActions: EntryAction[] = [
     primary: true
   },
   {
+    title: 'LightBIM 수량 검토',
+    headline: '도면 수량 확인 / 사용자 수정 / PCE 재검증',
+    note: '수량 검토',
+    view: 'lightbimQuantityReview',
+    tone: 'warning',
+    primary: true
+  },
+  {
     title: '저장된 견적 불러오기',
     headline: '저장된 견적과 프로젝트를 다시 확인',
     note: '프로젝트 목록',

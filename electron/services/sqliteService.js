@@ -25,6 +25,7 @@ const {
   parseLightBIMJSON,
   createEstimateDraftFromLightBIM
 } = require('./lightBimImportService');
+const { createLightBIMQuantityReviewService } = require('./lightBimQuantityReviewService');
 const { exportEstimateDocument } = require('./estimateExportService');
 const { buildContractFromEstimate, exportContractPdf } = require('./contractService');
 const { buildScheduleFromEstimate } = require('./scheduleService');
@@ -149,6 +150,7 @@ function createSqliteService({ app }) {
     master: openDatabase(dbPaths.master),
     logs: openDatabase(dbPaths.logs)
   };
+  const lightBIMQuantityReviewService = createLightBIMQuantityReviewService({ db, nowIso, toJson, fromJson });
 
   const PROFIT_POLICY = {
     minimumBudget: 7000000,
@@ -202,6 +204,42 @@ function createSqliteService({ app }) {
         created_estimate_id TEXT,
         status TEXT NOT NULL,
         error_message TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS lightbim_quantity_reviews (
+        id TEXT PRIMARY KEY,
+        import_id TEXT,
+        estimate_type TEXT NOT NULL,
+        estimate_id TEXT NOT NULL,
+        estimate_item_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        item_name TEXT NOT NULL,
+        unit TEXT NOT NULL,
+        original_quantity REAL NOT NULL,
+        default_quantity REAL NOT NULL DEFAULT 0,
+        lightbim_quantity REAL,
+        current_quantity REAL NOT NULL,
+        quantity_source TEXT NOT NULL,
+        quantity_basis_key TEXT,
+        quantity_note TEXT,
+        warning_code TEXT,
+        warning_message TEXT,
+        reviewed_status TEXT NOT NULL,
+        override_reason TEXT,
+        pricing_json TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(estimate_type, estimate_id, estimate_item_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS lightbim_quantity_review_logs (
+        id TEXT PRIMARY KEY,
+        review_id TEXT NOT NULL,
+        action TEXT NOT NULL,
+        before_quantity REAL NOT NULL,
+        after_quantity REAL NOT NULL,
+        reason TEXT,
         created_at TEXT NOT NULL
       );
 
@@ -3188,6 +3226,7 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'visualization_jobs', 'output_path', 'output_path TEXT');
     ensureColumn(db.project, 'visualization_jobs', 'retry_count', 'retry_count INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'visualization_jobs', 'last_error', 'last_error TEXT');
+    ensureColumn(db.project, 'lightbim_quantity_reviews', 'default_quantity', 'default_quantity REAL NOT NULL DEFAULT 0');
   }
 
   function countRows(database, tableName) {
@@ -4396,6 +4435,23 @@ function createSqliteService({ app }) {
         targetView = 'fullRemodelingEstimate';
       }
 
+      const lineItems = Array.isArray(preview?.estimate?.line_items) ? preview.estimate.line_items : [];
+      const quantityBasis = draft.input?.lightBimSource?.quantityBasis
+        || draft.input?.lightBimSource?.quantity_basis
+        || draft.summary?.quantityBasis
+        || parsed?.bocEstimateInput?.quantity_basis
+        || {};
+      const reviewSummary = lightBIMQuantityReviewService.createReviewsForEstimate(
+        activeImportId,
+        draft.estimateType,
+        estimateId,
+        lineItems,
+        quantityBasis
+      );
+      if (preview?.estimate) {
+        preview.estimate.quantity_review_summary = reviewSummary;
+      }
+
       if (activeImportId) {
         const quantitySummary = preview?.estimate?.quantity_source_summary || {};
         const normalizedSummary = {
@@ -4404,7 +4460,10 @@ function createSqliteService({ app }) {
           created_line_item_count: Array.isArray(preview?.estimate?.line_items) ? preview.estimate.line_items.length : 0,
           lightbim_bound_item_count: quantitySummary.lightbim_bound_item_count || 0,
           default_item_count: quantitySummary.default_item_count || 0,
-          user_override_count: quantitySummary.user_override_count || 0
+          user_override_count: quantitySummary.user_override_count || 0,
+          quantity_review_total_count: reviewSummary.totalCount || 0,
+          quantity_review_pending_count: reviewSummary.pendingCount || 0,
+          critical_unresolved_quantity_review_count: reviewSummary.criticalUnresolvedCount || 0
         };
         db.project.prepare(`
           UPDATE lightbim_imports
@@ -4422,6 +4481,7 @@ function createSqliteService({ app }) {
         input: draft.input,
         preview,
         summary: draft.summary,
+        quantityReviewSummary: reviewSummary,
         aiPromptHints: draft.aiPromptHints,
         bannerKo: 'LightBIM 도면 데이터가 적용되었습니다.'
       };
@@ -4432,6 +4492,70 @@ function createSqliteService({ app }) {
       }
       return { ok: false, importId: activeImportId, errorMessage: message };
     }
+  }
+
+  function createLightBIMQuantityReviews(payload = {}) {
+    return lightBIMQuantityReviewService.createReviewsForEstimate(
+      payload.importId,
+      payload.estimateType,
+      payload.estimateId,
+      payload.lineItems || [],
+      payload.quantityBasis || payload.quantity_basis || {}
+    );
+  }
+
+  function getLightBIMQuantityReviews(payload = {}) {
+    const estimateType = payload.estimateType || payload.estimate_type;
+    const estimateId = payload.estimateId || payload.estimate_id;
+    return {
+      reviews: lightBIMQuantityReviewService.getReviewsByEstimate(estimateType, estimateId),
+      summary: lightBIMQuantityReviewService.getReviewSummary(estimateType, estimateId)
+    };
+  }
+
+  function updateLightBIMQuantityReview(payload = {}) {
+    try {
+      const review = lightBIMQuantityReviewService.updateReviewQuantity(
+        payload.reviewId || payload.id,
+        payload.quantity ?? payload.currentQuantity,
+        payload.reason || payload.overrideReason
+      );
+      return { ok: true, review, summary: lightBIMQuantityReviewService.getReviewSummary(review.estimateType, review.estimateId) };
+    } catch (error) {
+      return { ok: false, errorMessage: error instanceof Error ? error.message : '견적 초안 생성에 실패했습니다.' };
+    }
+  }
+
+  function confirmLightBIMQuantityReview(payload = {}) {
+    const review = lightBIMQuantityReviewService.confirmReview(payload.reviewId || payload.id);
+    return { ok: true, review, summary: lightBIMQuantityReviewService.getReviewSummary(review.estimateType, review.estimateId) };
+  }
+
+  function ignoreLightBIMQuantityReview(payload = {}) {
+    const review = lightBIMQuantityReviewService.ignoreReview(payload.reviewId || payload.id, payload.reason || payload.overrideReason || '');
+    return { ok: true, review, summary: lightBIMQuantityReviewService.getReviewSummary(review.estimateType, review.estimateId) };
+  }
+
+  function resetLightBIMQuantityReviewToDefault(payload = {}) {
+    const review = lightBIMQuantityReviewService.resetReviewToDefault(payload.reviewId || payload.id);
+    return { ok: true, review, summary: lightBIMQuantityReviewService.getReviewSummary(review.estimateType, review.estimateId) };
+  }
+
+  function applyLightBIMQuantityReview(payload = {}) {
+    const review = lightBIMQuantityReviewService.applyLightBIMQuantity(payload.reviewId || payload.id);
+    return { ok: true, review, summary: lightBIMQuantityReviewService.getReviewSummary(review.estimateType, review.estimateId) };
+  }
+
+  function recalculateEstimateAfterQuantityReview(payload = {}) {
+    const estimateType = payload.estimateType || payload.estimate_type;
+    const estimateId = payload.estimateId || payload.estimate_id;
+    return lightBIMQuantityReviewService.recalculateEstimateAfterReview(estimateType, estimateId);
+  }
+
+  function getLightBIMQuantityReviewSummary(payload = {}) {
+    const estimateType = payload.estimateType || payload.estimate_type;
+    const estimateId = payload.estimateId || payload.estimate_id;
+    return lightBIMQuantityReviewService.getReviewSummary(estimateType, estimateId);
   }
 
   function calculateBathroomEstimatePreview(payload = {}) {
@@ -19633,6 +19757,15 @@ function createSqliteService({ app }) {
     importLightBIMPayload,
     importLightBIMJSONFile,
     createEstimateFromLightBIM,
+    createLightBIMQuantityReviews,
+    getLightBIMQuantityReviews,
+    updateLightBIMQuantityReview,
+    confirmLightBIMQuantityReview,
+    ignoreLightBIMQuantityReview,
+    resetLightBIMQuantityReviewToDefault,
+    applyLightBIMQuantityReview,
+    recalculateEstimateAfterQuantityReview,
+    getLightBIMQuantityReviewSummary,
     calculateBathroomEstimatePreview,
     saveBathroomEstimate,
     exportBathroomEstimateDocument,

@@ -10,6 +10,7 @@ export type LightBIMImportResult = {
   targetView?: string;
   input?: Record<string, unknown>;
   preview?: Record<string, unknown>;
+  quantityReviewSummary?: Record<string, unknown>;
   bannerKo?: string;
 };
 
@@ -48,6 +49,7 @@ export function storeLightBIMDraft(result: LightBIMImportResult) {
     input: result.input,
     preview: result.preview,
     summary: result.summary,
+    quantityReviewSummary: result.quantityReviewSummary,
     bannerKo: result.bannerKo || 'LightBIM 도면 데이터가 적용되었습니다.'
   };
   window.sessionStorage.setItem('ecorean:lightbimDraft', JSON.stringify(draft));

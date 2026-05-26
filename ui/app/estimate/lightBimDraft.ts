@@ -2,6 +2,7 @@ type LightBIMDraft = {
   estimateType?: string;
   input?: Record<string, unknown>;
   summary?: Record<string, unknown>;
+  quantityReviewSummary?: Record<string, unknown>;
   bannerKo?: string;
 };
 
@@ -39,6 +40,12 @@ export function readLightBIMInitialInput<T>(targetType: string, fallback: T): T 
 export function getLightBIMSource(input: unknown): LightBIMSourceSummary | null {
   const source = (input as { lightBimSource?: LightBIMSourceSummary }).lightBimSource;
   return source && typeof source === 'object' ? source : null;
+}
+
+export function readLightBIMQuantityReviewSummary(targetType: string) {
+  const draft = readStoredDraft();
+  if (!draft || draft.estimateType !== targetType) return null;
+  return draft.quantityReviewSummary || null;
 }
 
 export function formatLightBIMSource(source: LightBIMSourceSummary | null) {
@@ -87,4 +94,16 @@ export function formatQuantitySourceSummary(summary?: Record<string, unknown>) {
   const defaults = Number(summary.default_item_count || 0);
   const user = Number(summary.user_override_count || 0);
   return `LightBIM 적용 항목 ${lightBim}개 / 기본 산식 항목 ${defaults}개 / 사용자 수정 항목 ${user}개`;
+}
+
+export function formatQuantityReviewSummary(summary?: Record<string, unknown> | null) {
+  if (!summary) return '';
+  const confirmed = Number(summary.confirmedCount || 0);
+  const overridden = Number(summary.overriddenCount || 0);
+  const pending = Number(summary.pendingCount || 0);
+  return `검토 완료 ${confirmed}개 / 사용자 수정 ${overridden}개 / 검토 대기 ${pending}개`;
+}
+
+export function hasCriticalQuantityReviewWarning(summary?: Record<string, unknown> | null) {
+  return Number(summary?.criticalUnresolvedCount || 0) > 0;
 }

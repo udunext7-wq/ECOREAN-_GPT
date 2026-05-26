@@ -26,7 +26,11 @@ function resolveTargetView(type?: string): ViewKey {
   return 'fullRemodelingEstimate';
 }
 
-export function LightBIMImportCenterView() {
+type Props = {
+  onOpenQuantityReview?: () => void;
+};
+
+export function LightBIMImportCenterView({ onOpenQuantityReview }: Props = {}) {
   const [importResult, setImportResult] = useState<LightBIMImportResult | null>(null);
   const [estimateResult, setEstimateResult] = useState<LightBIMImportResult | null>(null);
   const [messageKo, setMessageKo] = useState('LightBIM JSON 파일을 선택하세요. 기존 수동 입력 방식은 계속 사용할 수 있습니다.');
@@ -101,6 +105,14 @@ export function LightBIMImportCenterView() {
   function openWizard(type = estimateType) {
     const targetView = resolveTargetView(type);
     window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: targetView }));
+  }
+
+  function openQuantityReview() {
+    if (onOpenQuantityReview) {
+      onOpenQuantityReview();
+      return;
+    }
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimQuantityReview' }));
   }
 
   return (
@@ -212,7 +224,11 @@ export function LightBIMImportCenterView() {
             <h5>견적 유형 판단</h5>
             <strong>{estimateTypeKo[String(estimateResult.estimateType)] || String(estimateResult.estimateType)}</strong>
             <p>PCE 결과: {String((estimateResult.preview?.['pce'] as Record<string, unknown> | undefined)?.decision || '계산 완료')}</p>
-            <button onClick={() => openWizard(String(estimateResult.estimateType))}>견적 Wizard 열기</button>
+            <p>수량 검토: {String((estimateResult.quantityReviewSummary as Record<string, unknown> | undefined)?.pendingCount || 0)}개 항목 대기</p>
+            <div className="button-row">
+              <button onClick={() => openWizard(String(estimateResult.estimateType))}>견적 Wizard 열기</button>
+              <button onClick={openQuantityReview}>수량 검토 열기</button>
+            </div>
           </div>
         ) : null}
       </section>

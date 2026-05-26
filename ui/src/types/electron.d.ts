@@ -32,6 +32,15 @@ declare global {
         importLightBIMJSON: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         importLightBIMPayload: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createEstimateFromLightBIM: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createLightBIMQuantityReviews: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getLightBIMQuantityReviews: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        updateLightBIMQuantityReview: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        confirmLightBIMQuantityReview: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        ignoreLightBIMQuantityReview: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        resetLightBIMQuantityReviewToDefault: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        applyLightBIMQuantityReview: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        recalculateEstimateAfterQuantityReview: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getLightBIMQuantityReviewSummary: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         calculateBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         saveBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         exportBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

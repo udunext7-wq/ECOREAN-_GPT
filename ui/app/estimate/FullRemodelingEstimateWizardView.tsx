@@ -10,7 +10,7 @@ import {
   type FullRemodelingEstimateInput,
   type FullRemodelingEstimatePreview
 } from '../../services/full-remodeling-estimate-service/fullRemodelingEstimateService';
-import { formatLightBIMSource, formatQuantitySourceSummary, getLightBIMSource, quantitySourceLabel, readLightBIMInitialInput } from './lightBimDraft';
+import { formatLightBIMSource, formatQuantityReviewSummary, formatQuantitySourceSummary, getLightBIMSource, hasCriticalQuantityReviewWarning, quantitySourceLabel, readLightBIMInitialInput, readLightBIMQuantityReviewSummary } from './lightBimDraft';
 
 const steps = ['기본 정보', '철거/폐기물', '주요 공정', '공정별 옵션', '자동 산출', 'AI 검토', '출력'];
 
@@ -114,6 +114,8 @@ export function FullRemodelingEstimateWizardView() {
   const [savedEstimateId, setSavedEstimateId] = useState<string | null>(null);
   const [generatedContractId, setGeneratedContractId] = useState<string | null>(null);
   const lightBimSource = getLightBIMSource(input);
+  const quantityReviewSummary = readLightBIMQuantityReviewSummary('FULL_REMODELING');
+  const hasCriticalQuantityWarning = hasCriticalQuantityReviewWarning(quantityReviewSummary);
 
   const groupedInternalRows = useMemo(() => {
     return ((preview?.estimate.process_summary as Array<{ category: string; customerTotal: number; internalTotal: number; margin: number; marginRate: number }> | undefined) || []);
@@ -178,6 +180,10 @@ export function FullRemodelingEstimateWizardView() {
   }
 
   async function handleExport(documentType: 'customer' | 'internal', format: 'pdf' | 'xlsx') {
+    if (hasCriticalQuantityWarning) {
+      setMessageKo('수량 검토가 필요한 Critical 경고가 있어 출력할 수 없습니다.');
+      return;
+    }
     setIsBusy(true);
     try {
       const estimateId = await ensureSavedEstimate();
@@ -191,6 +197,10 @@ export function FullRemodelingEstimateWizardView() {
   }
 
   function handlePrint(documentType: 'customer' | 'internal') {
+    if (hasCriticalQuantityWarning) {
+      setMessageKo('수량 검토가 필요한 Critical 경고가 있어 출력할 수 없습니다.');
+      return;
+    }
     setActiveOutput(documentType);
     window.setTimeout(() => window.print(), 80);
   }
@@ -208,6 +218,10 @@ export function FullRemodelingEstimateWizardView() {
   }
 
   async function handleGenerateContract() {
+    if (hasCriticalQuantityWarning) {
+      setMessageKo('Critical 수량 경고가 해결될 때까지 계약서를 생성할 수 없습니다.');
+      return;
+    }
     setIsBusy(true);
     try {
       const estimateId = await ensureSavedEstimate();
@@ -248,7 +262,7 @@ export function FullRemodelingEstimateWizardView() {
     }
   }
 
-  const blocked = preview?.estimate.pce_decision === 'BLOCK' || preview?.estimate.pce_decision === 'MODIFY';
+  const blocked = preview?.estimate.pce_decision === 'BLOCK' || preview?.estimate.pce_decision === 'MODIFY' || hasCriticalQuantityWarning;
 
   return (
     <div className="bathroom-wizard">
@@ -268,6 +282,12 @@ export function FullRemodelingEstimateWizardView() {
         <section className="drawer-block">
           <strong>LightBIM 도면 데이터가 적용되었습니다.</strong>
           <p>{formatLightBIMSource(lightBimSource)}</p>
+          <p>LightBIM 수량 검토 필요</p>
+          {quantityReviewSummary ? <p>{formatQuantityReviewSummary(quantityReviewSummary)}</p> : null}
+          {hasCriticalQuantityWarning ? <p className="danger-text">Critical 수량 경고를 확인한 뒤 출력과 계약 생성을 진행하세요.</p> : null}
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimQuantityReview' }))}>
+            수량 검토 열기
+          </button>
         </section>
       ) : null}
 
@@ -390,6 +410,7 @@ export function FullRemodelingEstimateWizardView() {
                   {activeOutput === 'internal' && preview.estimate.quantity_source_summary ? (
                     <p className="assistant-message">수량 출처: {formatQuantitySourceSummary(preview.estimate.quantity_source_summary)}</p>
                   ) : null}
+                  {activeOutput === 'internal' && quantityReviewSummary ? <p className="assistant-message">검토 상태: {formatQuantityReviewSummary(quantityReviewSummary)}</p> : null}
                   {activeOutput === 'internal' ? (
                     <table className="data-table compact">
                       <thead><tr><th>항목</th><th>수량</th><th>단위</th><th>수량 출처</th><th>수량 근거</th></tr></thead>

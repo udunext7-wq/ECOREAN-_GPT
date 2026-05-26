@@ -29,6 +29,15 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:lightbim:import-file', (_event, payload) => sqliteService.importLightBIMJSONFile(payload));
   ipcMain.handle('boc:lightbim:import-payload', (_event, payload) => sqliteService.importLightBIMPayload(payload));
   ipcMain.handle('boc:lightbim:create-estimate', (_event, payload) => sqliteService.createEstimateFromLightBIM(payload));
+  ipcMain.handle('boc:lightbim:quantity-review:create', (_event, payload) => sqliteService.createLightBIMQuantityReviews(payload));
+  ipcMain.handle('boc:lightbim:quantity-review:get', (_event, payload) => sqliteService.getLightBIMQuantityReviews(payload));
+  ipcMain.handle('boc:lightbim:quantity-review:update', (_event, payload) => sqliteService.updateLightBIMQuantityReview(payload));
+  ipcMain.handle('boc:lightbim:quantity-review:confirm', (_event, payload) => sqliteService.confirmLightBIMQuantityReview(payload));
+  ipcMain.handle('boc:lightbim:quantity-review:ignore', (_event, payload) => sqliteService.ignoreLightBIMQuantityReview(payload));
+  ipcMain.handle('boc:lightbim:quantity-review:reset-default', (_event, payload) => sqliteService.resetLightBIMQuantityReviewToDefault(payload));
+  ipcMain.handle('boc:lightbim:quantity-review:apply-lightbim', (_event, payload) => sqliteService.applyLightBIMQuantityReview(payload));
+  ipcMain.handle('boc:lightbim:quantity-review:recalculate', (_event, payload) => sqliteService.recalculateEstimateAfterQuantityReview(payload));
+  ipcMain.handle('boc:lightbim:quantity-review:summary', (_event, payload) => sqliteService.getLightBIMQuantityReviewSummary(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));

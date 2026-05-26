@@ -91,6 +91,7 @@ function resolveQuantity(input, basisKey, defaultValue, options = {}) {
       sourceLabelKo: SOURCE_LABEL_KO.USER,
       basisKey,
       note: options.userNote || '사용자가 수정한 수량 기준',
+      defaultQuantity: roundQuantity(defaultValue),
       originalLightBimQuantity: lightBimValue || null,
       userQuantityOverride: userValue
     };
@@ -103,6 +104,7 @@ function resolveQuantity(input, basisKey, defaultValue, options = {}) {
       sourceLabelKo: SOURCE_LABEL_KO.LIGHTBIM,
       basisKey,
       note: options.lightBimNote || 'LightBIM 도면 수량 기준',
+      defaultQuantity: roundQuantity(defaultValue),
       originalLightBimQuantity: lightBimValue,
       userQuantityOverride: null
     };
@@ -114,6 +116,7 @@ function resolveQuantity(input, basisKey, defaultValue, options = {}) {
     sourceLabelKo: SOURCE_LABEL_KO.DEFAULT,
     basisKey,
     note: options.defaultNote || '기본 산식 기준',
+    defaultQuantity: roundQuantity(defaultValue),
     originalLightBimQuantity: null,
     userQuantityOverride: null
   };
@@ -128,6 +131,8 @@ function itemQuantityMeta(resolved) {
     quantityBasisKey: resolved.basisKey,
     quantity_note: resolved.note,
     quantityNote: resolved.note,
+    original_default_quantity: resolved.defaultQuantity,
+    originalDefaultQuantity: resolved.defaultQuantity,
     original_lightbim_quantity: resolved.originalLightBimQuantity,
     originalLightBimQuantity: resolved.originalLightBimQuantity,
     user_quantity_override: resolved.userQuantityOverride,
@@ -144,6 +149,8 @@ function preserveQuantityMeta(item = {}) {
     quantityBasisKey: item.quantityBasisKey,
     quantity_note: item.quantity_note,
     quantityNote: item.quantityNote,
+    original_default_quantity: item.original_default_quantity,
+    originalDefaultQuantity: item.originalDefaultQuantity,
     original_lightbim_quantity: item.original_lightbim_quantity,
     originalLightBimQuantity: item.originalLightBimQuantity,
     user_quantity_override: item.user_quantity_override,

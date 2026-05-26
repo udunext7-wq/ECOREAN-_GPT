@@ -11,7 +11,7 @@ import {
   type BathroomEstimatePreview
 } from '../../services/bathroom-estimate-service/bathroomEstimateService';
 import { AIEstimateAssistantPanel } from './AIEstimateAssistantPanel';
-import { formatLightBIMSource, formatQuantitySourceSummary, getLightBIMSource, quantitySourceLabel, readLightBIMInitialInput } from './lightBimDraft';
+import { formatLightBIMSource, formatQuantityReviewSummary, formatQuantitySourceSummary, getLightBIMSource, hasCriticalQuantityReviewWarning, quantitySourceLabel, readLightBIMInitialInput, readLightBIMQuantityReviewSummary } from './lightBimDraft';
 
 const steps = ['기본 정보', '시공 방식', '옵션', '자동 산출', '출력'];
 
@@ -98,6 +98,8 @@ export function BathroomEstimateWizardView() {
   const [generatedContractId, setGeneratedContractId] = useState<string | null>(null);
   const [estimateNumber] = useState(() => `BATH-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${Math.floor(Math.random() * 900 + 100)}`);
   const lightBimSource = getLightBIMSource(input);
+  const quantityReviewSummary = readLightBIMQuantityReviewSummary('BATHROOM');
+  const hasCriticalQuantityWarning = hasCriticalQuantityReviewWarning(quantityReviewSummary);
 
   const groupedCustomerRows = useMemo(() => {
     const groups = (preview?.customerView?.groups as Array<{ category: string; customerTotal: number }> | undefined) || [];
@@ -172,6 +174,10 @@ export function BathroomEstimateWizardView() {
   }
 
   async function handleExport(documentType: 'customer' | 'internal', format: 'pdf' | 'xlsx') {
+    if (hasCriticalQuantityWarning) {
+      setMessageKo('수량 검토가 필요한 Critical 경고가 있어 출력할 수 없습니다.');
+      return;
+    }
     setIsBusy(true);
     try {
       const estimateId = await ensureSavedEstimate();
@@ -185,6 +191,10 @@ export function BathroomEstimateWizardView() {
   }
 
   function handlePrint(documentType: 'customer' | 'internal') {
+    if (hasCriticalQuantityWarning) {
+      setMessageKo('수량 검토가 필요한 Critical 경고가 있어 출력할 수 없습니다.');
+      return;
+    }
     setActiveOutput(documentType);
     window.setTimeout(() => window.print(), 80);
   }
@@ -198,6 +208,7 @@ export function BathroomEstimateWizardView() {
   }
 
   function executionBlockedMessage() {
+    if (hasCriticalQuantityWarning) return 'Critical 수량 경고가 해결될 때까지 계약/공정표/발주서를 생성할 수 없습니다.';
     const decision = preview?.estimate.pce_decision;
     if (decision === 'BLOCK') return '수익성 검증 BLOCK 상태에서는 계약/공정표/발주서를 생성할 수 없습니다.';
     if (decision === 'MODIFY') return '수정 필요 상태입니다. 견적 수정 후 계약서를 생성하세요.';
@@ -279,6 +290,12 @@ export function BathroomEstimateWizardView() {
         <section className="drawer-block">
           <strong>LightBIM 도면 데이터가 적용되었습니다.</strong>
           <p>{formatLightBIMSource(lightBimSource)}</p>
+          <p>LightBIM 수량 검토 필요</p>
+          {quantityReviewSummary ? <p>{formatQuantityReviewSummary(quantityReviewSummary)}</p> : null}
+          {hasCriticalQuantityWarning ? <p className="danger-text">Critical 수량 경고를 확인한 뒤 출력과 계약 생성을 진행하세요.</p> : null}
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimQuantityReview' }))}>
+            수량 검토 열기
+          </button>
         </section>
       ) : null}
 
@@ -509,6 +526,7 @@ export function BathroomEstimateWizardView() {
                   {preview.estimate.quantity_source_summary ? (
                     <p className="assistant-message">수량 출처: {formatQuantitySourceSummary(preview.estimate.quantity_source_summary)}</p>
                   ) : null}
+                  {quantityReviewSummary ? <p className="assistant-message">검토 상태: {formatQuantityReviewSummary(quantityReviewSummary)}</p> : null}
                   <table className="estimate-line-table professional-table compact">
                     <thead><tr><th>항목</th><th>수량</th><th>단위</th><th>수량 출처</th><th>수량 근거</th><th>고객가</th><th>자재</th><th>노무</th><th>외주</th><th>마진</th></tr></thead>
                     <tbody>

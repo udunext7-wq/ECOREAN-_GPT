@@ -21,6 +21,7 @@ import { FullRemodelingEstimateWizardView } from '../../app/estimate/FullRemodel
 import { KitchenEstimateWizardView } from '../../app/estimate/KitchenEstimateWizardView';
 import { NewEstimateWizard } from '../../app/estimate/NewEstimateWizard';
 import { LightBIMImportCenterView } from '../../app/lightbim/LightBIMImportCenterView';
+import { LightBIMQuantityReviewView } from '../../app/lightbim/LightBIMQuantityReviewView';
 import { CeoControlTowerView } from '../../app/dashboard/CeoControlTowerView';
 import { FieldMobileCenterView } from '../../app/mobile/FieldMobileCenterView';
 import { BoardGenerationCenterView } from '../../app/board/BoardGenerationCenterView';
@@ -65,6 +66,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     aiVisualization: 'AI 투시도 생성',
     boardGeneration: '디자인 보드 생성',
     lightbimImport: 'LightBIM 도면 가져오기',
+    lightbimQuantityReview: 'LightBIM 수량 검토',
     masterDb: '기준 데이터 관리',
     franchise: '프랜차이즈 관리',
     fieldMobile: '현장 모바일',
@@ -99,7 +101,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     profitAutomation: '수익 자동화'
   };
 
-  const isWideView = ['masterDb', 'franchise', 'fieldMobile', 'clientPortal', 'analytics', 'aiAutomation', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'lightbimImport', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
+  const isWideView = ['masterDb', 'franchise', 'fieldMobile', 'clientPortal', 'analytics', 'aiAutomation', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'lightbimImport', 'lightbimQuantityReview', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
 
   return (
     <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
@@ -111,7 +113,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
         <button onClick={() => onNavigate('dashboard')}>닫기</button>
       </div>
 
-      {view !== 'estimate' && view !== 'bathroomEstimate' && view !== 'kitchenEstimate' && view !== 'fullRemodelingEstimate' && view !== 'lightbimImport' && view !== 'ontology' && view !== 'floorplanCenter' && view !== 'aiVisualization' && view !== 'boardGeneration' ? (
+      {view !== 'estimate' && view !== 'bathroomEstimate' && view !== 'kitchenEstimate' && view !== 'fullRemodelingEstimate' && view !== 'lightbimImport' && view !== 'lightbimQuantityReview' && view !== 'ontology' && view !== 'floorplanCenter' && view !== 'aiVisualization' && view !== 'boardGeneration' ? (
         <div className="drawer-block">
           <strong>{project.projectNameKo}</strong>
           <p>{getProjectDecisionText(project)}</p>
@@ -122,7 +124,8 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'floorplanCenter' ? <FloorplanCenterView /> : null}
       {view === 'aiVisualization' ? <AIVisualizationCenterView /> : null}
       {view === 'boardGeneration' ? <BoardGenerationCenterView /> : null}
-      {view === 'lightbimImport' ? <LightBIMImportCenterView /> : null}
+      {view === 'lightbimImport' ? <LightBIMImportCenterView onOpenQuantityReview={() => onNavigate('lightbimQuantityReview')} /> : null}
+      {view === 'lightbimQuantityReview' ? <LightBIMQuantityReviewView /> : null}
       {view === 'masterDb' ? <MasterDataCenterView /> : null}
       {view === 'franchise' ? <FranchiseCenterView /> : null}
       {view === 'fieldMobile' ? <FieldMobileCenterView projectId={project.projectId} /> : null}
