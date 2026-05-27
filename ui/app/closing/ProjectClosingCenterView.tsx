@@ -85,6 +85,10 @@ export function ProjectClosingCenterView() {
     window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimTraceability' }));
   }
 
+  function openSpaceMap() {
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimSpaceMap' }));
+  }
+
   if (!data) return <div className="drawer-block">Project Closing Center 로딩 중</div>;
 
   const labels = data.statusLabelsKo || {};
@@ -118,6 +122,7 @@ export function ProjectClosingCenterView() {
           <button onClick={openCalibrationCenter}>실제 보정 센터</button>
           <button onClick={openExecutionFeedback}>LightBIM 실행 피드백</button>
           <button onClick={openTraceability}>수량 차이 추적</button>
+          <button onClick={openSpaceMap}>공간 맵 보기</button>
         </div>
         <p>{messageKo}</p>
       </div>

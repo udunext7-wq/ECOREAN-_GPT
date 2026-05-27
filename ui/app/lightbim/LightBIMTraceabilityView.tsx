@@ -131,6 +131,7 @@ export function LightBIMTraceabilityView({ estimateId = '' }: Props) {
         <div className="button-row">
           <button onClick={() => refresh()}>조회</button>
           <button onClick={syncFeedback}>실제 사용 연결 새로고침</button>
+          <button onClick={() => navigate('lightbimSpaceMap')}>공간 맵</button>
         </div>
         <p className="small-note">{messageKo}</p>
       </section>

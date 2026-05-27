@@ -166,6 +166,7 @@ export function LightBIMQuantityReviewView() {
             <button onClick={recalculate} disabled={!reviews.length}>재계산</button>
             <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimExecutionFeedback' }))}>실행 피드백 열기</button>
             <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimTraceability' }))}>이 수량 추적</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimSpaceMap' }))}>도면에서 보기</button>
           </div>
         </div>
 

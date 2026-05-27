@@ -51,6 +51,10 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:lightbim:traceability:summary', (_event, payload) => sqliteService.getLightBIMTraceabilitySummary(payload));
   ipcMain.handle('boc:lightbim:traceability:receiving', (_event, payload) => sqliteService.updateLightBIMTraceabilityFromReceiving(payload));
   ipcMain.handle('boc:lightbim:traceability:feedback', (_event, payload) => sqliteService.updateLightBIMTraceabilityFromFeedback(payload));
+  ipcMain.handle('boc:lightbim:space-map:get', (_event, payload) => sqliteService.getLightBIMSpaceMapData(payload));
+  ipcMain.handle('boc:lightbim:space-map:estimate', (_event, payload) => sqliteService.getLightBIMSpaceMapDataByEstimate(payload));
+  ipcMain.handle('boc:lightbim:space-map:space', (_event, payload) => sqliteService.getLightBIMSpaceTraceSummary(payload));
+  ipcMain.handle('boc:lightbim:space-map:summaries', (_event, payload) => sqliteService.getAllLightBIMSpaceTraceSummaries(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));

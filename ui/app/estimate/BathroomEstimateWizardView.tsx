@@ -299,6 +299,9 @@ export function BathroomEstimateWizardView() {
           <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimTraceability' }))}>
             수량 추적
           </button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimSpaceMap' }))}>
+            LightBIM 공간 맵
+          </button>
         </section>
       ) : null}
 

@@ -156,7 +156,10 @@ export function LightBIMExecutionFeedbackView({ projectId = '' }: Props) {
             <h2>LightBIM 실행 피드백</h2>
             <p>도면에서 산출된 수량과 실제 현장 사용량을 비교하여 다음 견적과 발주 기준을 보정합니다.</p>
           </div>
-          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimTraceability' }))}>추적 보기</button>
+          <div className="button-row">
+            <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimTraceability' }))}>추적 보기</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimSpaceMap' }))}>공간별 보기</button>
+          </div>
         </div>
         <div className="form-grid">
           <label>

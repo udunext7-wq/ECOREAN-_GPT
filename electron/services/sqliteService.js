@@ -28,6 +28,7 @@ const {
 const { createLightBIMQuantityReviewService } = require('./lightBimQuantityReviewService');
 const { createLightBIMExecutionFeedbackService } = require('./lightBimExecutionFeedbackService');
 const { createLightBIMTraceabilityService } = require('./lightBimTraceabilityService');
+const { createLightBIMSpaceMapService } = require('./lightBimSpaceMapService');
 const { exportEstimateDocument } = require('./estimateExportService');
 const { buildContractFromEstimate, exportContractPdf } = require('./contractService');
 const { buildScheduleFromEstimate } = require('./scheduleService');
@@ -155,6 +156,7 @@ function createSqliteService({ app }) {
   const lightBIMQuantityReviewService = createLightBIMQuantityReviewService({ db, nowIso, toJson, fromJson });
   const lightBIMExecutionFeedbackService = createLightBIMExecutionFeedbackService({ db, nowIso, toJson });
   const lightBIMTraceabilityService = createLightBIMTraceabilityService({ db, nowIso, fromJson });
+  const lightBIMSpaceMapService = createLightBIMSpaceMapService({ db, fromJson });
 
   const PROFIT_POLICY = {
     minimumBudget: 7000000,
@@ -4804,6 +4806,28 @@ function createSqliteService({ app }) {
       estimateId: payload.estimateId || payload.estimate_id,
       projectId: payload.projectId || payload.project_id
     });
+  }
+
+  function getLightBIMSpaceMapData(payload = {}) {
+    return lightBIMSpaceMapService.getSpaceMapData(payload.importId || payload.import_id);
+  }
+
+  function getLightBIMSpaceMapDataByEstimate(payload = {}) {
+    return lightBIMSpaceMapService.getSpaceMapDataByEstimate(
+      payload.estimateType || payload.estimate_type || '',
+      payload.estimateId || payload.estimate_id || ''
+    );
+  }
+
+  function getLightBIMSpaceTraceSummary(payload = {}) {
+    return lightBIMSpaceMapService.getSpaceTraceSummary(
+      payload.importId || payload.import_id,
+      payload.spaceId || payload.space_id
+    );
+  }
+
+  function getAllLightBIMSpaceTraceSummaries(payload = {}) {
+    return lightBIMSpaceMapService.getAllSpaceTraceSummaries(payload.importId || payload.import_id);
   }
 
   function prepareStoredQuantityItems(lineItems = [], estimateId, payload = {}) {
@@ -20169,6 +20193,10 @@ function createSqliteService({ app }) {
     getLightBIMTraceabilitySummary,
     updateLightBIMTraceabilityFromReceiving,
     updateLightBIMTraceabilityFromFeedback,
+    getLightBIMSpaceMapData,
+    getLightBIMSpaceMapDataByEstimate,
+    getLightBIMSpaceTraceSummary,
+    getAllLightBIMSpaceTraceSummaries,
     calculateBathroomEstimatePreview,
     saveBathroomEstimate,
     exportBathroomEstimateDocument,

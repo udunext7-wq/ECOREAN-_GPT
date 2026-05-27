@@ -55,6 +55,10 @@ const releaseChecks = [
     script: 'lightbim-traceability.smoke.js'
   },
   {
+    label: 'LightBIM 공간 맵',
+    script: 'lightbim-interactive-space-map.smoke.js'
+  },
+  {
     label: '견적 출력',
     script: 'estimate-export.smoke.js'
   },
