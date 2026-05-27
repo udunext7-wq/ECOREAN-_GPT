@@ -23,6 +23,7 @@ import { NewEstimateWizard } from '../../app/estimate/NewEstimateWizard';
 import { LightBIMImportCenterView } from '../../app/lightbim/LightBIMImportCenterView';
 import { LightBIMQuantityReviewView } from '../../app/lightbim/LightBIMQuantityReviewView';
 import { LightBIMExecutionFeedbackView } from '../../app/lightbim/LightBIMExecutionFeedbackView';
+import { LightBIMTraceabilityView } from '../../app/lightbim/LightBIMTraceabilityView';
 import { CeoControlTowerView } from '../../app/dashboard/CeoControlTowerView';
 import { FieldMobileCenterView } from '../../app/mobile/FieldMobileCenterView';
 import { BoardGenerationCenterView } from '../../app/board/BoardGenerationCenterView';
@@ -69,6 +70,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     lightbimImport: 'LightBIM 도면 가져오기',
     lightbimQuantityReview: 'LightBIM 수량 검토',
     lightbimExecutionFeedback: 'LightBIM 실행 피드백',
+    lightbimTraceability: 'LightBIM 추적 보기',
     masterDb: '기준 데이터 관리',
     franchise: '프랜차이즈 관리',
     fieldMobile: '현장 모바일',
@@ -103,7 +105,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     profitAutomation: '수익 자동화'
   };
 
-  const isWideView = ['masterDb', 'franchise', 'fieldMobile', 'clientPortal', 'analytics', 'aiAutomation', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'lightbimImport', 'lightbimQuantityReview', 'lightbimExecutionFeedback', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
+  const isWideView = ['masterDb', 'franchise', 'fieldMobile', 'clientPortal', 'analytics', 'aiAutomation', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'lightbimImport', 'lightbimQuantityReview', 'lightbimExecutionFeedback', 'lightbimTraceability', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
 
   return (
     <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
@@ -115,7 +117,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
         <button onClick={() => onNavigate('dashboard')}>닫기</button>
       </div>
 
-      {view !== 'estimate' && view !== 'bathroomEstimate' && view !== 'kitchenEstimate' && view !== 'fullRemodelingEstimate' && view !== 'lightbimImport' && view !== 'lightbimQuantityReview' && view !== 'lightbimExecutionFeedback' && view !== 'ontology' && view !== 'floorplanCenter' && view !== 'aiVisualization' && view !== 'boardGeneration' ? (
+      {view !== 'estimate' && view !== 'bathroomEstimate' && view !== 'kitchenEstimate' && view !== 'fullRemodelingEstimate' && view !== 'lightbimImport' && view !== 'lightbimQuantityReview' && view !== 'lightbimExecutionFeedback' && view !== 'lightbimTraceability' && view !== 'ontology' && view !== 'floorplanCenter' && view !== 'aiVisualization' && view !== 'boardGeneration' ? (
         <div className="drawer-block">
           <strong>{project.projectNameKo}</strong>
           <p>{getProjectDecisionText(project)}</p>
@@ -126,9 +128,10 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'floorplanCenter' ? <FloorplanCenterView /> : null}
       {view === 'aiVisualization' ? <AIVisualizationCenterView /> : null}
       {view === 'boardGeneration' ? <BoardGenerationCenterView /> : null}
-      {view === 'lightbimImport' ? <LightBIMImportCenterView onOpenQuantityReview={() => onNavigate('lightbimQuantityReview')} onOpenExecutionFeedback={() => onNavigate('lightbimExecutionFeedback')} /> : null}
+      {view === 'lightbimImport' ? <LightBIMImportCenterView onOpenQuantityReview={() => onNavigate('lightbimQuantityReview')} onOpenExecutionFeedback={() => onNavigate('lightbimExecutionFeedback')} onOpenTraceability={() => onNavigate('lightbimTraceability')} /> : null}
       {view === 'lightbimQuantityReview' ? <LightBIMQuantityReviewView /> : null}
       {view === 'lightbimExecutionFeedback' ? <LightBIMExecutionFeedbackView projectId={project.projectId} /> : null}
+      {view === 'lightbimTraceability' ? <LightBIMTraceabilityView estimateId={project.projectId === 'NO_PROJECT' ? '' : project.projectId} /> : null}
       {view === 'masterDb' ? <MasterDataCenterView /> : null}
       {view === 'franchise' ? <FranchiseCenterView /> : null}
       {view === 'fieldMobile' ? <FieldMobileCenterView projectId={project.projectId} /> : null}

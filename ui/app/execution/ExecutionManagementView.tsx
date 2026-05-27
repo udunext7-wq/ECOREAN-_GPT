@@ -64,6 +64,7 @@ export function ExecutionManagementView({ project }: Props) {
         <MaterialReceivingView
           onCreate={() => run('자재입고', () => createMaterialReceivingLog(project.projectId))}
           onOpenFeedback={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimExecutionFeedback' }))}
+          onOpenTraceability={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimTraceability' }))}
         />
         <InspectionChecklistView onCreate={() => run('검수 체크리스트', () => createInspectionChecklist(project.projectId))} />
         <ChangeOrderView onCreate={() => run('추가공사 승인 요청', () => createExecutionChangeOrder(project.projectId))} />

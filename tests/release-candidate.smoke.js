@@ -51,6 +51,10 @@ const releaseChecks = [
     script: 'lightbim-execution-feedback.smoke.js'
   },
   {
+    label: 'LightBIM 시각 추적',
+    script: 'lightbim-traceability.smoke.js'
+  },
+  {
     label: '견적 출력',
     script: 'estimate-export.smoke.js'
   },

@@ -27,6 +27,7 @@ const {
 } = require('./lightBimImportService');
 const { createLightBIMQuantityReviewService } = require('./lightBimQuantityReviewService');
 const { createLightBIMExecutionFeedbackService } = require('./lightBimExecutionFeedbackService');
+const { createLightBIMTraceabilityService } = require('./lightBimTraceabilityService');
 const { exportEstimateDocument } = require('./estimateExportService');
 const { buildContractFromEstimate, exportContractPdf } = require('./contractService');
 const { buildScheduleFromEstimate } = require('./scheduleService');
@@ -153,6 +154,7 @@ function createSqliteService({ app }) {
   };
   const lightBIMQuantityReviewService = createLightBIMQuantityReviewService({ db, nowIso, toJson, fromJson });
   const lightBIMExecutionFeedbackService = createLightBIMExecutionFeedbackService({ db, nowIso, toJson });
+  const lightBIMTraceabilityService = createLightBIMTraceabilityService({ db, nowIso, fromJson });
 
   const PROFIT_POLICY = {
     minimumBudget: 7000000,
@@ -286,6 +288,45 @@ function createSqliteService({ app }) {
         reason TEXT NOT NULL,
         source_feedback_ids TEXT NOT NULL,
         status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS lightbim_traceability_links (
+        id TEXT PRIMARY KEY,
+        import_id TEXT,
+        project_id TEXT,
+        estimate_type TEXT NOT NULL,
+        estimate_id TEXT NOT NULL,
+        source_entity_type TEXT NOT NULL,
+        source_entity_id TEXT,
+        source_entity_name TEXT,
+        source_quantity_key TEXT NOT NULL,
+        source_quantity REAL NOT NULL,
+        source_unit TEXT,
+        estimate_item_id TEXT,
+        estimate_item_name TEXT,
+        estimate_quantity REAL,
+        estimate_unit TEXT,
+        schedule_item_id TEXT,
+        schedule_process_name TEXT,
+        schedule_quantity REAL,
+        schedule_unit TEXT,
+        purchase_order_id TEXT,
+        purchase_order_item_id TEXT,
+        purchase_item_name TEXT,
+        purchase_quantity REAL,
+        purchase_unit TEXT,
+        material_receiving_id TEXT,
+        received_quantity REAL,
+        execution_feedback_id TEXT,
+        actual_used_quantity REAL,
+        variance_quantity REAL,
+        variance_rate REAL,
+        feedback_status TEXT,
+        calibration_rule_id TEXT,
+        calibration_status TEXT,
+        trace_status TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       );
@@ -4564,6 +4605,7 @@ function createSqliteService({ app }) {
           WHERE id = ?
         `).run(draft.estimateType, estimateId, toJson(normalizedSummary), 'SUCCESS', activeImportId);
       }
+      const traceabilitySummary = lightBIMTraceabilityService.createTraceabilityForEstimate(activeImportId, draft.estimateType, estimateId);
 
       return {
         ok: true,
@@ -4575,6 +4617,7 @@ function createSqliteService({ app }) {
         preview,
         summary: draft.summary,
         quantityReviewSummary: reviewSummary,
+        traceabilitySummary,
         aiPromptHints: draft.aiPromptHints,
         bannerKo: 'LightBIM 도면 데이터가 적용되었습니다.'
       };
@@ -4588,13 +4631,15 @@ function createSqliteService({ app }) {
   }
 
   function createLightBIMQuantityReviews(payload = {}) {
-    return lightBIMQuantityReviewService.createReviewsForEstimate(
+    const summary = lightBIMQuantityReviewService.createReviewsForEstimate(
       payload.importId,
       payload.estimateType,
       payload.estimateId,
       payload.lineItems || [],
       payload.quantityBasis || payload.quantity_basis || {}
     );
+    lightBIMTraceabilityService.createTraceabilityForEstimate(payload.importId, payload.estimateType, payload.estimateId);
+    return summary;
   }
 
   function getLightBIMQuantityReviews(payload = {}) {
@@ -4613,6 +4658,7 @@ function createSqliteService({ app }) {
         payload.quantity ?? payload.currentQuantity,
         payload.reason || payload.overrideReason
       );
+      lightBIMTraceabilityService.createTraceabilityForEstimate(review.importId, review.estimateType, review.estimateId);
       return { ok: true, review, summary: lightBIMQuantityReviewService.getReviewSummary(review.estimateType, review.estimateId) };
     } catch (error) {
       return { ok: false, errorMessage: error instanceof Error ? error.message : '견적 초안 생성에 실패했습니다.' };
@@ -4621,28 +4667,33 @@ function createSqliteService({ app }) {
 
   function confirmLightBIMQuantityReview(payload = {}) {
     const review = lightBIMQuantityReviewService.confirmReview(payload.reviewId || payload.id);
+    lightBIMTraceabilityService.createTraceabilityForEstimate(review.importId, review.estimateType, review.estimateId);
     return { ok: true, review, summary: lightBIMQuantityReviewService.getReviewSummary(review.estimateType, review.estimateId) };
   }
 
   function ignoreLightBIMQuantityReview(payload = {}) {
     const review = lightBIMQuantityReviewService.ignoreReview(payload.reviewId || payload.id, payload.reason || payload.overrideReason || '');
+    lightBIMTraceabilityService.createTraceabilityForEstimate(review.importId, review.estimateType, review.estimateId);
     return { ok: true, review, summary: lightBIMQuantityReviewService.getReviewSummary(review.estimateType, review.estimateId) };
   }
 
   function resetLightBIMQuantityReviewToDefault(payload = {}) {
     const review = lightBIMQuantityReviewService.resetReviewToDefault(payload.reviewId || payload.id);
+    lightBIMTraceabilityService.createTraceabilityForEstimate(review.importId, review.estimateType, review.estimateId);
     return { ok: true, review, summary: lightBIMQuantityReviewService.getReviewSummary(review.estimateType, review.estimateId) };
   }
 
   function applyLightBIMQuantityReview(payload = {}) {
     const review = lightBIMQuantityReviewService.applyLightBIMQuantity(payload.reviewId || payload.id);
+    lightBIMTraceabilityService.createTraceabilityForEstimate(review.importId, review.estimateType, review.estimateId);
     return { ok: true, review, summary: lightBIMQuantityReviewService.getReviewSummary(review.estimateType, review.estimateId) };
   }
 
   function recalculateEstimateAfterQuantityReview(payload = {}) {
     const estimateType = payload.estimateType || payload.estimate_type;
     const estimateId = payload.estimateId || payload.estimate_id;
-    return lightBIMQuantityReviewService.recalculateEstimateAfterReview(estimateType, estimateId);
+    const result = lightBIMQuantityReviewService.recalculateEstimateAfterReview(estimateType, estimateId);
+    return { ...result, traceabilitySummary: lightBIMTraceabilityService.createTraceabilityForEstimate(null, estimateType, estimateId) };
   }
 
   function getLightBIMQuantityReviewSummary(payload = {}) {
@@ -4652,12 +4703,17 @@ function createSqliteService({ app }) {
   }
 
   function createLightBIMExecutionFeedback(payload = {}) {
-    return lightBIMExecutionFeedbackService.createFeedbackFromPurchaseOrder({
+    const result = lightBIMExecutionFeedbackService.createFeedbackFromPurchaseOrder({
       estimateId: payload.estimateId || payload.estimate_id,
       projectId: payload.projectId || payload.project_id || payload.estimateId || payload.estimate_id,
       purchaseOrderId: payload.purchaseOrderId || payload.purchase_order_id,
       estimateType: payload.estimateType || payload.estimate_type || 'FULL_REMODELING'
     });
+    lightBIMTraceabilityService.createTraceabilityForPurchaseOrder(
+      payload.estimateId || payload.estimate_id,
+      payload.purchaseOrderId || payload.purchase_order_id
+    );
+    return result;
   }
 
   function getLightBIMExecutionFeedback(payload = {}) {
@@ -4670,7 +4726,7 @@ function createSqliteService({ app }) {
   }
 
   function updateLightBIMActualUsedQuantity(payload = {}) {
-    return lightBIMExecutionFeedbackService.updateActualUsedQuantity(
+    const result = lightBIMExecutionFeedbackService.updateActualUsedQuantity(
       payload.feedbackId || payload.id,
       payload.actualUsedQuantity ?? payload.actual_used_quantity,
       payload.reason || payload.varianceReason || '',
@@ -4681,14 +4737,18 @@ function createSqliteService({ app }) {
         photoPath: payload.photoPath || payload.photo_path
       }
     );
+    return { ...result, traceabilitySummary: lightBIMTraceabilityService.updateTraceabilityFromExecutionFeedback({ feedbackId: payload.feedbackId || payload.id }) };
   }
 
   function closeLightBIMExecutionFeedback(payload = {}) {
-    return lightBIMExecutionFeedbackService.closeFeedbackItem(payload.feedbackId || payload.id);
+    const result = lightBIMExecutionFeedbackService.closeFeedbackItem(payload.feedbackId || payload.id);
+    lightBIMTraceabilityService.updateTraceabilityFromExecutionFeedback({ feedbackId: payload.feedbackId || payload.id });
+    return result;
   }
 
   function generateLightBIMQuantityCalibration(payload = {}) {
-    return lightBIMExecutionFeedbackService.generateCalibrationRecommendation(payload.feedbackId || payload.id);
+    const result = lightBIMExecutionFeedbackService.generateCalibrationRecommendation(payload.feedbackId || payload.id);
+    return { ...result, traceabilitySummary: lightBIMTraceabilityService.updateTraceabilityFromExecutionFeedback({ feedbackId: payload.feedbackId || payload.id }) };
   }
 
   function getLightBIMExecutionFeedbackSummary(payload = {}) {
@@ -4696,6 +4756,53 @@ function createSqliteService({ app }) {
       projectId: payload.projectId || payload.project_id || '',
       estimateId: payload.estimateId || payload.estimate_id || '',
       purchaseOrderId: payload.purchaseOrderId || payload.purchase_order_id || ''
+    });
+  }
+
+  function createLightBIMTraceability(payload = {}) {
+    return lightBIMTraceabilityService.createTraceabilityForEstimate(
+      payload.importId || payload.import_id,
+      payload.estimateType || payload.estimate_type || 'FULL_REMODELING',
+      payload.estimateId || payload.estimate_id
+    );
+  }
+
+  function getLightBIMTraceability(payload = {}) {
+    return lightBIMTraceabilityService.getTraceabilitySummary({
+      importId: payload.importId || payload.import_id,
+      estimateId: payload.estimateId || payload.estimate_id,
+      estimateType: payload.estimateType || payload.estimate_type,
+      purchaseOrderId: payload.purchaseOrderId || payload.purchase_order_id
+    });
+  }
+
+  function getLightBIMTraceabilityByEstimate(payload = {}) {
+    return lightBIMTraceabilityService.getTraceabilityByEstimate(
+      payload.estimateType || payload.estimate_type || '',
+      payload.estimateId || payload.estimate_id
+    );
+  }
+
+  function getLightBIMTraceabilityBySpace(payload = {}) {
+    return lightBIMTraceabilityService.getTraceabilityBySpace(
+      payload.importId || payload.import_id,
+      payload.spaceId || payload.space_id
+    );
+  }
+
+  function getLightBIMTraceabilitySummary(payload = {}) {
+    return getLightBIMTraceability(payload);
+  }
+
+  function updateLightBIMTraceabilityFromReceiving(payload = {}) {
+    return lightBIMTraceabilityService.updateTraceabilityFromReceiving(payload.purchaseOrderId || payload.purchase_order_id);
+  }
+
+  function updateLightBIMTraceabilityFromFeedback(payload = {}) {
+    return lightBIMTraceabilityService.updateTraceabilityFromExecutionFeedback({
+      feedbackId: payload.feedbackId || payload.feedback_id,
+      estimateId: payload.estimateId || payload.estimate_id,
+      projectId: payload.projectId || payload.project_id
     });
   }
 
@@ -4721,7 +4828,9 @@ function createSqliteService({ app }) {
   function registerSavedEstimateQuantityReviews(importId, estimateType, estimateId, items, payload = {}) {
     if (!payload.lightBimSource) return null;
     const quantityBasis = payload.lightBimSource.quantityBasis || payload.lightBimSource.quantity_basis || {};
-    return lightBIMQuantityReviewService.createReviewsForEstimate(importId || null, estimateType, estimateId, items, quantityBasis);
+    const result = lightBIMQuantityReviewService.createReviewsForEstimate(importId || null, estimateType, estimateId, items, quantityBasis);
+    lightBIMTraceabilityService.createTraceabilityForEstimate(importId || null, estimateType, estimateId);
+    return result;
   }
 
   function calculateBathroomEstimatePreview(payload = {}) {
@@ -5202,7 +5311,8 @@ function createSqliteService({ app }) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(scheduleId, estimateId, contractId, schedule.scheduleName, schedule.startDate, schedule.endDate, schedule.durationDays, schedule.status, createdAt, createdAt, toJson(schedule.quantitySummary || {}));
     persistConstructionScheduleItems(scheduleId, schedule);
-    return { scheduleId, schedule };
+    const traceabilitySummary = lightBIMTraceabilityService.updateTraceabilityFromSchedule(estimateId, scheduleId);
+    return { scheduleId, schedule, traceabilitySummary };
   }
 
   function generateKitchenPurchaseOrder({ estimateId, contractId = null, requiredDate = null }) {
@@ -5224,9 +5334,10 @@ function createSqliteService({ app }) {
     `).run(purchaseOrderId, `EXEC-PENDING-${estimateId}`, estimateId, purchaseOrder.status, 1, toJson({ source: 'KITCHEN_ESTIMATE', itemCount: purchaseOrder.items.length, quantitySummary: purchaseOrder.quantitySummary }), createdAt, estimateId, contractId, purchaseOrder.orderNumber, purchaseOrder.supplierName, purchaseOrder.totalAmount, purchaseOrder.status, purchaseOrder.requiredDate, createdAt);
     persistPurchaseOrderItems(purchaseOrderId, purchaseOrder);
     const executionFeedback = lightBIMExecutionFeedbackService.createFeedbackFromPurchaseOrder({ estimateId, projectId: estimateId, purchaseOrderId, estimateType: 'KITCHEN' });
+    const traceabilitySummary = lightBIMTraceabilityService.createTraceabilityForPurchaseOrder(estimateId, purchaseOrderId);
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
-    return { purchaseOrderId, purchaseOrder, executionFeedback, masterData: buildMasterDataUsageSummary('bathroom_remodel') };
+    return { purchaseOrderId, purchaseOrder, executionFeedback, traceabilitySummary, masterData: buildMasterDataUsageSummary('bathroom_remodel') };
   }
 
   function calculateFullRemodelingEstimatePreview(payload = {}) {
@@ -5488,7 +5599,8 @@ function createSqliteService({ app }) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(scheduleId, estimateId, contractId, schedule.scheduleName, schedule.startDate, schedule.endDate, schedule.durationDays, schedule.status, createdAt, createdAt, toJson(schedule.quantitySummary || {}));
     persistConstructionScheduleItems(scheduleId, schedule);
-    return { scheduleId, schedule };
+    const traceabilitySummary = lightBIMTraceabilityService.updateTraceabilityFromSchedule(estimateId, scheduleId);
+    return { scheduleId, schedule, traceabilitySummary };
   }
 
   function generateFullRemodelingPurchaseOrder({ estimateId, contractId = null, requiredDate = null }) {
@@ -5510,9 +5622,10 @@ function createSqliteService({ app }) {
     `).run(purchaseOrderId, `EXEC-PENDING-${estimateId}`, estimateId, purchaseOrder.status, 1, toJson({ source: 'FULL_REMODELING_ESTIMATE', itemCount: purchaseOrder.items.length, quantitySummary: purchaseOrder.quantitySummary }), createdAt, estimateId, contractId, purchaseOrder.orderNumber, purchaseOrder.supplierName, purchaseOrder.totalAmount, purchaseOrder.status, purchaseOrder.requiredDate, createdAt);
     persistPurchaseOrderItems(purchaseOrderId, purchaseOrder);
     const executionFeedback = lightBIMExecutionFeedbackService.createFeedbackFromPurchaseOrder({ estimateId, projectId: estimateId, purchaseOrderId, estimateType: 'FULL_REMODELING' });
+    const traceabilitySummary = lightBIMTraceabilityService.createTraceabilityForPurchaseOrder(estimateId, purchaseOrderId);
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
-    return { purchaseOrderId, purchaseOrder, executionFeedback, masterData: buildMasterDataUsageSummary('kitchen_remodel') };
+    return { purchaseOrderId, purchaseOrder, executionFeedback, traceabilitySummary, masterData: buildMasterDataUsageSummary('kitchen_remodel') };
   }
 
   function mapFloorplan(row) {
@@ -7913,6 +8026,7 @@ function createSqliteService({ app }) {
     const calibrationRules = createEstimateCalibrationRulesFromClosing(projectId, costLeaks, createdAt);
     const templateCandidate = maybeCreateClosingProfitTemplate(basis, snapshot, createdAt);
     const closingReport = upsertClosingReport(snapshot, costLeaks, calibrationRules, templateCandidate, createdAt);
+    const traceabilitySummary = lightBIMTraceabilityService.updateTraceabilityFromExecutionFeedback({ projectId });
 
     insertNotification({
       level: snapshot.closing_status.startsWith('BLOCKED') || snapshot.closing_status === 'CLOSED_LOSS' ? 'RED' : snapshot.closing_status === 'CLOSED_REVIEW_REQUIRED' ? 'WARNING' : 'INFO',
@@ -7934,6 +8048,7 @@ function createSqliteService({ app }) {
       calibrationRules,
       templateCandidate,
       closingReport,
+      traceabilitySummary,
       canClose: !String(snapshot.closing_status).startsWith('BLOCKED'),
       closingCenterData: getProjectClosingCenterData({ projectId, skipRefresh: true })
     };
@@ -8446,7 +8561,8 @@ function createSqliteService({ app }) {
       status: 'READY',
       createdAt
     });
-    return { scheduleId, schedule };
+    const traceabilitySummary = lightBIMTraceabilityService.updateTraceabilityFromSchedule(estimateId, scheduleId);
+    return { scheduleId, schedule, traceabilitySummary };
   }
 
   function generateBathroomPurchaseOrder({ estimateId, contractId = null, requiredDate = null }) {
@@ -8481,6 +8597,7 @@ function createSqliteService({ app }) {
     );
     persistPurchaseOrderItems(purchaseOrderId, purchaseOrder);
     const executionFeedback = lightBIMExecutionFeedbackService.createFeedbackFromPurchaseOrder({ estimateId, projectId: estimateId, purchaseOrderId, estimateType: 'BATHROOM' });
+    const traceabilitySummary = lightBIMTraceabilityService.createTraceabilityForPurchaseOrder(estimateId, purchaseOrderId);
     insertNotification({ level: 'WARNING', messageKo: `발주서 생성: ${purchaseOrder.orderNumber} / 실제 공급가 확인 필요`, relatedProjectId: estimateId, actionKo: '발주서 생성', createdAt });
     createCommunicationDraft({
       messageType: 'VENDOR_PURCHASE_ORDER',
@@ -8493,7 +8610,7 @@ function createSqliteService({ app }) {
     });
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
-    return { purchaseOrderId, purchaseOrder, executionFeedback, masterData: buildMasterDataUsageSummary('full_remodel') };
+    return { purchaseOrderId, purchaseOrder, executionFeedback, traceabilitySummary, masterData: buildMasterDataUsageSummary('full_remodel') };
   }
 
   function profitGateForWonLead({ lead, payload = {}, actor = 'CEO', createdAt = nowIso() }) {
@@ -14778,6 +14895,7 @@ function createSqliteService({ app }) {
       );
     });
     const executionFeedback = lightBIMExecutionFeedbackService.syncReceivingQuantities(purchaseOrderId, projectId);
+    const traceabilitySummary = lightBIMTraceabilityService.updateTraceabilityFromReceiving(purchaseOrderId);
     const shortages = rows.filter((row) => row.missingQuantity > 0);
     if (shortages.length > 0) {
       upsertEventTrigger({
@@ -14815,7 +14933,7 @@ function createSqliteService({ app }) {
         createdAt
       });
     }
-    return { dashboardData: getDashboardData(), receivingCount: rows.length, shortageCount: shortages.length, shortages, executionFeedback };
+    return { dashboardData: getDashboardData(), receivingCount: rows.length, shortageCount: shortages.length, shortages, executionFeedback, traceabilitySummary };
   }
 
   function createInspectionChecklistFromSchedule({ projectId, scheduleId = null, processNameKo = '욕실 공정', actor = 'CEO' }) {
@@ -19937,6 +20055,7 @@ function createSqliteService({ app }) {
       materialReceivingLogCount: countRows(db.project, 'material_receiving_logs'),
       lightBimExecutionFeedbackCount: countRows(db.project, 'lightbim_execution_quantity_feedback'),
       lightBimPurchaseCalibrationRuleCount: countRows(db.project, 'lightbim_purchase_quantity_calibration_rules'),
+      lightBimTraceabilityLinkCount: countRows(db.project, 'lightbim_traceability_links'),
       siteMediaFileCount: countRows(db.project, 'site_media_files'),
       fieldSignatureCount: countRows(db.project, 'field_signatures'),
       fieldRiskReportCount: countRows(db.project, 'field_risk_reports'),
@@ -20043,6 +20162,13 @@ function createSqliteService({ app }) {
     closeLightBIMExecutionFeedback,
     generateLightBIMQuantityCalibration,
     getLightBIMExecutionFeedbackSummary,
+    createLightBIMTraceability,
+    getLightBIMTraceability,
+    getLightBIMTraceabilityByEstimate,
+    getLightBIMTraceabilityBySpace,
+    getLightBIMTraceabilitySummary,
+    updateLightBIMTraceabilityFromReceiving,
+    updateLightBIMTraceabilityFromFeedback,
     calculateBathroomEstimatePreview,
     saveBathroomEstimate,
     exportBathroomEstimateDocument,

@@ -29,9 +29,10 @@ function resolveTargetView(type?: string): ViewKey {
 type Props = {
   onOpenQuantityReview?: () => void;
   onOpenExecutionFeedback?: () => void;
+  onOpenTraceability?: () => void;
 };
 
-export function LightBIMImportCenterView({ onOpenQuantityReview, onOpenExecutionFeedback }: Props = {}) {
+export function LightBIMImportCenterView({ onOpenQuantityReview, onOpenExecutionFeedback, onOpenTraceability }: Props = {}) {
   const [importResult, setImportResult] = useState<LightBIMImportResult | null>(null);
   const [estimateResult, setEstimateResult] = useState<LightBIMImportResult | null>(null);
   const [messageKo, setMessageKo] = useState('LightBIM JSON 파일을 선택하세요. 기존 수동 입력 방식은 계속 사용할 수 있습니다.');
@@ -122,6 +123,14 @@ export function LightBIMImportCenterView({ onOpenQuantityReview, onOpenExecution
       return;
     }
     window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimExecutionFeedback' }));
+  }
+
+  function openTraceability() {
+    if (onOpenTraceability) {
+      onOpenTraceability();
+      return;
+    }
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimTraceability' }));
   }
 
   return (
@@ -238,6 +247,7 @@ export function LightBIMImportCenterView({ onOpenQuantityReview, onOpenExecution
               <button onClick={() => openWizard(String(estimateResult.estimateType))}>견적 Wizard 열기</button>
               <button onClick={openQuantityReview}>수량 검토 열기</button>
               <button onClick={openExecutionFeedback}>실행 피드백 열기</button>
+              <button onClick={openTraceability}>추적 보기</button>
             </div>
           </div>
         ) : null}

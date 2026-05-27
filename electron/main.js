@@ -44,6 +44,13 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:lightbim:execution-feedback:close', (_event, payload) => sqliteService.closeLightBIMExecutionFeedback(payload));
   ipcMain.handle('boc:lightbim:execution-feedback:calibration', (_event, payload) => sqliteService.generateLightBIMQuantityCalibration(payload));
   ipcMain.handle('boc:lightbim:execution-feedback:summary', (_event, payload) => sqliteService.getLightBIMExecutionFeedbackSummary(payload));
+  ipcMain.handle('boc:lightbim:traceability:create', (_event, payload) => sqliteService.createLightBIMTraceability(payload));
+  ipcMain.handle('boc:lightbim:traceability:get', (_event, payload) => sqliteService.getLightBIMTraceability(payload));
+  ipcMain.handle('boc:lightbim:traceability:estimate', (_event, payload) => sqliteService.getLightBIMTraceabilityByEstimate(payload));
+  ipcMain.handle('boc:lightbim:traceability:space', (_event, payload) => sqliteService.getLightBIMTraceabilityBySpace(payload));
+  ipcMain.handle('boc:lightbim:traceability:summary', (_event, payload) => sqliteService.getLightBIMTraceabilitySummary(payload));
+  ipcMain.handle('boc:lightbim:traceability:receiving', (_event, payload) => sqliteService.updateLightBIMTraceabilityFromReceiving(payload));
+  ipcMain.handle('boc:lightbim:traceability:feedback', (_event, payload) => sqliteService.updateLightBIMTraceabilityFromFeedback(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));

@@ -1,9 +1,10 @@
 type Props = {
   onCreate: () => void;
   onOpenFeedback?: () => void;
+  onOpenTraceability?: () => void;
 };
 
-export function MaterialReceivingView({ onCreate, onOpenFeedback }: Props) {
+export function MaterialReceivingView({ onCreate, onOpenFeedback, onOpenTraceability }: Props) {
   return (
     <div className="estimate-preview-card">
       <h5>자재입고</h5>
@@ -12,6 +13,7 @@ export function MaterialReceivingView({ onCreate, onOpenFeedback }: Props) {
       <div className="button-row">
         <button onClick={onCreate}>자재입고 기록</button>
         <button onClick={onOpenFeedback}>실제 사용 / 차이 확인</button>
+        <button onClick={onOpenTraceability}>수량 출처 보기</button>
       </div>
     </div>
   );

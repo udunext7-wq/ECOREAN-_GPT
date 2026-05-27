@@ -2347,6 +2347,15 @@ button:hover {
   font-size: 19px;
 }
 
+.traceability-table {
+  min-width: 1260px;
+}
+
+.traceability-table th,
+.traceability-table td {
+  white-space: nowrap;
+}
+
 .document-terms-grid h4,
 .internal-risk-note h4,
 .internal-document h4 {

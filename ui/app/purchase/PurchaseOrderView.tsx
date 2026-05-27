@@ -7,6 +7,10 @@ export function PurchaseOrderView() {
     window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimExecutionFeedback' }));
   }
 
+  function openTraceability() {
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimTraceability' }));
+  }
+
   return (
     <section className="wizard-panel professional-output-panel">
       <h3>발주 관리</h3>
@@ -29,6 +33,7 @@ export function PurchaseOrderView() {
       <div className="button-row">
         <button onClick={openVendorIntelligence}>협력업체 단가 지능화 열기</button>
         <button onClick={openExecutionFeedback}>LightBIM 실행 피드백</button>
+        <button onClick={openTraceability}>LightBIM 수량 추적</button>
       </div>
     </section>
   );
