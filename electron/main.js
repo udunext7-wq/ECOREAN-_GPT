@@ -55,6 +55,10 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:lightbim:space-map:estimate', (_event, payload) => sqliteService.getLightBIMSpaceMapDataByEstimate(payload));
   ipcMain.handle('boc:lightbim:space-map:space', (_event, payload) => sqliteService.getLightBIMSpaceTraceSummary(payload));
   ipcMain.handle('boc:lightbim:space-map:summaries', (_event, payload) => sqliteService.getAllLightBIMSpaceTraceSummaries(payload));
+  ipcMain.handle('boc:lightbim:customer-map:get', (_event, payload) => sqliteService.getLightBIMCustomerProposalMapData(payload));
+  ipcMain.handle('boc:lightbim:customer-map:estimate', (_event, payload) => sqliteService.getLightBIMCustomerProposalMapByEstimate(payload));
+  ipcMain.handle('boc:lightbim:customer-map:project', (_event, payload) => sqliteService.getLightBIMCustomerProposalMapByProject(payload));
+  ipcMain.handle('boc:lightbim:customer-map:summary', (_event, payload) => sqliteService.generateLightBIMCustomerMapSummary(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));

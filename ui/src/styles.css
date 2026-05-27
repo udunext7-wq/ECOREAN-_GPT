@@ -2788,6 +2788,120 @@ button:hover {
   overflow-x: auto;
 }
 
+.customer-proposal-map {
+  display: grid;
+  gap: 16px;
+}
+
+.customer-map-hero {
+  background: #ffffff;
+  color: #20252c;
+}
+
+.customer-map-layout {
+  display: grid;
+  grid-template-columns: minmax(420px, 1.45fr) minmax(260px, 0.8fr);
+  gap: 14px;
+}
+
+.customer-map-canvas {
+  min-width: 0;
+}
+
+.customer-map-svg {
+  width: 100%;
+  min-height: 360px;
+  max-height: 520px;
+  display: block;
+  background: #f8f7f4;
+  border: 1px solid #ddd8cd;
+}
+
+.customer-map-space {
+  cursor: pointer;
+}
+
+.customer-map-polygon {
+  fill: #f4f1ea;
+  stroke: #918d84;
+  stroke-width: 30;
+  transition: fill 160ms ease, stroke 160ms ease;
+}
+
+.customer-map-polygon:hover,
+.customer-map-polygon.selected {
+  fill: #dfe8df;
+  stroke: #51705e;
+}
+
+.customer-map-wall {
+  stroke: #59584f;
+  stroke-width: 42;
+  pointer-events: none;
+}
+
+.customer-map-opening {
+  fill: #fff;
+  stroke: #51705e;
+  stroke-width: 20;
+  pointer-events: none;
+}
+
+.customer-map-label {
+  font-size: 170px;
+  font-weight: 600;
+  text-anchor: middle;
+  fill: #232720;
+  pointer-events: none;
+}
+
+.customer-map-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid #c9c7bd;
+  color: #3d4942;
+  background: #f3f1eb;
+}
+
+.customer-map-status.active {
+  border-color: #7d9a86;
+  background: #e6eee8;
+}
+
+.customer-map-status.complete {
+  border-color: #558266;
+  background: #ddebe2;
+}
+
+.customer-map-status.supplement {
+  border-color: #b79f69;
+  background: #f3ecdd;
+}
+
+.customer-map-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.customer-map-gallery figure {
+  margin: 0;
+}
+
+.customer-map-gallery img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid #ddd8cd;
+}
+
+.customer-map-gallery figcaption {
+  padding-top: 6px;
+  color: #5a5f60;
+}
+
 @media (max-width: 1100px) {
   .estimate-entry-grid,
   .wizard-form-grid,
@@ -2809,6 +2923,10 @@ button:hover {
   }
 
   .space-map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-map-layout {
     grid-template-columns: 1fr;
   }
 }

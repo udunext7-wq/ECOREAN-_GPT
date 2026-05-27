@@ -60,6 +60,11 @@ export function ClientPortalCenterView({ projectId }: Props) {
   const defectRequests = useMemo(() => asArray(data?.defectView?.defectRequests), [data]);
   const confirmations = useMemo(() => asArray(data?.completionView?.confirmations), [data]);
   const tokens = useMemo(() => asArray(data?.tokenView?.tokens), [data]);
+  const proposalSpaces = useMemo(() => asArray(data?.proposalMap?.spaces), [data]);
+
+  function openProposalMap() {
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimCustomerMap' }));
+  }
 
   async function handleToken() {
     await generateClientPortalToken({ projectId: activeProjectId, clientName });
@@ -146,6 +151,7 @@ export function ClientPortalCenterView({ projectId }: Props) {
         <div className="button-row">
           <button className="primary-action" onClick={() => refresh(activeProjectId)}>고객 포털 열기</button>
           <button onClick={handleToken}>토큰 생성</button>
+          <button onClick={openProposalMap}>공간 제안 맵 보기</button>
         </div>
         <p className="small-note">{messageKo}</p>
       </section>
@@ -215,6 +221,21 @@ export function ClientPortalCenterView({ projectId }: Props) {
           <p>{text(schedule.delayNoticeKo, '일정 안내 없음')}</p>
         </section>
       </div>
+
+      <section className="estimate-preview-card">
+        <div className="estimate-panel-head">
+          <div>
+            <h4>공간 제안 맵</h4>
+            <p>공간별 공사 범위와 디자인 방향을 확인합니다.</p>
+          </div>
+          <button onClick={openProposalMap}>공간 제안 맵 보기</button>
+        </div>
+        {proposalSpaces.length ? (
+          <div className="tag-row">
+            {proposalSpaces.map((space) => <span className="status-pill" key={String(space.id)}>{String(space.name)}</span>)}
+          </div>
+        ) : <p className="small-note">표시할 공간 정보가 없습니다.</p>}
+      </section>
 
       <section className="estimate-preview-card">
         <h4>진행 현황</h4>

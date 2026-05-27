@@ -300,7 +300,10 @@ export function AIVisualizationCenterView() {
           <h2>AI 투시도 생성</h2>
           <p>견적 + 평면도 + 무드보드 + 공간 데이터를 이미지 생성 브리프와 검토 워크플로로 연결합니다.</p>
         </div>
-        <button className="primary-action" onClick={openBoardGenerationCenter}>디자인 보드 생성</button>
+        <div className="button-row">
+          <button className="primary-action" onClick={openBoardGenerationCenter}>디자인 보드 생성</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimCustomerMap' }))}>고객 제안 맵 보기</button>
+        </div>
       </div>
 
       <div className="wizard-summary-grid visualization-stats">

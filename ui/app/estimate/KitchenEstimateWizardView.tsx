@@ -315,6 +315,9 @@ export function KitchenEstimateWizardView() {
           <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimSpaceMap' }))}>
             LightBIM 공간 맵
           </button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimCustomerMap' }))}>
+            공간별 공사 범위
+          </button>
         </section>
       ) : null}
 

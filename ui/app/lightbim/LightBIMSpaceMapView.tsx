@@ -121,6 +121,7 @@ export function LightBIMSpaceMapView({ estimateId = '' }: Props) {
         <div className="button-row">
           <button onClick={() => refresh()}>도면 불러오기</button>
           <button onClick={() => navigate('lightbimTraceability')}>추적 상세 보기</button>
+          <button onClick={() => navigate('lightbimCustomerMap')}>고객 제안 맵 보기</button>
         </div>
         <p className="small-note">{messageKo}</p>
       </section>

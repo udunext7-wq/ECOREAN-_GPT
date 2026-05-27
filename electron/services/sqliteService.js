@@ -29,6 +29,7 @@ const { createLightBIMQuantityReviewService } = require('./lightBimQuantityRevie
 const { createLightBIMExecutionFeedbackService } = require('./lightBimExecutionFeedbackService');
 const { createLightBIMTraceabilityService } = require('./lightBimTraceabilityService');
 const { createLightBIMSpaceMapService } = require('./lightBimSpaceMapService');
+const { createLightBIMCustomerMapService } = require('./lightBimCustomerMapService');
 const { exportEstimateDocument } = require('./estimateExportService');
 const { buildContractFromEstimate, exportContractPdf } = require('./contractService');
 const { buildScheduleFromEstimate } = require('./scheduleService');
@@ -157,6 +158,7 @@ function createSqliteService({ app }) {
   const lightBIMExecutionFeedbackService = createLightBIMExecutionFeedbackService({ db, nowIso, toJson });
   const lightBIMTraceabilityService = createLightBIMTraceabilityService({ db, nowIso, fromJson });
   const lightBIMSpaceMapService = createLightBIMSpaceMapService({ db, fromJson });
+  const lightBIMCustomerMapService = createLightBIMCustomerMapService({ db, fromJson });
 
   const PROFIT_POLICY = {
     minimumBudget: 7000000,
@@ -4819,6 +4821,25 @@ function createSqliteService({ app }) {
     );
   }
 
+  function getLightBIMCustomerProposalMapData(payload = {}) {
+    return lightBIMCustomerMapService.getCustomerProposalMapData(payload.importId || payload.import_id);
+  }
+
+  function getLightBIMCustomerProposalMapByEstimate(payload = {}) {
+    return lightBIMCustomerMapService.getCustomerProposalMapByEstimate(
+      payload.estimateType || payload.estimate_type || '',
+      payload.estimateId || payload.estimate_id || ''
+    );
+  }
+
+  function getLightBIMCustomerProposalMapByProject(payload = {}) {
+    return lightBIMCustomerMapService.getCustomerProposalMapByProject(payload.projectId || payload.project_id || '');
+  }
+
+  function generateLightBIMCustomerMapSummary(payload = {}) {
+    return lightBIMCustomerMapService.generateCustomerMapSummary(payload);
+  }
+
   function getLightBIMSpaceTraceSummary(payload = {}) {
     return lightBIMSpaceMapService.getSpaceTraceSummary(
       payload.importId || payload.import_id,
@@ -4851,6 +4872,13 @@ function createSqliteService({ app }) {
 
   function registerSavedEstimateQuantityReviews(importId, estimateType, estimateId, items, payload = {}) {
     if (!payload.lightBimSource) return null;
+    if (importId) {
+      db.project.prepare(`
+        UPDATE lightbim_imports
+        SET created_estimate_type = ?, created_estimate_id = ?
+        WHERE id = ? AND status = 'SUCCESS'
+      `).run(estimateType, estimateId, importId);
+    }
     const quantityBasis = payload.lightBimSource.quantityBasis || payload.lightBimSource.quantity_basis || {};
     const result = lightBIMQuantityReviewService.createReviewsForEstimate(importId || null, estimateType, estimateId, items, quantityBasis);
     lightBIMTraceabilityService.createTraceabilityForEstimate(importId || null, estimateType, estimateId);
@@ -6570,6 +6598,9 @@ function createSqliteService({ app }) {
     const title = payload.title || (boardType === 'PORTFOLIO_BOARD' ? 'ECOREAN Portfolio Board' : 'ECOREAN Interior Proposal');
     const subtitle = payload.subtitle || (boardType === 'MATERIAL_BOARD' ? 'Material Selection Board' : 'Premium Interior Presentation');
     const projectName = payload.projectName || floorplan?.fileName || 'ECOREAN Project';
+    const customerProposalMap = payload.includeCustomerProposalMap
+      ? lightBIMCustomerMapService.getCustomerProposalMapByEstimate('', payload.estimateId || '')
+      : null;
     const layout = buildBoardLayout({
       boardType,
       exportMode: payload.exportMode || boardType,
@@ -6586,6 +6617,7 @@ function createSqliteService({ app }) {
       subtitle,
       materialSelections: payload.materialSelections || [],
       constructionScope: payload.constructionScope || [],
+      customerProposalMap,
       imageFitMode: payload.imageFitMode || 'CONTAIN',
       printFormat: payload.printFormat || 'A3_LANDSCAPE'
     });
@@ -10066,6 +10098,7 @@ function createSqliteService({ app }) {
       defectView: { defectRequests, emptyMessageKo: defectRequests.length ? '' : '접수된 하자 요청이 없습니다.' },
       completionView: { confirmations, emptyMessageKo: confirmations.length ? '' : '완료 확인 기록이 없습니다.' },
       tokenView: { tokens, shareStatusKo: '고객 공유 링크 준비 중' },
+      proposalMap: lightBIMCustomerMapService.getCustomerProposalMapByEstimate('', estimateId),
       customerSafe: true
     };
   }
@@ -20197,6 +20230,10 @@ function createSqliteService({ app }) {
     getLightBIMSpaceMapDataByEstimate,
     getLightBIMSpaceTraceSummary,
     getAllLightBIMSpaceTraceSummaries,
+    getLightBIMCustomerProposalMapData,
+    getLightBIMCustomerProposalMapByEstimate,
+    getLightBIMCustomerProposalMapByProject,
+    generateLightBIMCustomerMapSummary,
     calculateBathroomEstimatePreview,
     saveBathroomEstimate,
     exportBathroomEstimateDocument,

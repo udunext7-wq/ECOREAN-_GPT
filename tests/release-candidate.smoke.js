@@ -59,6 +59,10 @@ const releaseChecks = [
     script: 'lightbim-interactive-space-map.smoke.js'
   },
   {
+    label: 'LightBIM 고객 제안 맵',
+    script: 'lightbim-customer-proposal-map.smoke.js'
+  },
+  {
     label: '견적 출력',
     script: 'estimate-export.smoke.js'
   },

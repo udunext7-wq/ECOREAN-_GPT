@@ -65,6 +65,7 @@ export function BoardGenerationCenterView() {
     printFormat: 'A3_LANDSCAPE',
     imageFitMode: 'CONTAIN',
     manualImagePath: '',
+    includeCustomerProposalMap: true,
     finalMarginRate: '0.35',
     hasMajorDefect: false,
     hasSevereClientComplaint: false
@@ -114,6 +115,7 @@ export function BoardGenerationCenterView() {
       exportMode: form.exportMode,
       printFormat: form.printFormat,
       imageFitMode: form.imageFitMode,
+      includeCustomerProposalMap: form.includeCustomerProposalMap,
       selectedImageIds,
       manualImages,
       estimateSummary: {
@@ -271,7 +273,12 @@ export function BoardGenerationCenterView() {
             <button className="primary-action" onClick={handleCreateBoard}>보드 생성</button>
             <button onClick={handleExportPdf}>PDF 출력</button>
             <button onClick={handleCreatePortfolioCandidate}>포트폴리오 등록</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimCustomerMap' }))}>공간 제안 맵 보기</button>
           </div>
+          <label className="toggle-row">
+            <input type="checkbox" checked={form.includeCustomerProposalMap} onChange={(event) => setForm({ ...form, includeCustomerProposalMap: event.target.checked })} />
+            고객용 공간 제안 맵 포함
+          </label>
         </div>
 
         <div className="drawer-block">

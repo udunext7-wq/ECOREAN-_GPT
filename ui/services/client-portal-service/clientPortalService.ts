@@ -11,6 +11,7 @@ export type ClientPortalData = {
   defectView: Record<string, unknown>;
   completionView: Record<string, unknown>;
   tokenView: Record<string, unknown>;
+  proposalMap?: Record<string, unknown>;
   customerSafe?: boolean;
 };
 
@@ -27,6 +28,7 @@ const emptyData: ClientPortalData = {
   defectView: { defectRequests: [], emptyMessageKo: '접수된 하자 요청이 없습니다.' },
   completionView: { confirmations: [], emptyMessageKo: '완료 확인 기록이 없습니다.' },
   tokenView: { tokens: [], shareStatusKo: '고객 공유 링크 준비 중' },
+  proposalMap: {},
   customerSafe: true
 };
 

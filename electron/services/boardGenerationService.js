@@ -391,6 +391,26 @@ function buildBoardLayout(input = {}) {
         { labelKo: '결제 조건', valueKo: '계약 시 협의' }
       ]
     }),
+    customerProposalMap: input.customerProposalMap?.spaces?.length ? {
+      ...buildSection({
+      id: 'SECTION-CUSTOMER-MAP',
+      sortOrder: 9,
+      sectionType: 'CUSTOMER_PROPOSAL_MAP',
+      titleKo: '고객용 공간 제안 맵',
+      descriptionKo: '공간 구성과 공간별 공사 범위, 디자인 방향을 고객 안내용으로 정리합니다.',
+      table: input.customerProposalMap.spaces.map((space) => ({
+        labelKo: space.name,
+        valueKo: `${space.constructionScope.join(', ')} / ${space.progressStatusKo}`
+      })),
+      notes: input.customerProposalMap.publicScopeSummary
+      }),
+      mapArea: {
+        renderMode: 'SVG',
+        geometry: input.customerProposalMap.geometry,
+        placeholderKo: '공간 맵 미리보기'
+      },
+      designDirection: input.customerProposalMap.designDirection
+    } : null,
     closingSignature: buildSection({
       id: 'SECTION-SIGNATURE',
       sortOrder: 9,
@@ -405,12 +425,17 @@ function buildBoardLayout(input = {}) {
     })
   };
 
-  const sections = template.sectionOrdering
+  let sections = template.sectionOrdering
     .filter((key) => sectionMap[key])
     .map((key, index) => ({
       ...sectionMap[key],
       sortOrder: index + 1
     }));
+  if (sectionMap.customerProposalMap) {
+    const insertionIndex = Math.max(0, sections.findIndex((section) => section.sectionType === 'FLOORPLAN') + 1);
+    sections.splice(insertionIndex, 0, sectionMap.customerProposalMap);
+    sections = sections.map((section, index) => ({ ...section, sortOrder: index + 1 }));
+  }
 
   const pages = [
     coverPage,
