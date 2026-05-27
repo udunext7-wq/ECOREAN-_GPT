@@ -1,0 +1,20 @@
+{
+  "releaseVersion": "RC-0.3.0",
+  "bugId": "BUG-RC030-001",
+  "severity": "HIGH",
+  "module": "Customer Proposal Map",
+  "testStep": "UT-09",
+  "title": "고객 제안 맵에서 승인 이미지가 표시되지 않음",
+  "environment": "Windows Desktop / Local DB",
+  "precondition": "APPROVED 상태 제안 이미지가 저장되어 있음",
+  "stepsToReproduce": [
+    "LightBIM 가져오기 결과에서 고객용 공간 제안 맵을 엽니다.",
+    "욕실 공간을 선택합니다.",
+    "제안 이미지 영역을 확인합니다."
+  ],
+  "expectedResult": "승인된 욕실 이미지가 고객용 맵에 표시됩니다.",
+  "actualResult": "등록된 제안 이미지가 없습니다 문구가 표시됩니다.",
+  "evidencePath": "evidence/BUG-RC030-001.png",
+  "customerDataLeakObserved": false,
+  "status": "OPEN"
+}

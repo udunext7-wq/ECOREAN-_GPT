@@ -59,6 +59,10 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:lightbim:customer-map:estimate', (_event, payload) => sqliteService.getLightBIMCustomerProposalMapByEstimate(payload));
   ipcMain.handle('boc:lightbim:customer-map:project', (_event, payload) => sqliteService.getLightBIMCustomerProposalMapByProject(payload));
   ipcMain.handle('boc:lightbim:customer-map:summary', (_event, payload) => sqliteService.generateLightBIMCustomerMapSummary(payload));
+  ipcMain.handle('boc:user-test:get', (_event, payload = {}) => sqliteService.getUserTestCenterData(payload));
+  ipcMain.handle('boc:user-test:create-run', (_event, payload = {}) => sqliteService.createUserTestRun(payload));
+  ipcMain.handle('boc:user-test:update-step', (_event, payload) => sqliteService.updateUserTestStep(payload));
+  ipcMain.handle('boc:user-test:complete-run', (_event, payload) => sqliteService.completeUserTestRun(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));

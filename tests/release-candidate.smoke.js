@@ -75,6 +75,10 @@ const releaseChecks = [
     script: 'lightbim-customer-safety-regression.smoke.js'
   },
   {
+    label: 'RC-0.3.0 사용자 테스트 패키지',
+    script: 'rc-0-3-0-user-test-package.smoke.js'
+  },
+  {
     label: '견적 출력',
     script: 'estimate-export.smoke.js'
   },

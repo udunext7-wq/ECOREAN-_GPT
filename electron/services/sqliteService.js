@@ -163,6 +163,21 @@ function createSqliteService({ app }) {
   const lightBIMTraceabilityService = createLightBIMTraceabilityService({ db, nowIso, fromJson });
   const lightBIMSpaceMapService = createLightBIMSpaceMapService({ db, fromJson });
   const lightBIMCustomerMapService = createLightBIMCustomerMapService({ db, fromJson });
+  const USER_TEST_RELEASE = 'RC-0.3.0';
+  const USER_TEST_STEP_TEMPLATES = [
+    { code: 'UT-01', module: 'MiniCAD / LightBIM', title: 'LightBIM JSON 내보내기', expected: 'MiniCAD 도면이 ECOREAN.LightBIM.v0.1 JSON으로 저장됩니다.' },
+    { code: 'UT-02', module: 'LightBIM Import', title: 'LightBIM 도면 가져오기', expected: '프로젝트 공간과 추천 견적 유형이 오류 없이 표시됩니다.' },
+    { code: 'UT-03', module: 'Quantity Review', title: '수량 확인 및 사용자 수정', expected: '수정 수량과 사유가 저장되고 재계산 준비 상태가 됩니다.' },
+    { code: 'UT-04', module: 'Estimate / PCE', title: '견적 및 수익성 검증', expected: '견적 금액과 PCE 판단이 도면 수량 기준으로 생성됩니다.' },
+    { code: 'UT-05', module: 'Contract / Schedule', title: '계약 및 공정표 생성', expected: '계약 초안과 수량 기반 공정 기간이 생성됩니다.' },
+    { code: 'UT-06', module: 'Purchase / Receiving', title: '발주 및 자재 입고 확인', expected: '할증률이 반영된 발주량과 입고 기준량이 확인됩니다.' },
+    { code: 'UT-07', module: 'Execution Feedback', title: '실제 사용량 입력', expected: '사용량과 차이율, 검토 상태가 계산됩니다.' },
+    { code: 'UT-08', module: 'Traceability / Space Map', title: '추적 보기와 내부 공간 맵', expected: '공간에서 견적/발주/실사용 연결 상태를 확인할 수 있습니다.' },
+    { code: 'UT-09', module: 'Customer Proposal', title: '고객용 공간 맵과 제안 보드', expected: '고객 안전 모드의 공간 제안 자료가 표시됩니다.' },
+    { code: 'UT-10', module: 'Export', title: 'PDF / Excel 출력', expected: '고객 PDF와 내부 Excel 출력 파일이 생성됩니다.' },
+    { code: 'UT-11', module: 'Customer Safety', title: '고객 화면 내부정보 차단', expected: '원가, 마진, PCE, 발주/차이 데이터가 고객 화면에 노출되지 않습니다.' },
+    { code: 'UT-12', module: 'Closing / Calibration', title: '마감 및 보정 후보 확인', expected: '실행 피드백과 다음 보정 후보를 내부 화면에서 확인할 수 있습니다.' }
+  ];
 
   const PROFIT_POLICY = {
     minimumBudget: 7000000,
@@ -337,6 +352,37 @@ function createSqliteService({ app }) {
         trace_status TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS user_test_runs (
+        id TEXT PRIMARY KEY,
+        release_version TEXT NOT NULL,
+        tester_name TEXT NOT NULL,
+        test_environment TEXT NOT NULL,
+        status TEXT NOT NULL,
+        conclusion TEXT,
+        notes TEXT,
+        started_at TEXT NOT NULL,
+        completed_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS user_test_steps (
+        id TEXT PRIMARY KEY,
+        run_id TEXT NOT NULL,
+        step_code TEXT NOT NULL,
+        step_order INTEGER NOT NULL,
+        module_name TEXT NOT NULL,
+        task_name TEXT NOT NULL,
+        expected_result TEXT NOT NULL,
+        status TEXT NOT NULL,
+        actual_result TEXT,
+        bug_severity TEXT,
+        evidence_path TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(run_id, step_code)
       );
 
       CREATE TABLE IF NOT EXISTS bathroom_estimates (
@@ -20003,6 +20049,159 @@ function createSqliteService({ app }) {
     return reasonKo ? `${label}: ${reasonKo}` : `${label} 액션 기록`;
   }
 
+  function mapUserTestRun(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      releaseVersion: row.release_version,
+      testerName: row.tester_name,
+      testEnvironment: row.test_environment,
+      status: row.status,
+      conclusion: row.conclusion || '',
+      notes: row.notes || '',
+      startedAt: row.started_at,
+      completedAt: row.completed_at || '',
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  function mapUserTestStep(row) {
+    return {
+      id: row.id,
+      runId: row.run_id,
+      stepCode: row.step_code,
+      stepOrder: Number(row.step_order),
+      moduleName: row.module_name,
+      taskName: row.task_name,
+      expectedResult: row.expected_result,
+      status: row.status,
+      actualResult: row.actual_result || '',
+      bugSeverity: row.bug_severity || '',
+      evidencePath: row.evidence_path || '',
+      updatedAt: row.updated_at
+    };
+  }
+
+  function getUserTestCenterData({ runId = '' } = {}) {
+    const runs = db.project.prepare('SELECT * FROM user_test_runs ORDER BY created_at DESC LIMIT 20').all().map(mapUserTestRun);
+    const activeRun = runId
+      ? mapUserTestRun(db.project.prepare('SELECT * FROM user_test_runs WHERE id = ?').get(runId))
+      : (runs[0] || null);
+    const steps = activeRun
+      ? db.project.prepare('SELECT * FROM user_test_steps WHERE run_id = ? ORDER BY step_order').all(activeRun.id).map(mapUserTestStep)
+      : USER_TEST_STEP_TEMPLATES.map((step, index) => ({
+        id: '',
+        runId: '',
+        stepCode: step.code,
+        stepOrder: index + 1,
+        moduleName: step.module,
+        taskName: step.title,
+        expectedResult: step.expected,
+        status: 'NOT_STARTED',
+        actualResult: '',
+        bugSeverity: '',
+        evidencePath: ''
+      }));
+    const totalCount = steps.length;
+    const passedCount = steps.filter((step) => step.status === 'PASSED').length;
+    const failedCount = steps.filter((step) => step.status === 'FAILED').length;
+    const blockedCount = steps.filter((step) => step.status === 'BLOCKED').length;
+    const pendingCount = steps.filter((step) => ['NOT_STARTED', 'IN_PROGRESS'].includes(step.status)).length;
+    return {
+      releaseVersion: USER_TEST_RELEASE,
+      activeRun,
+      runs,
+      steps,
+      summary: {
+        totalCount,
+        passedCount,
+        failedCount,
+        blockedCount,
+        pendingCount,
+        progressRate: totalCount ? Number(((totalCount - pendingCount) / totalCount).toFixed(4)) : 0
+      },
+      documents: [
+        'docs/RC_0_3_0_USER_TEST_CHECKLIST.md',
+        'docs/RC_0_3_0_BUG_REPORT_TEMPLATE.md',
+        'docs/RC_0_3_0_ACCEPTANCE_CRITERIA.md',
+        'docs/RC_0_3_0_USER_TEST_REPORT.md'
+      ],
+      sampleDataPath: 'tests/user-test-data/rc-0.3.0',
+      emptyMessageKo: activeRun ? '' : '시작된 사용자 테스트 회차가 없습니다.'
+    };
+  }
+
+  function createUserTestRun({ testerName = '테스터 미입력', testEnvironment = 'LOCAL_DESKTOP', notes = '' } = {}) {
+    const createdAt = nowIso();
+    const runId = `UTRUN-RC030-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    db.project.prepare(`
+      INSERT INTO user_test_runs (
+        id, release_version, tester_name, test_environment, status, conclusion,
+        notes, started_at, completed_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(runId, USER_TEST_RELEASE, testerName || '테스터 미입력', testEnvironment || 'LOCAL_DESKTOP', 'IN_PROGRESS', null, notes || '', createdAt, null, createdAt, createdAt);
+    const insertStep = db.project.prepare(`
+      INSERT INTO user_test_steps (
+        id, run_id, step_code, step_order, module_name, task_name, expected_result,
+        status, actual_result, bug_severity, evidence_path, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    USER_TEST_STEP_TEMPLATES.forEach((step, index) => {
+      insertStep.run(
+        `UTSTEP-${runId}-${step.code}`,
+        runId,
+        step.code,
+        index + 1,
+        step.module,
+        step.title,
+        step.expected,
+        'NOT_STARTED',
+        '',
+        '',
+        '',
+        createdAt,
+        createdAt
+      );
+    });
+    return getUserTestCenterData({ runId });
+  }
+
+  function updateUserTestStep({ stepId, status = 'IN_PROGRESS', actualResult = '', bugSeverity = '', evidencePath = '' } = {}) {
+    const acceptedStatus = ['NOT_STARTED', 'IN_PROGRESS', 'PASSED', 'FAILED', 'BLOCKED'];
+    const acceptedSeverity = ['', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+    if (!stepId) return { ok: false, errorMessage: '사용자 테스트 단계를 선택하세요.' };
+    if (!acceptedStatus.includes(status)) return { ok: false, errorMessage: '사용자 테스트 상태가 올바르지 않습니다.' };
+    if (!acceptedSeverity.includes(bugSeverity)) return { ok: false, errorMessage: '버그 심각도가 올바르지 않습니다.' };
+    const row = db.project.prepare('SELECT * FROM user_test_steps WHERE id = ?').get(stepId);
+    if (!row) return { ok: false, errorMessage: '사용자 테스트 단계를 찾을 수 없습니다.' };
+    const updatedAt = nowIso();
+    db.project.prepare(`
+      UPDATE user_test_steps
+      SET status = ?, actual_result = ?, bug_severity = ?, evidence_path = ?, updated_at = ?
+      WHERE id = ?
+    `).run(status, actualResult || '', bugSeverity || '', evidencePath || '', updatedAt, stepId);
+    db.project.prepare('UPDATE user_test_runs SET updated_at = ? WHERE id = ?').run(updatedAt, row.run_id);
+    return { ok: true, ...getUserTestCenterData({ runId: row.run_id }) };
+  }
+
+  function completeUserTestRun({ runId, conclusion = '', notes = '' } = {}) {
+    if (!runId) return { ok: false, errorMessage: '완료할 사용자 테스트 회차가 없습니다.' };
+    const data = getUserTestCenterData({ runId });
+    if (!data.activeRun) return { ok: false, errorMessage: '사용자 테스트 회차를 찾을 수 없습니다.' };
+    if (data.summary.pendingCount > 0) {
+      return { ok: false, errorMessage: '완료되지 않은 테스트 단계가 있습니다.', ...data };
+    }
+    const status = data.summary.blockedCount > 0 ? 'BLOCKED' : data.summary.failedCount > 0 ? 'FAILED' : 'PASSED';
+    const updatedAt = nowIso();
+    db.project.prepare(`
+      UPDATE user_test_runs
+      SET status = ?, conclusion = ?, notes = ?, completed_at = ?, updated_at = ?
+      WHERE id = ?
+    `).run(status, conclusion || '', notes || data.activeRun.notes || '', updatedAt, updatedAt, runId);
+    return { ok: true, ...getUserTestCenterData({ runId }) };
+  }
+
   function getDbStats() {
     return {
       databaseDir,
@@ -20052,6 +20251,8 @@ function createSqliteService({ app }) {
       purchaseOrderExportDir,
       reportExportDir,
       lightBimExportDir,
+      userTestRunCount: countRows(db.project, 'user_test_runs'),
+      userTestStepCount: countRows(db.project, 'user_test_steps'),
       constructionScheduleCount: countRows(db.project, 'construction_schedules'),
       constructionScheduleItemCount: countRows(db.project, 'construction_schedule_items'),
       purchaseOrderItemCount: countRows(db.project, 'purchase_order_items'),
@@ -20254,6 +20455,10 @@ function createSqliteService({ app }) {
     getLightBIMCustomerProposalMapByEstimate,
     getLightBIMCustomerProposalMapByProject,
     generateLightBIMCustomerMapSummary,
+    getUserTestCenterData,
+    createUserTestRun,
+    updateUserTestStep,
+    completeUserTestRun,
     calculateBathroomEstimatePreview,
     saveBathroomEstimate,
     exportBathroomEstimateDocument,

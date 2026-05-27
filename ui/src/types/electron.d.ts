@@ -62,6 +62,10 @@ declare global {
         getLightBIMCustomerProposalMapByEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getLightBIMCustomerProposalMapByProject: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         generateLightBIMCustomerMapSummary: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getUserTestCenterData: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createUserTestRun: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        updateUserTestStep: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        completeUserTestRun: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         calculateBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         saveBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         exportBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

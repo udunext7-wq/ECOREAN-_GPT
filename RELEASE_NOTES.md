@@ -17,6 +17,14 @@ LightBIM is now stabilized as the spatial quantity source for the BOC operating 
 - Visual traceability and interactive internal space map
 - Customer-safe proposal map and proposal board integration
 
+#### RC-0.3.0 User Test Package
+
+- Added the in-app `RC-0.3.0 사용자 테스트` center for starting test runs, recording evidence and severity, and completing a release verdict.
+- Persists test runs and twelve release workflow steps in `user_test_runs` and `user_test_steps`.
+- Provides executable sample inputs in `tests/user-test-data/rc-0.3.0`.
+- Provides checklist, bug report, acceptance criteria, and report templates in `docs/RC_0_3_0_*.md`.
+- Release acceptance requires customer/internal data separation checks and no unresolved high-impact blocking defects.
+
 #### Verified End-To-End Flow
 
 `MiniCAD / LightBIM -> JSON Export -> BOC Import -> Quantity Review -> Estimate / PCE -> Contract -> Schedule -> Purchase Order -> Material Receiving -> Execution Feedback -> Traceability -> Space Map -> Customer Proposal Map -> Proposal Board / Export -> Project Closing / Calibration`
@@ -55,6 +63,7 @@ node tests/lightbim-schedule-purchase-binding.smoke.js
 node tests/lightbim-quantity-review.smoke.js
 node tests/lightbim-quantity-binding.smoke.js
 node tests/lightbim-quantity-accuracy.smoke.js
+node tests/rc-0-3-0-user-test-package.smoke.js
 cd electron
 npm run build:ui
 npm run smoke:prod

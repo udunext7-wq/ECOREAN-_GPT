@@ -1,0 +1,23 @@
+{
+  "releaseVersion": "RC-0.3.0",
+  "packageName": "LightBIM + BOC User Test Package",
+  "testEnvironment": "Windows Desktop / Local DB",
+  "fixtureReferences": [
+    "tests/fixtures/lightbim/real-minicad-export.lightbim.json",
+    "tests/fixtures/lightbim/full-remodeling-lightbim.sample.json"
+  ],
+  "steps": [
+    { "code": "UT-01", "module": "MiniCAD / LightBIM", "task": "LightBIM JSON 내보내기", "expectedResult": "MiniCAD 도면이 ECOREAN.LightBIM.v0.1 JSON으로 저장됩니다." },
+    { "code": "UT-02", "module": "LightBIM Import", "task": "LightBIM 도면 가져오기", "expectedResult": "프로젝트 공간과 추천 견적 유형이 오류 없이 표시됩니다." },
+    { "code": "UT-03", "module": "Quantity Review", "task": "수량 확인 및 사용자 수정", "expectedResult": "수정 수량과 사유가 저장되고 재계산 준비 상태가 됩니다." },
+    { "code": "UT-04", "module": "Estimate / PCE", "task": "견적 및 수익성 검증", "expectedResult": "견적 금액과 PCE 판단이 도면 수량 기준으로 생성됩니다." },
+    { "code": "UT-05", "module": "Contract / Schedule", "task": "계약 및 공정표 생성", "expectedResult": "계약 초안과 수량 기반 공정 기간이 생성됩니다." },
+    { "code": "UT-06", "module": "Purchase / Receiving", "task": "발주 및 자재 입고 확인", "expectedResult": "할증률이 반영된 발주량과 입고 기준량이 확인됩니다." },
+    { "code": "UT-07", "module": "Execution Feedback", "task": "실제 사용량 입력", "expectedResult": "사용량과 차이율, 검토 상태가 계산됩니다." },
+    { "code": "UT-08", "module": "Traceability / Space Map", "task": "추적 보기와 내부 공간 맵", "expectedResult": "공간에서 견적/발주/실사용 연결 상태를 확인할 수 있습니다." },
+    { "code": "UT-09", "module": "Customer Proposal", "task": "고객용 공간 맵과 제안 보드", "expectedResult": "고객 안전 모드의 공간 제안 자료가 표시됩니다." },
+    { "code": "UT-10", "module": "Export", "task": "PDF / Excel 출력", "expectedResult": "고객 PDF와 내부 Excel 출력 파일이 생성됩니다." },
+    { "code": "UT-11", "module": "Customer Safety", "task": "고객 화면 내부정보 차단", "expectedResult": "원가, 마진, PCE, 발주/차이 데이터가 고객 화면에 노출되지 않습니다." },
+    { "code": "UT-12", "module": "Closing / Calibration", "task": "마감 및 보정 후보 확인", "expectedResult": "실행 피드백과 다음 보정 후보를 내부 화면에서 확인할 수 있습니다." }
+  ]
+}

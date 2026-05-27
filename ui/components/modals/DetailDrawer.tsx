@@ -26,6 +26,7 @@ import { LightBIMExecutionFeedbackView } from '../../app/lightbim/LightBIMExecut
 import { LightBIMTraceabilityView } from '../../app/lightbim/LightBIMTraceabilityView';
 import { LightBIMSpaceMapView } from '../../app/lightbim/LightBIMSpaceMapView';
 import { LightBIMCustomerProposalMapView } from '../../app/lightbim/LightBIMCustomerProposalMapView';
+import { UserTestCenterView } from '../../app/release/UserTestCenterView';
 import { CeoControlTowerView } from '../../app/dashboard/CeoControlTowerView';
 import { FieldMobileCenterView } from '../../app/mobile/FieldMobileCenterView';
 import { BoardGenerationCenterView } from '../../app/board/BoardGenerationCenterView';
@@ -75,6 +76,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     lightbimTraceability: 'LightBIM 추적 보기',
     lightbimSpaceMap: 'LightBIM 공간 맵',
     lightbimCustomerMap: '고객용 공간 제안 맵',
+    userTestCenter: 'RC-0.3.0 사용자 테스트',
     masterDb: '기준 데이터 관리',
     franchise: '프랜차이즈 관리',
     fieldMobile: '현장 모바일',
@@ -109,7 +111,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     profitAutomation: '수익 자동화'
   };
 
-  const isWideView = ['masterDb', 'franchise', 'fieldMobile', 'clientPortal', 'analytics', 'aiAutomation', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'lightbimImport', 'lightbimQuantityReview', 'lightbimExecutionFeedback', 'lightbimTraceability', 'lightbimSpaceMap', 'lightbimCustomerMap', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
+  const isWideView = ['masterDb', 'franchise', 'fieldMobile', 'clientPortal', 'analytics', 'aiAutomation', 'userTestCenter', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'lightbimImport', 'lightbimQuantityReview', 'lightbimExecutionFeedback', 'lightbimTraceability', 'lightbimSpaceMap', 'lightbimCustomerMap', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
 
   return (
     <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
@@ -121,7 +123,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
         <button onClick={() => onNavigate('dashboard')}>닫기</button>
       </div>
 
-      {view !== 'estimate' && view !== 'bathroomEstimate' && view !== 'kitchenEstimate' && view !== 'fullRemodelingEstimate' && view !== 'lightbimImport' && view !== 'lightbimQuantityReview' && view !== 'lightbimExecutionFeedback' && view !== 'lightbimTraceability' && view !== 'lightbimSpaceMap' && view !== 'lightbimCustomerMap' && view !== 'ontology' && view !== 'floorplanCenter' && view !== 'aiVisualization' && view !== 'boardGeneration' ? (
+      {view !== 'estimate' && view !== 'bathroomEstimate' && view !== 'kitchenEstimate' && view !== 'fullRemodelingEstimate' && view !== 'lightbimImport' && view !== 'lightbimQuantityReview' && view !== 'lightbimExecutionFeedback' && view !== 'lightbimTraceability' && view !== 'lightbimSpaceMap' && view !== 'lightbimCustomerMap' && view !== 'userTestCenter' && view !== 'ontology' && view !== 'floorplanCenter' && view !== 'aiVisualization' && view !== 'boardGeneration' ? (
         <div className="drawer-block">
           <strong>{project.projectNameKo}</strong>
           <p>{getProjectDecisionText(project)}</p>
@@ -138,6 +140,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'lightbimTraceability' ? <LightBIMTraceabilityView estimateId={project.projectId === 'NO_PROJECT' ? '' : project.projectId} /> : null}
       {view === 'lightbimSpaceMap' ? <LightBIMSpaceMapView estimateId={project.projectId === 'NO_PROJECT' ? '' : project.projectId} /> : null}
       {view === 'lightbimCustomerMap' ? <LightBIMCustomerProposalMapView projectId={project.projectId === 'NO_PROJECT' ? '' : project.projectId} /> : null}
+      {view === 'userTestCenter' ? <UserTestCenterView /> : null}
       {view === 'masterDb' ? <MasterDataCenterView /> : null}
       {view === 'franchise' ? <FranchiseCenterView /> : null}
       {view === 'fieldMobile' ? <FieldMobileCenterView projectId={project.projectId} /> : null}

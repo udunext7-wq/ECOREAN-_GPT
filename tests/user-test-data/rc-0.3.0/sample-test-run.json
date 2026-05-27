@@ -1,0 +1,21 @@
+{
+  "releaseVersion": "RC-0.3.0",
+  "testerName": "현장 검증 담당자",
+  "testEnvironment": "Windows Desktop / Local DB",
+  "status": "IN_PROGRESS",
+  "notes": "실제 사용자 테스트 입력 예시입니다.",
+  "steps": [
+    { "stepCode": "UT-01", "status": "PASSED", "actualResult": "LightBIM JSON 파일 생성 확인", "evidencePath": "export/lightbim/sample-export.json" },
+    { "stepCode": "UT-02", "status": "PASSED", "actualResult": "전체 리모델링 추천 표시 확인", "evidencePath": "evidence/ut-02-import.png" },
+    { "stepCode": "UT-03", "status": "IN_PROGRESS", "actualResult": "바닥 면적 수정 검토 중", "evidencePath": "" },
+    { "stepCode": "UT-04", "status": "NOT_STARTED", "actualResult": "", "evidencePath": "" },
+    { "stepCode": "UT-05", "status": "NOT_STARTED", "actualResult": "", "evidencePath": "" },
+    { "stepCode": "UT-06", "status": "NOT_STARTED", "actualResult": "", "evidencePath": "" },
+    { "stepCode": "UT-07", "status": "NOT_STARTED", "actualResult": "", "evidencePath": "" },
+    { "stepCode": "UT-08", "status": "NOT_STARTED", "actualResult": "", "evidencePath": "" },
+    { "stepCode": "UT-09", "status": "NOT_STARTED", "actualResult": "", "evidencePath": "" },
+    { "stepCode": "UT-10", "status": "NOT_STARTED", "actualResult": "", "evidencePath": "" },
+    { "stepCode": "UT-11", "status": "NOT_STARTED", "actualResult": "", "evidencePath": "" },
+    { "stepCode": "UT-12", "status": "NOT_STARTED", "actualResult": "", "evidencePath": "" }
+  ]
+}
