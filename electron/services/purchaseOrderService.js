@@ -1,4 +1,5 @@
 const { assertExecutableEstimate } = require('./contractService');
+const { applyQuantityAwarePurchaseOrder } = require('./lightBimExecutionBindingService');
 
 function addDays(dateText, days) {
   const date = dateText ? new Date(dateText) : new Date();
@@ -20,7 +21,7 @@ function isPurchasable(item) {
   return ['타일', '방수', '부자재', '줄눈', '양변기', '세면기', '수전', '배수', '천장', '조명', '환풍기', '샤워부스', '욕조', '슬라이딩장', '실리콘'].some((keyword) => text.includes(keyword));
 }
 
-function buildPurchaseOrderFromEstimate({ estimate, items, contractId = null, requiredDate }) {
+function buildPurchaseOrderFromEstimate({ estimate, items, contractId = null, requiredDate, quantityContext = {} }) {
   assertExecutableEstimate(estimate);
   const date = requiredDate || addDays(new Date().toISOString().slice(0, 10), 2);
   const orderItems = items
@@ -38,7 +39,7 @@ function buildPurchaseOrderFromEstimate({ estimate, items, contractId = null, re
       notes: '견적 기반 자동 생성. 실제 공급가 확인 필요.'
     }));
 
-  return {
+  return applyQuantityAwarePurchaseOrder({
     estimateId: estimate.id,
     contractId,
     orderNumber: `PO-${estimate.id}`,
@@ -47,7 +48,7 @@ function buildPurchaseOrderFromEstimate({ estimate, items, contractId = null, re
     status: 'DRAFT',
     requiredDate: date,
     items: orderItems
-  };
+  }, items, quantityContext);
 }
 
 module.exports = {

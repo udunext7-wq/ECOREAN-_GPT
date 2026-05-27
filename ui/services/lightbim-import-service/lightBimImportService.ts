@@ -46,7 +46,7 @@ export function storeLightBIMDraft(result: LightBIMImportResult) {
     estimateId: result.estimateId,
     estimateType: result.estimateType,
     targetView: result.targetView,
-    input: result.input,
+    input: { ...(result.input || {}), lightBimImportId: result.importId },
     preview: result.preview,
     summary: result.summary,
     quantityReviewSummary: result.quantityReviewSummary,

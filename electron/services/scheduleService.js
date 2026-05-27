@@ -1,4 +1,5 @@
 const { assertExecutableEstimate } = require('./contractService');
+const { applyQuantityAwareSchedule } = require('./lightBimExecutionBindingService');
 
 function addDays(dateText, days) {
   const date = dateText ? new Date(dateText) : new Date();
@@ -10,7 +11,7 @@ function hasItem(items, keyword) {
   return items.some((item) => String(item.itemName || '').includes(keyword) || String(item.category || '').includes(keyword));
 }
 
-function buildScheduleFromEstimate({ estimate, items, contractId = null, startDate }) {
+function buildScheduleFromEstimate({ estimate, items, contractId = null, startDate, quantityContext = {} }) {
   assertExecutableEstimate(estimate);
   const start = startDate || new Date().toISOString().slice(0, 10);
   const hasOptionInstall = estimate.options?.showerBooth || estimate.options?.zenda || estimate.options?.bathtub || estimate.options?.slidingCabinet;
@@ -46,7 +47,7 @@ function buildScheduleFromEstimate({ estimate, items, contractId = null, startDa
     };
   });
 
-  return {
+  return applyQuantityAwareSchedule({
     scheduleName: '욕실 리모델링 공정표',
     estimateId: estimate.id,
     contractId,
@@ -55,7 +56,7 @@ function buildScheduleFromEstimate({ estimate, items, contractId = null, startDa
     durationDays: itemsOut.reduce((sum, item) => sum + item.durationDays, 0),
     status: 'DRAFT',
     items: itemsOut
-  };
+  }, quantityContext);
 }
 
 module.exports = {

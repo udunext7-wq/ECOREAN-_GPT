@@ -278,7 +278,11 @@ function createSqliteService({ app }) {
         subcontract_cost INTEGER NOT NULL,
         internal_total INTEGER NOT NULL,
         margin INTEGER NOT NULL,
-        margin_rate REAL NOT NULL
+        margin_rate REAL NOT NULL,
+        quantity_source TEXT,
+        quantity_basis_key TEXT,
+        quantity_note TEXT,
+        quantity_review_status TEXT
       );
 
       CREATE TABLE IF NOT EXISTS kitchen_estimates (
@@ -323,7 +327,11 @@ function createSqliteService({ app }) {
         subcontract_cost INTEGER NOT NULL,
         internal_total INTEGER NOT NULL,
         margin INTEGER NOT NULL,
-        margin_rate REAL NOT NULL
+        margin_rate REAL NOT NULL,
+        quantity_source TEXT,
+        quantity_basis_key TEXT,
+        quantity_note TEXT,
+        quantity_review_status TEXT
       );
 
       CREATE TABLE IF NOT EXISTS full_remodeling_estimates (
@@ -365,7 +373,11 @@ function createSqliteService({ app }) {
         subcontract_cost INTEGER NOT NULL,
         internal_total INTEGER NOT NULL,
         margin INTEGER NOT NULL,
-        margin_rate REAL NOT NULL
+        margin_rate REAL NOT NULL,
+        quantity_source TEXT,
+        quantity_basis_key TEXT,
+        quantity_note TEXT,
+        quantity_review_status TEXT
       );
 
       CREATE TABLE IF NOT EXISTS floorplans (
@@ -1375,7 +1387,8 @@ function createSqliteService({ app }) {
         duration_days INTEGER NOT NULL,
         status TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        quantity_summary_json TEXT
       );
 
       CREATE TABLE IF NOT EXISTS construction_schedule_items (
@@ -1388,7 +1401,12 @@ function createSqliteService({ app }) {
         dependency TEXT NOT NULL,
         assignee TEXT NOT NULL,
         status TEXT NOT NULL,
-        sort_order INTEGER NOT NULL
+        sort_order INTEGER NOT NULL,
+        quantity REAL,
+        unit TEXT,
+        quantity_source TEXT,
+        productivity_rate REAL,
+        duration_basis_note TEXT
       );
 
       CREATE TABLE IF NOT EXISTS purchase_order_items (
@@ -1403,7 +1421,13 @@ function createSqliteService({ app }) {
         supplier_name TEXT NOT NULL,
         order_status TEXT NOT NULL,
         required_date TEXT NOT NULL,
-        notes TEXT NOT NULL
+        notes TEXT NOT NULL,
+        base_quantity REAL,
+        order_quantity REAL,
+        waste_factor REAL,
+        quantity_source TEXT,
+        quantity_basis_key TEXT,
+        quantity_note TEXT
       );
 
       CREATE TABLE IF NOT EXISTS site_report_templates (
@@ -1511,7 +1535,9 @@ function createSqliteService({ app }) {
         inspection_status TEXT NOT NULL,
         damage_or_missing INTEGER NOT NULL,
         notes_ko TEXT NOT NULL,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        expected_quantity_source TEXT,
+        expected_quantity_basis_key TEXT
       );
 
       CREATE TABLE IF NOT EXISTS material_delivery_checks (
@@ -3227,6 +3253,26 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'visualization_jobs', 'retry_count', 'retry_count INTEGER NOT NULL DEFAULT 0');
     ensureColumn(db.project, 'visualization_jobs', 'last_error', 'last_error TEXT');
     ensureColumn(db.project, 'lightbim_quantity_reviews', 'default_quantity', 'default_quantity REAL NOT NULL DEFAULT 0');
+    ['bathroom_estimate_items', 'kitchen_estimate_items', 'full_remodeling_estimate_items'].forEach((tableName) => {
+      ensureColumn(db.project, tableName, 'quantity_source', 'quantity_source TEXT');
+      ensureColumn(db.project, tableName, 'quantity_basis_key', 'quantity_basis_key TEXT');
+      ensureColumn(db.project, tableName, 'quantity_note', 'quantity_note TEXT');
+      ensureColumn(db.project, tableName, 'quantity_review_status', 'quantity_review_status TEXT');
+    });
+    ensureColumn(db.project, 'construction_schedules', 'quantity_summary_json', 'quantity_summary_json TEXT');
+    ensureColumn(db.project, 'construction_schedule_items', 'quantity', 'quantity REAL');
+    ensureColumn(db.project, 'construction_schedule_items', 'unit', 'unit TEXT');
+    ensureColumn(db.project, 'construction_schedule_items', 'quantity_source', 'quantity_source TEXT');
+    ensureColumn(db.project, 'construction_schedule_items', 'productivity_rate', 'productivity_rate REAL');
+    ensureColumn(db.project, 'construction_schedule_items', 'duration_basis_note', 'duration_basis_note TEXT');
+    ensureColumn(db.project, 'purchase_order_items', 'base_quantity', 'base_quantity REAL');
+    ensureColumn(db.project, 'purchase_order_items', 'order_quantity', 'order_quantity REAL');
+    ensureColumn(db.project, 'purchase_order_items', 'waste_factor', 'waste_factor REAL');
+    ensureColumn(db.project, 'purchase_order_items', 'quantity_source', 'quantity_source TEXT');
+    ensureColumn(db.project, 'purchase_order_items', 'quantity_basis_key', 'quantity_basis_key TEXT');
+    ensureColumn(db.project, 'purchase_order_items', 'quantity_note', 'quantity_note TEXT');
+    ensureColumn(db.project, 'material_receiving_logs', 'expected_quantity_source', 'expected_quantity_source TEXT');
+    ensureColumn(db.project, 'material_receiving_logs', 'expected_quantity_basis_key', 'expected_quantity_basis_key TEXT');
   }
 
   function countRows(database, tableName) {
@@ -4558,6 +4604,31 @@ function createSqliteService({ app }) {
     return lightBIMQuantityReviewService.getReviewSummary(estimateType, estimateId);
   }
 
+  function prepareStoredQuantityItems(lineItems = [], estimateId, payload = {}) {
+    const reviewState = payload.lightBimQuantityReviewState || payload.lightbimQuantityReviewState || {};
+    const isLightBIMEstimate = Boolean(payload.lightBimSource);
+    return lineItems.map((item, index) => {
+      const basisKey = item.quantity_basis_key || item.quantityBasisKey || '';
+      const source = item.quantity_source || item.quantitySource || 'DEFAULT';
+      const reviewStatus = reviewState[basisKey]?.reviewedStatus ||
+        (isLightBIMEstimate && ['LIGHTBIM', 'USER'].includes(source) ? 'PENDING' : null);
+      return {
+        ...item,
+        id: `${estimateId}-ITEM-${String(index + 1).padStart(3, '0')}`,
+        quantity_source: source,
+        quantity_basis_key: basisKey,
+        quantity_note: item.quantity_note || item.quantityNote || '',
+        quantity_review_status: reviewStatus
+      };
+    });
+  }
+
+  function registerSavedEstimateQuantityReviews(importId, estimateType, estimateId, items, payload = {}) {
+    if (!payload.lightBimSource) return null;
+    const quantityBasis = payload.lightBimSource.quantityBasis || payload.lightBimSource.quantity_basis || {};
+    return lightBIMQuantityReviewService.createReviewsForEstimate(importId || null, estimateType, estimateId, items, quantityBasis);
+  }
+
   function calculateBathroomEstimatePreview(payload = {}) {
     const rawEstimate = calculateBathroomEstimate(payload);
     const { estimate, calibration } = applyApprovedCalibrationToEstimate(rawEstimate, 'bathroom_remodel');
@@ -4598,6 +4669,7 @@ function createSqliteService({ app }) {
     const branchId = payload.branchId || payload.branch_id || 'HEADQUARTERS';
     const rawCalculated = calculateBathroomEstimate(payload);
     const { estimate: calculated, calibration } = applyApprovedCalibrationToEstimate(rawCalculated, 'bathroom_remodel');
+    const storedItems = prepareStoredQuantityItems(calculated.line_items, estimateId, payload);
     const pce = runProfitControlEngine({
       estimateId,
       revenue: calculated.revenue,
@@ -4656,12 +4728,13 @@ function createSqliteService({ app }) {
     const insertItem = db.project.prepare(`
       INSERT INTO bathroom_estimate_items (
         id, estimate_id, category, item_name, quantity, unit, customer_unit_price,
-        customer_total, material_cost, labor_cost, subcontract_cost, internal_total, margin, margin_rate
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        customer_total, material_cost, labor_cost, subcontract_cost, internal_total, margin, margin_rate,
+        quantity_source, quantity_basis_key, quantity_note, quantity_review_status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    calculated.line_items.forEach((item, index) => {
+    storedItems.forEach((item) => {
       insertItem.run(
-        `${estimateId}-ITEM-${String(index + 1).padStart(3, '0')}`,
+        item.id,
         estimateId,
         item.category,
         item.itemName,
@@ -4674,9 +4747,14 @@ function createSqliteService({ app }) {
         item.subcontractCost,
         item.internalTotal,
         item.margin,
-        item.marginRate
+        item.marginRate,
+        item.quantity_source,
+        item.quantity_basis_key,
+        item.quantity_note,
+        item.quantity_review_status
       );
     });
+    registerSavedEstimateQuantityReviews(payload.lightBimImportId, 'BATHROOM', estimateId, storedItems, payload);
 
     insertNotification({
       level: pce.decision === 'BLOCK' ? 'RED' : pce.decision === 'MODIFY' ? 'WARNING' : 'INFO',
@@ -4706,9 +4784,9 @@ function createSqliteService({ app }) {
       estimateId,
       pce,
       calibration,
-      estimate: { ...calculated, pce_decision: pce.decision },
+      estimate: { ...calculated, line_items: storedItems, pce_decision: pce.decision },
       customerView: buildCustomerEstimateView(calculated),
-      internalView: buildInternalCostView({ ...calculated, pce_decision: pce.decision }),
+      internalView: buildInternalCostView({ ...calculated, line_items: storedItems, pce_decision: pce.decision }),
       dashboardData: getDashboardData()
     };
   }
@@ -4744,6 +4822,7 @@ function createSqliteService({ app }) {
     const branchId = payload.branchId || payload.branch_id || 'HEADQUARTERS';
     const rawCalculated = calculateKitchenEstimate(payload);
     const { estimate: calculated, calibration } = applyApprovedCalibrationToEstimate(rawCalculated, 'kitchen_remodel');
+    const storedItems = prepareStoredQuantityItems(calculated.line_items, estimateId, payload);
     const pce = runProfitControlEngine({
       estimateId,
       revenue: calculated.revenue,
@@ -4798,12 +4877,13 @@ function createSqliteService({ app }) {
     const insertItem = db.project.prepare(`
       INSERT INTO kitchen_estimate_items (
         id, estimate_id, category, item_name, quantity, unit, customer_unit_price,
-        customer_total, material_cost, labor_cost, subcontract_cost, internal_total, margin, margin_rate
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        customer_total, material_cost, labor_cost, subcontract_cost, internal_total, margin, margin_rate,
+        quantity_source, quantity_basis_key, quantity_note, quantity_review_status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    calculated.line_items.forEach((item, index) => {
+    storedItems.forEach((item) => {
       insertItem.run(
-        `${estimateId}-ITEM-${String(index + 1).padStart(3, '0')}`,
+        item.id,
         estimateId,
         item.category,
         item.itemName,
@@ -4816,9 +4896,14 @@ function createSqliteService({ app }) {
         item.subcontractCost,
         item.internalTotal,
         item.margin,
-        item.marginRate
+        item.marginRate,
+        item.quantity_source,
+        item.quantity_basis_key,
+        item.quantity_note,
+        item.quantity_review_status
       );
     });
+    registerSavedEstimateQuantityReviews(payload.lightBimImportId, 'KITCHEN', estimateId, storedItems, payload);
     insertNotification({
       level: pce.decision === 'BLOCK' ? 'RED' : pce.decision === 'MODIFY' ? 'WARNING' : 'INFO',
       messageKo: `주방 견적 저장: ${estimateId} / PCE ${pce.decision} / 마진율 ${(calculated.expected_margin_rate * 100).toFixed(1)}%`,
@@ -4830,9 +4915,9 @@ function createSqliteService({ app }) {
       estimateId,
       pce,
       calibration,
-      estimate: { ...calculated, id: estimateId, pce_decision: pce.decision },
+      estimate: { ...calculated, id: estimateId, line_items: storedItems, pce_decision: pce.decision },
       customerView: buildCustomerKitchenEstimateView(calculated),
-      internalView: buildInternalKitchenCostView({ ...calculated, pce_decision: pce.decision }),
+      internalView: buildInternalKitchenCostView({ ...calculated, line_items: storedItems, pce_decision: pce.decision }),
       dashboardData: getDashboardData()
     };
   }
@@ -4876,7 +4961,11 @@ function createSqliteService({ app }) {
         subcontractCost: item.subcontract_cost,
         internalTotal: item.internal_total,
         margin: item.margin,
-        marginRate: item.margin_rate
+        marginRate: item.margin_rate,
+        quantity_source: item.quantity_source,
+        quantity_basis_key: item.quantity_basis_key,
+        quantity_note: item.quantity_note,
+        quantity_review_status: item.quantity_review_status
       }))
     };
   }
@@ -4920,6 +5009,76 @@ function createSqliteService({ app }) {
     return { contractId, contract };
   }
 
+  function buildExecutionQuantityContext(estimateType, estimateId, items) {
+    return lightBIMQuantityReviewService.buildExecutionQuantityContext(estimateType, estimateId, items);
+  }
+
+  function persistConstructionScheduleItems(scheduleId, schedule) {
+    db.project.prepare('DELETE FROM construction_schedule_items WHERE schedule_id = ?').run(scheduleId);
+    const insertItem = db.project.prepare(`
+      INSERT INTO construction_schedule_items (
+        id, schedule_id, process_name, start_date, end_date, duration_days,
+        dependency, assignee, status, sort_order, quantity, unit,
+        quantity_source, productivity_rate, duration_basis_note
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    schedule.items.forEach((item) => insertItem.run(
+      `${scheduleId}-${String(item.sortOrder).padStart(2, '0')}`,
+      scheduleId,
+      item.processName,
+      item.startDate,
+      item.endDate,
+      item.durationDays,
+      item.dependency || '',
+      item.assignee,
+      item.status,
+      item.sortOrder,
+      item.quantity ?? null,
+      item.unit || null,
+      item.quantity_source || item.quantitySource || null,
+      item.productivity_rate ?? item.productivityRate ?? null,
+      item.duration_basis_note || item.durationBasisNote || null
+    ));
+  }
+
+  function assertPurchaseOrderQuantityReady(quantityContext) {
+    if (Number(quantityContext?.summary?.critical_unresolved_count || 0) > 0) {
+      throw new Error('중요 수량 경고가 해결되지 않아 발주 수량을 확정할 수 없습니다.');
+    }
+  }
+
+  function persistPurchaseOrderItems(purchaseOrderId, purchaseOrder) {
+    db.project.prepare('DELETE FROM purchase_order_items WHERE purchase_order_id = ?').run(purchaseOrderId);
+    const insertItem = db.project.prepare(`
+      INSERT INTO purchase_order_items (
+        id, purchase_order_id, item_name, specification, quantity, unit,
+        expected_unit_price, expected_total, supplier_name, order_status,
+        required_date, notes, base_quantity, order_quantity, waste_factor,
+        quantity_source, quantity_basis_key, quantity_note
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    purchaseOrder.items.forEach((item, index) => insertItem.run(
+      `${purchaseOrderId}-ITEM-${String(index + 1).padStart(3, '0')}`,
+      purchaseOrderId,
+      item.itemName,
+      item.specification,
+      item.quantity,
+      item.unit,
+      item.expectedUnitPrice,
+      item.expectedTotal,
+      item.supplierName,
+      item.orderStatus,
+      item.requiredDate,
+      item.notes,
+      item.base_quantity ?? item.baseQuantity ?? item.quantity,
+      item.order_quantity ?? item.orderQuantity ?? item.quantity,
+      item.waste_factor ?? item.wasteFactor ?? 1,
+      item.quantity_source || item.quantitySource || 'ESTIMATE',
+      item.quantity_basis_key || item.quantityBasisKey || '',
+      item.quantity_note || item.quantityNote || ''
+    ));
+  }
+
   function generateKitchenSchedule({ estimateId, contractId = null, startDate = null }) {
     const createdAt = nowIso();
     const model = getStoredKitchenEstimateModel(estimateId);
@@ -4937,22 +5096,17 @@ function createSqliteService({ app }) {
       line_items: model.items,
       pce_decision: source.pce_decision
     };
-    const schedule = buildKitchenScheduleFromEstimate({ estimate, contractId, startDate });
+    const quantityContext = buildExecutionQuantityContext('KITCHEN', estimateId, model.items);
+    estimate.line_items = quantityContext.items;
+    const schedule = buildKitchenScheduleFromEstimate({ estimate, contractId, startDate, quantityContext });
     const scheduleId = `SCH-${estimateId}`;
     db.project.prepare(`
       INSERT OR REPLACE INTO construction_schedules (
         id, estimate_id, contract_id, schedule_name, start_date, end_date,
-        duration_days, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(scheduleId, estimateId, contractId, schedule.scheduleName, schedule.startDate, schedule.endDate, schedule.durationDays, schedule.status, createdAt, createdAt);
-    db.project.prepare('DELETE FROM construction_schedule_items WHERE schedule_id = ?').run(scheduleId);
-    const insertItem = db.project.prepare(`
-      INSERT INTO construction_schedule_items (
-        id, schedule_id, process_name, start_date, end_date, duration_days,
-        dependency, assignee, status, sort_order
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    schedule.items.forEach((item) => insertItem.run(`${scheduleId}-${String(item.sortOrder).padStart(2, '0')}`, scheduleId, item.processName, item.startDate, item.endDate, item.durationDays, item.dependency || '', item.assignee, item.status, item.sortOrder));
+        duration_days, status, created_at, updated_at, quantity_summary_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(scheduleId, estimateId, contractId, schedule.scheduleName, schedule.startDate, schedule.endDate, schedule.durationDays, schedule.status, createdAt, createdAt, toJson(schedule.quantitySummary || {}));
+    persistConstructionScheduleItems(scheduleId, schedule);
     return { scheduleId, schedule };
   }
 
@@ -4961,7 +5115,10 @@ function createSqliteService({ app }) {
     const model = getStoredKitchenEstimateModel(estimateId);
     const row = db.project.prepare('SELECT * FROM kitchen_estimates WHERE id = ?').get(estimateId);
     const estimate = { ...model.estimate, id: estimateId, input: { options: fromJson(row.options_json, {}) }, line_items: model.items, pce_decision: row.pce_decision };
-    const purchaseOrder = buildKitchenPurchaseOrderFromEstimate({ estimate, contractId, requiredDate });
+    const quantityContext = buildExecutionQuantityContext('KITCHEN', estimateId, model.items);
+    assertPurchaseOrderQuantityReady(quantityContext);
+    estimate.line_items = quantityContext.items;
+    const purchaseOrder = buildKitchenPurchaseOrderFromEstimate({ estimate, contractId, requiredDate, quantityContext });
     const purchaseOrderId = purchaseOrder.orderNumber;
     db.project.prepare(`
       INSERT OR REPLACE INTO purchase_orders (
@@ -4969,16 +5126,8 @@ function createSqliteService({ app }) {
         payload_json, created_at, estimate_id, contract_id, order_number, supplier_name,
         total_amount, status, required_date, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(purchaseOrderId, `EXEC-PENDING-${estimateId}`, estimateId, purchaseOrder.status, 1, toJson({ source: 'KITCHEN_ESTIMATE', itemCount: purchaseOrder.items.length }), createdAt, estimateId, contractId, purchaseOrder.orderNumber, purchaseOrder.supplierName, purchaseOrder.totalAmount, purchaseOrder.status, purchaseOrder.requiredDate, createdAt);
-    db.project.prepare('DELETE FROM purchase_order_items WHERE purchase_order_id = ?').run(purchaseOrderId);
-    const insertItem = db.project.prepare(`
-      INSERT INTO purchase_order_items (
-        id, purchase_order_id, item_name, specification, quantity, unit,
-        expected_unit_price, expected_total, supplier_name, order_status,
-        required_date, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    purchaseOrder.items.forEach((item, index) => insertItem.run(`${purchaseOrderId}-ITEM-${String(index + 1).padStart(3, '0')}`, purchaseOrderId, item.itemName, item.specification, item.quantity, item.unit, item.expectedUnitPrice, item.expectedTotal, item.supplierName, item.orderStatus, item.requiredDate, item.notes));
+    `).run(purchaseOrderId, `EXEC-PENDING-${estimateId}`, estimateId, purchaseOrder.status, 1, toJson({ source: 'KITCHEN_ESTIMATE', itemCount: purchaseOrder.items.length, quantitySummary: purchaseOrder.quantitySummary }), createdAt, estimateId, contractId, purchaseOrder.orderNumber, purchaseOrder.supplierName, purchaseOrder.totalAmount, purchaseOrder.status, purchaseOrder.requiredDate, createdAt);
+    persistPurchaseOrderItems(purchaseOrderId, purchaseOrder);
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
     return { purchaseOrderId, purchaseOrder, masterData: buildMasterDataUsageSummary('bathroom_remodel') };
@@ -5015,6 +5164,7 @@ function createSqliteService({ app }) {
     const branchId = payload.branchId || payload.branch_id || 'HEADQUARTERS';
     const rawCalculated = calculateFullRemodelingEstimate(payload);
     const { estimate: calculated, calibration } = applyApprovedCalibrationToEstimate(rawCalculated, 'full_remodel');
+    const storedItems = prepareStoredQuantityItems(calculated.line_items, estimateId, payload);
     const pce = runProfitControlEngine({
       estimateId,
       revenue: calculated.revenue,
@@ -5066,12 +5216,13 @@ function createSqliteService({ app }) {
     const insertItem = db.project.prepare(`
       INSERT INTO full_remodeling_estimate_items (
         id, estimate_id, category, item_name, quantity, unit, customer_unit_price,
-        customer_total, material_cost, labor_cost, subcontract_cost, internal_total, margin, margin_rate
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        customer_total, material_cost, labor_cost, subcontract_cost, internal_total, margin, margin_rate,
+        quantity_source, quantity_basis_key, quantity_note, quantity_review_status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    calculated.line_items.forEach((item, index) => {
+    storedItems.forEach((item) => {
       insertItem.run(
-        `${estimateId}-ITEM-${String(index + 1).padStart(3, '0')}`,
+        item.id,
         estimateId,
         item.category,
         item.itemName,
@@ -5084,9 +5235,14 @@ function createSqliteService({ app }) {
         item.subcontractCost,
         item.internalTotal,
         item.margin,
-        item.marginRate
+        item.marginRate,
+        item.quantity_source,
+        item.quantity_basis_key,
+        item.quantity_note,
+        item.quantity_review_status
       );
     });
+    registerSavedEstimateQuantityReviews(payload.lightBimImportId, 'FULL_REMODELING', estimateId, storedItems, payload);
     insertNotification({
       level: pce.decision === 'BLOCK' ? 'RED' : pce.decision === 'MODIFY' ? 'WARNING' : 'INFO',
       messageKo: `전체 리모델링 견적 저장: ${estimateId} / PCE ${pce.decision} / 마진율 ${(calculated.expected_margin_rate * 100).toFixed(1)}%`,
@@ -5098,9 +5254,9 @@ function createSqliteService({ app }) {
       estimateId,
       pce,
       calibration,
-      estimate: { ...calculated, id: estimateId, pce_decision: pce.decision },
+      estimate: { ...calculated, id: estimateId, line_items: storedItems, pce_decision: pce.decision },
       customerView: buildCustomerFullEstimateView(calculated),
-      internalView: buildInternalFullCostView({ ...calculated, pce_decision: pce.decision }),
+      internalView: buildInternalFullCostView({ ...calculated, line_items: storedItems, pce_decision: pce.decision }),
       dashboardData: getDashboardData()
     };
   }
@@ -5151,7 +5307,11 @@ function createSqliteService({ app }) {
         subcontractCost: item.subcontract_cost,
         internalTotal: item.internal_total,
         margin: item.margin,
-        marginRate: item.margin_rate
+        marginRate: item.margin_rate,
+        quantity_source: item.quantity_source,
+        quantity_basis_key: item.quantity_basis_key,
+        quantity_note: item.quantity_note,
+        quantity_review_status: item.quantity_review_status
       }))
     };
   }
@@ -5221,22 +5381,17 @@ function createSqliteService({ app }) {
       line_items: model.items,
       pce_decision: row.pce_decision
     };
-    const schedule = buildFullScheduleFromEstimate({ estimate, contractId, startDate });
+    const quantityContext = buildExecutionQuantityContext('FULL_REMODELING', estimateId, model.items);
+    estimate.line_items = quantityContext.items;
+    const schedule = buildFullScheduleFromEstimate({ estimate, contractId, startDate, quantityContext });
     const scheduleId = `SCH-${estimateId}`;
     db.project.prepare(`
       INSERT OR REPLACE INTO construction_schedules (
         id, estimate_id, contract_id, schedule_name, start_date, end_date,
-        duration_days, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(scheduleId, estimateId, contractId, schedule.scheduleName, schedule.startDate, schedule.endDate, schedule.durationDays, schedule.status, createdAt, createdAt);
-    db.project.prepare('DELETE FROM construction_schedule_items WHERE schedule_id = ?').run(scheduleId);
-    const insertItem = db.project.prepare(`
-      INSERT INTO construction_schedule_items (
-        id, schedule_id, process_name, start_date, end_date, duration_days,
-        dependency, assignee, status, sort_order
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    schedule.items.forEach((item) => insertItem.run(`${scheduleId}-${String(item.sortOrder).padStart(2, '0')}`, scheduleId, item.processName, item.startDate, item.endDate, item.durationDays, item.dependency || '', item.assignee, item.status, item.sortOrder));
+        duration_days, status, created_at, updated_at, quantity_summary_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(scheduleId, estimateId, contractId, schedule.scheduleName, schedule.startDate, schedule.endDate, schedule.durationDays, schedule.status, createdAt, createdAt, toJson(schedule.quantitySummary || {}));
+    persistConstructionScheduleItems(scheduleId, schedule);
     return { scheduleId, schedule };
   }
 
@@ -5245,7 +5400,10 @@ function createSqliteService({ app }) {
     const model = getStoredFullRemodelingEstimateModel(estimateId);
     const row = db.project.prepare('SELECT * FROM full_remodeling_estimates WHERE id = ?').get(estimateId);
     const estimate = { ...model.estimate, id: estimateId, line_items: model.items, pce_decision: row.pce_decision };
-    const purchaseOrder = buildFullPurchaseOrderFromEstimate({ estimate, contractId, requiredDate });
+    const quantityContext = buildExecutionQuantityContext('FULL_REMODELING', estimateId, model.items);
+    assertPurchaseOrderQuantityReady(quantityContext);
+    estimate.line_items = quantityContext.items;
+    const purchaseOrder = buildFullPurchaseOrderFromEstimate({ estimate, contractId, requiredDate, quantityContext });
     const purchaseOrderId = purchaseOrder.orderNumber;
     db.project.prepare(`
       INSERT OR REPLACE INTO purchase_orders (
@@ -5253,16 +5411,8 @@ function createSqliteService({ app }) {
         payload_json, created_at, estimate_id, contract_id, order_number, supplier_name,
         total_amount, status, required_date, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(purchaseOrderId, `EXEC-PENDING-${estimateId}`, estimateId, purchaseOrder.status, 1, toJson({ source: 'FULL_REMODELING_ESTIMATE', itemCount: purchaseOrder.items.length }), createdAt, estimateId, contractId, purchaseOrder.orderNumber, purchaseOrder.supplierName, purchaseOrder.totalAmount, purchaseOrder.status, purchaseOrder.requiredDate, createdAt);
-    db.project.prepare('DELETE FROM purchase_order_items WHERE purchase_order_id = ?').run(purchaseOrderId);
-    const insertItem = db.project.prepare(`
-      INSERT INTO purchase_order_items (
-        id, purchase_order_id, item_name, specification, quantity, unit,
-        expected_unit_price, expected_total, supplier_name, order_status,
-        required_date, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    purchaseOrder.items.forEach((item, index) => insertItem.run(`${purchaseOrderId}-ITEM-${String(index + 1).padStart(3, '0')}`, purchaseOrderId, item.itemName, item.specification, item.quantity, item.unit, item.expectedUnitPrice, item.expectedTotal, item.supplierName, item.orderStatus, item.requiredDate, item.notes));
+    `).run(purchaseOrderId, `EXEC-PENDING-${estimateId}`, estimateId, purchaseOrder.status, 1, toJson({ source: 'FULL_REMODELING_ESTIMATE', itemCount: purchaseOrder.items.length, quantitySummary: purchaseOrder.quantitySummary }), createdAt, estimateId, contractId, purchaseOrder.orderNumber, purchaseOrder.supplierName, purchaseOrder.totalAmount, purchaseOrder.status, purchaseOrder.requiredDate, createdAt);
+    persistPurchaseOrderItems(purchaseOrderId, purchaseOrder);
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
     return { purchaseOrderId, purchaseOrder, masterData: buildMasterDataUsageSummary('kitchen_remodel') };
@@ -6494,7 +6644,11 @@ function createSqliteService({ app }) {
         subcontractCost: row.subcontract_cost,
         internalTotal: row.internal_total,
         margin: row.margin,
-        marginRate: row.margin_rate
+        marginRate: row.margin_rate,
+        quantity_source: row.quantity_source,
+        quantity_basis_key: row.quantity_basis_key,
+        quantity_note: row.quantity_note,
+        quantity_review_status: row.quantity_review_status
       }))
     };
   }
@@ -8168,24 +8322,16 @@ function createSqliteService({ app }) {
   function generateBathroomSchedule({ estimateId, contractId = null, startDate = null }) {
     const createdAt = nowIso();
     const model = getStoredBathroomEstimateModel(estimateId);
-    const schedule = buildScheduleFromEstimate({ ...model, contractId, startDate });
+    const quantityContext = buildExecutionQuantityContext('BATHROOM', estimateId, model.items);
+    const schedule = buildScheduleFromEstimate({ ...model, items: quantityContext.items, contractId, startDate, quantityContext });
     const scheduleId = `SCH-${estimateId}`;
     db.project.prepare(`
       INSERT OR REPLACE INTO construction_schedules (
         id, estimate_id, contract_id, schedule_name, start_date, end_date,
-        duration_days, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(scheduleId, estimateId, contractId, schedule.scheduleName, schedule.startDate, schedule.endDate, schedule.durationDays, schedule.status, createdAt, createdAt);
-    db.project.prepare('DELETE FROM construction_schedule_items WHERE schedule_id = ?').run(scheduleId);
-    const insertItem = db.project.prepare(`
-      INSERT INTO construction_schedule_items (
-        id, schedule_id, process_name, start_date, end_date, duration_days,
-        dependency, assignee, status, sort_order
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    schedule.items.forEach((item) => {
-      insertItem.run(`${scheduleId}-${String(item.sortOrder).padStart(2, '0')}`, scheduleId, item.processName, item.startDate, item.endDate, item.durationDays, item.dependency || '', item.assignee, item.status, item.sortOrder);
-    });
+        duration_days, status, created_at, updated_at, quantity_summary_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(scheduleId, estimateId, contractId, schedule.scheduleName, schedule.startDate, schedule.endDate, schedule.durationDays, schedule.status, createdAt, createdAt, toJson(schedule.quantitySummary || {}));
+    persistConstructionScheduleItems(scheduleId, schedule);
     insertNotification({ level: 'INFO', messageKo: `공정표 생성: ${schedule.scheduleName}`, relatedProjectId: estimateId, actionKo: '공정표 생성', createdAt });
     createCommunicationDraft({
       messageType: 'CLIENT_SCHEDULE_NOTICE',
@@ -8201,7 +8347,9 @@ function createSqliteService({ app }) {
   function generateBathroomPurchaseOrder({ estimateId, contractId = null, requiredDate = null }) {
     const createdAt = nowIso();
     const model = getStoredBathroomEstimateModel(estimateId);
-    const purchaseOrder = buildPurchaseOrderFromEstimate({ ...model, contractId, requiredDate });
+    const quantityContext = buildExecutionQuantityContext('BATHROOM', estimateId, model.items);
+    assertPurchaseOrderQuantityReady(quantityContext);
+    const purchaseOrder = buildPurchaseOrderFromEstimate({ ...model, items: quantityContext.items, contractId, requiredDate, quantityContext });
     const purchaseOrderId = purchaseOrder.orderNumber;
     db.project.prepare(`
       INSERT OR REPLACE INTO purchase_orders (
@@ -8215,7 +8363,7 @@ function createSqliteService({ app }) {
       estimateId,
       purchaseOrder.status,
       1,
-      toJson({ source: 'BATHROOM_ESTIMATE', itemCount: purchaseOrder.items.length }),
+      toJson({ source: 'BATHROOM_ESTIMATE', itemCount: purchaseOrder.items.length, quantitySummary: purchaseOrder.quantitySummary }),
       createdAt,
       estimateId,
       contractId,
@@ -8226,17 +8374,7 @@ function createSqliteService({ app }) {
       purchaseOrder.requiredDate,
       createdAt
     );
-    db.project.prepare('DELETE FROM purchase_order_items WHERE purchase_order_id = ?').run(purchaseOrderId);
-    const insertItem = db.project.prepare(`
-      INSERT INTO purchase_order_items (
-        id, purchase_order_id, item_name, specification, quantity, unit,
-        expected_unit_price, expected_total, supplier_name, order_status,
-        required_date, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    purchaseOrder.items.forEach((item, index) => {
-      insertItem.run(`${purchaseOrderId}-ITEM-${String(index + 1).padStart(3, '0')}`, purchaseOrderId, item.itemName, item.specification, item.quantity, item.unit, item.expectedUnitPrice, item.expectedTotal, item.supplierName, item.orderStatus, item.requiredDate, item.notes);
-    });
+    persistPurchaseOrderItems(purchaseOrderId, purchaseOrder);
     insertNotification({ level: 'WARNING', messageKo: `발주서 생성: ${purchaseOrder.orderNumber} / 실제 공급가 확인 필요`, relatedProjectId: estimateId, actionKo: '발주서 생성', createdAt });
     createCommunicationDraft({
       messageType: 'VENDOR_PURCHASE_ORDER',
@@ -14482,13 +14620,35 @@ function createSqliteService({ app }) {
     ensureExecutionContextForRecord(projectId);
     const createdAt = nowIso();
     const purchaseOrder = db.project.prepare('SELECT * FROM purchase_orders WHERE purchase_order_id = ?').get(purchaseOrderId);
-    const rows = buildReceivingRows({ purchaseOrder, items: receivedItems });
+    const purchaseItems = db.project.prepare('SELECT * FROM purchase_order_items WHERE purchase_order_id = ? ORDER BY id').all(purchaseOrderId);
+    const purchaseItemByName = new Map(purchaseItems.map((item) => [item.item_name, item]));
+    const baselineItems = receivedItems.length
+      ? receivedItems.map((item) => {
+        const purchaseItem = purchaseItemByName.get(item.itemNameKo || item.item_name || item.itemName);
+        return purchaseItem ? {
+          ...item,
+          orderedQuantity: purchaseItem.order_quantity ?? purchaseItem.quantity,
+          expectedQuantitySource: purchaseItem.quantity_source,
+          expectedQuantityBasisKey: purchaseItem.quantity_basis_key
+        } : item;
+      })
+      : purchaseItems.map((item) => ({
+        itemNameKo: item.item_name,
+        specificationKo: item.specification,
+        orderedQuantity: item.order_quantity ?? item.quantity,
+        receivedQuantity: 0,
+        unit: item.unit,
+        expectedQuantitySource: item.quantity_source,
+        expectedQuantityBasisKey: item.quantity_basis_key
+      }));
+    const rows = buildReceivingRows({ purchaseOrder, items: baselineItems });
     const insert = db.project.prepare(`
       INSERT INTO material_receiving_logs (
         receiving_log_id, project_id, purchase_order_id, item_name_ko, specification_ko,
         ordered_quantity, received_quantity, missing_quantity, unit, received_at,
-        supplier_name_ko, inspection_status, damage_or_missing, notes_ko, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        supplier_name_ko, inspection_status, damage_or_missing, notes_ko, created_at,
+        expected_quantity_source, expected_quantity_basis_key
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     rows.forEach((row, index) => {
       insert.run(
@@ -14506,7 +14666,9 @@ function createSqliteService({ app }) {
         row.inspectionStatus,
         row.damageOrMissing ? 1 : 0,
         row.notesKo,
-        createdAt
+        createdAt,
+        row.expectedQuantitySource,
+        row.expectedQuantityBasisKey
       );
     });
     const shortages = rows.filter((row) => row.missingQuantity > 0);

@@ -43,6 +43,10 @@ const releaseChecks = [
     script: 'lightbim-quantity-review.smoke.js'
   },
   {
+    label: 'LightBIM 공정표/발주 수량 연결',
+    script: 'lightbim-schedule-purchase-binding.smoke.js'
+  },
+  {
     label: '견적 출력',
     script: 'estimate-export.smoke.js'
   },

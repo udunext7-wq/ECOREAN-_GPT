@@ -216,6 +216,10 @@ function createLightBIMQuantityReviewService({ db, nowIso, toJson, fromJson }) {
       const itemName = String(getItemValue(item, 'itemName', 'item_name', 'name') || `항목 ${index + 1}`);
       const lineItemId = String(getItemValue(item, 'id', 'lineItemId', 'line_item_id') || `${estimateId}-${index + 1}-${category}-${itemName}`);
       const pricing = pricingFromItem(item, currentQuantity);
+      const importedReviewStatus = String(getItemValue(item, 'quantity_review_status', 'quantityReviewStatus') || '');
+      const reviewedStatus = ['CONFIRMED', 'OVERRIDDEN', 'IGNORED'].includes(importedReviewStatus)
+        ? importedReviewStatus
+        : (reviewRequired ? 'PENDING' : 'CONFIRMED');
       const now = nowIso();
       const result = insert.run(
         makeId('LBIM-QTY-REVIEW'),
@@ -235,7 +239,7 @@ function createLightBIMQuantityReviewService({ db, nowIso, toJson, fromJson }) {
         String(getItemValue(item, 'quantity_note', 'quantityNote') || ''),
         warning?.code || '',
         warning?.message || '',
-        reviewRequired ? 'PENDING' : 'CONFIRMED',
+        reviewedStatus,
         '',
         toJson(pricing),
         now,
@@ -429,6 +433,7 @@ function createLightBIMQuantityReviewService({ db, nowIso, toJson, fromJson }) {
       confirmedCount: 0,
       overriddenCount: 0,
       ignoredCount: 0,
+      warningCount: 0,
       criticalUnresolvedCount: 0,
       lightbimCount: 0,
       userCount: 0,
@@ -442,11 +447,76 @@ function createLightBIMQuantityReviewService({ db, nowIso, toJson, fromJson }) {
       if (review.quantitySource === 'LIGHTBIM') summary.lightbimCount += 1;
       else if (review.quantitySource === 'USER') summary.userCount += 1;
       else summary.defaultCount += 1;
+      if (review.warningCode) summary.warningCount += 1;
       if (CRITICAL_WARNING_CODES.has(review.warningCode) && !['CONFIRMED', 'OVERRIDDEN', 'IGNORED'].includes(review.reviewedStatus)) {
         summary.criticalUnresolvedCount += 1;
       }
     });
     return summary;
+  }
+
+  function toExecutionSource(item, review) {
+    if (review?.reviewedStatus === 'OVERRIDDEN' || item.quantity_source === 'USER' || item.quantitySource === 'USER') {
+      return 'USER_REVIEW';
+    }
+    if (review?.reviewedStatus === 'CONFIRMED' && review.quantitySource === 'LIGHTBIM') {
+      return 'LIGHTBIM_REVIEWED';
+    }
+    if (item.quantity_source === 'LIGHTBIM' || item.quantitySource === 'LIGHTBIM') return 'LIGHTBIM';
+    return item.quantity_source === 'DEFAULT' || item.quantitySource === 'DEFAULT' ? 'DEFAULT' : 'ESTIMATE';
+  }
+
+  function buildExecutionQuantityContext(estimateType, estimateId, estimateItems = []) {
+    const reviews = getReviewsByEstimate(estimateType, estimateId);
+    const reviewByItemId = new Map(reviews.map((review) => [review.lineItemId, review]));
+    const basis = {};
+    const executionItems = estimateItems.map((item) => {
+      const review = reviewByItemId.get(item.id);
+      const useReview = review && review.reviewedStatus !== 'IGNORED';
+      const quantity = useReview ? review.currentQuantity : safeNumber(item.quantity, 0);
+      const quantityBasisKey = (useReview ? review.quantityBasisKey : (item.quantity_basis_key || item.quantityBasisKey)) || '';
+      const quantitySource = toExecutionSource(item, useReview ? review : null);
+      const mapped = {
+        ...item,
+        quantity,
+        quantitySource,
+        quantity_source: quantitySource,
+        quantityBasisKey,
+        quantity_basis_key: quantityBasisKey,
+        quantityNote: useReview ? review.quantityNote : (item.quantity_note || item.quantityNote || '견적 수량 기준'),
+        quantity_note: useReview ? review.quantityNote : (item.quantity_note || item.quantityNote || '견적 수량 기준'),
+        reviewedStatus: review?.reviewedStatus || item.quantity_review_status || 'NOT_REVIEWED',
+        reviewWarningCode: review?.warningCode || ''
+      };
+      if (quantityBasisKey && quantity > 0 && ['USER_REVIEW', 'LIGHTBIM_REVIEWED', 'LIGHTBIM'].includes(quantitySource)) {
+        const priority = { USER_REVIEW: 5, LIGHTBIM_REVIEWED: 4, LIGHTBIM: 3, ESTIMATE: 2, DEFAULT: 1 }[quantitySource] || 0;
+        const previous = basis[quantityBasisKey];
+        if (!previous || priority > previous.priority) {
+          basis[quantityBasisKey] = {
+            quantity,
+            unit: item.unit,
+            quantitySource,
+            quantityBasisKey,
+            quantityNote: mapped.quantityNote,
+            priority
+          };
+        }
+      }
+      return mapped;
+    });
+    const summary = getReviewSummary(estimateType, estimateId);
+    return {
+      estimateType,
+      estimateId,
+      items: executionItems,
+      basis,
+      summary: {
+        lightbim_quantity_used: Object.values(basis).some((item) => ['LIGHTBIM', 'LIGHTBIM_REVIEWED', 'USER_REVIEW'].includes(item.quantitySource)),
+        reviewed_quantity_used: Object.values(basis).some((item) => ['LIGHTBIM_REVIEWED', 'USER_REVIEW'].includes(item.quantitySource)),
+        quantity_warning_count: summary.warningCount || 0,
+        critical_unresolved_count: summary.criticalUnresolvedCount || 0
+      }
+    };
   }
 
   return {
@@ -459,6 +529,7 @@ function createLightBIMQuantityReviewService({ db, nowIso, toJson, fromJson }) {
     applyLightBIMQuantity,
     recalculateEstimateAfterReview,
     getReviewSummary,
+    buildExecutionQuantityContext,
     CRITICAL_WARNING_CODES,
     NON_CRITICAL_WARNING_CODES
   };

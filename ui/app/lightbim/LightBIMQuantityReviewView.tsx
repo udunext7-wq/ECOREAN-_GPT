@@ -86,7 +86,18 @@ export function LightBIMQuantityReviewView() {
         }
         return overrides;
       }, {});
-      draft.input = { ...input, manualQuantityOverrides };
+      const lightBimQuantityReviewState = nextReviews.reduce<Record<string, Record<string, unknown>>>((state, review) => {
+        if (review.quantityBasisKey) {
+          state[review.quantityBasisKey] = {
+            reviewedStatus: review.reviewedStatus,
+            quantitySource: review.quantitySource,
+            currentQuantity: review.currentQuantity,
+            overrideReason: review.overrideReason
+          };
+        }
+        return state;
+      }, {});
+      draft.input = { ...input, manualQuantityOverrides, lightBimQuantityReviewState };
       window.sessionStorage.setItem('ecorean:lightbimDraft', JSON.stringify(draft));
     } catch {
       // Storage is optional; the review center remains usable without it.

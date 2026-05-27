@@ -11,6 +11,7 @@ const {
   preserveQuantityMeta,
   summarizeQuantitySources
 } = require('./lightBimQuantityBinding');
+const { applyQuantityAwareSchedule, applyQuantityAwarePurchaseOrder } = require('./lightBimExecutionBindingService');
 
 function numberOr(value, fallback) {
   const parsed = Number(value);
@@ -245,7 +246,7 @@ function buildInternalKitchenCostView(estimate) {
   };
 }
 
-function buildKitchenScheduleFromEstimate({ estimate, contractId = null, startDate }) {
+function buildKitchenScheduleFromEstimate({ estimate, contractId = null, startDate, quantityContext = {} }) {
   if (estimate.pce_decision === 'BLOCK') throw new Error('수익성 검증 BLOCK 상태에서는 공정표를 생성할 수 없습니다.');
   if (estimate.pce_decision === 'MODIFY') throw new Error('수정 필요 상태입니다. 견적 수정 후 공정표를 생성하세요.');
   const start = startDate || new Date().toISOString().slice(0, 10);
@@ -272,7 +273,7 @@ function buildKitchenScheduleFromEstimate({ estimate, contractId = null, startDa
     const { itemStart, itemEnd } = add(Number(durationDays));
     return { processName, startDate: itemStart, endDate: itemEnd, durationDays: Number(durationDays), dependency, assignee, status: 'PLANNED', sortOrder: index + 1 };
   });
-  return {
+  return applyQuantityAwareSchedule({
     scheduleName: '주방 리모델링 공정표',
     estimateId: estimate.id,
     contractId,
@@ -281,10 +282,10 @@ function buildKitchenScheduleFromEstimate({ estimate, contractId = null, startDa
     durationDays: items.reduce((sum, item) => sum + item.durationDays, 0),
     status: 'DRAFT',
     items
-  };
+  }, quantityContext);
 }
 
-function buildKitchenPurchaseOrderFromEstimate({ estimate, contractId = null, requiredDate }) {
+function buildKitchenPurchaseOrderFromEstimate({ estimate, contractId = null, requiredDate, quantityContext = {} }) {
   if (estimate.pce_decision === 'BLOCK') throw new Error('수익성 검증 BLOCK 상태에서는 발주서를 생성할 수 없습니다.');
   if (estimate.pce_decision === 'MODIFY') throw new Error('수정 필요 상태입니다. 견적 수정 후 발주서를 생성하세요.');
   const date = requiredDate || new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
@@ -303,7 +304,7 @@ function buildKitchenPurchaseOrderFromEstimate({ estimate, contractId = null, re
       requiredDate: date,
       notes: '주방 견적 기반 자동 생성. 실제 공급가 확인 필요.'
     }));
-  return {
+  return applyQuantityAwarePurchaseOrder({
     estimateId: estimate.id,
     contractId,
     orderNumber: `PO-${estimate.id}`,
@@ -312,7 +313,7 @@ function buildKitchenPurchaseOrderFromEstimate({ estimate, contractId = null, re
     status: 'DRAFT',
     requiredDate: date,
     items
-  };
+  }, estimate.line_items, quantityContext);
 }
 
 module.exports = {
