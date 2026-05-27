@@ -1,62 +1,27 @@
 # ECOREAN BOC Release Notes
 
-## Version: RC-0.2.0
+## Version: RC-0.3.0
 
-### Release Status
+### RC-0.3.0 LightBIM + BOC Release Flow
 
-ECOREAN BOC RC-0.2.0 is a release-candidate stabilization build. The goal of this release is coherence, safe navigation, consistent exports, and a single smoke path for first user testing.
+LightBIM is now stabilized as the spatial quantity source for the BOC operating flow. The release verifies the path from MiniCAD drawing export through estimate, execution planning, field feedback, traceability, and customer proposal output.
 
-### Completed Modules
+#### Completed LightBIM Modules
 
-- Bathroom Estimate Wizard
-- Kitchen Estimate Wizard
-- Full Remodeling Estimate Wizard
-- AI Estimate Intelligence
-- PCE / Profit Automation Loop
-- Contract / Schedule / Purchase Order generation
-- Site Execution Management
-- Payment / Cashflow
-- Project Profit Closing
-- CEO Control Tower
-- Communication Center
-- Floorplan / Isometric Center
-- AI Visualization / ComfyUI Integration
-- Portfolio / Proposal Board Generation
-- Premium Board Export Polish
+- MiniCAD LightBIM Core and `exportLightBIMJSON()`
+- LightBIM JSON import and estimate draft creation
+- Quantity calculation, review, and user override
+- Estimate line item quantity binding and PCE recalculation
+- Schedule duration and purchase order quantity binding
+- Material receiving baseline and execution feedback
+- Visual traceability and interactive internal space map
+- Customer-safe proposal map and proposal board integration
 
-### How To Test
+#### Verified End-To-End Flow
 
-Run from `electron/`:
+`MiniCAD / LightBIM -> JSON Export -> BOC Import -> Quantity Review -> Estimate / PCE -> Contract -> Schedule -> Purchase Order -> Material Receiving -> Execution Feedback -> Traceability -> Space Map -> Customer Proposal Map -> Proposal Board / Export -> Project Closing / Calibration`
 
-```powershell
-npm run build:ui
-npm run smoke:prod
-npm run smoke:release
-```
-
-The release smoke test verifies the first operating path:
-
-1. Create bathroom estimate
-2. Create kitchen estimate
-3. Create full remodeling estimate
-4. Export estimate
-5. Generate contract
-6. Generate schedule
-7. Generate purchase order
-8. Create daily site report
-9. Create payment schedule
-10. Create project closing snapshot
-11. Generate visualization prompt
-12. Create design board
-13. Load CEO Control Tower
-14. Handle empty states
-15. Handle ComfyUI offline safely
-
-### Export Folders
-
-Development exports are stored under the project `export/` folder.
-
-Packaged app exports are stored under the Electron `userData/export/` folder.
+#### Export Paths
 
 - `export/estimates`
 - `export/contracts`
@@ -65,24 +30,64 @@ Packaged app exports are stored under the Electron `userData/export/` folder.
 - `export/visualizations`
 - `export/boards`
 - `export/reports`
+- `export/lightbim`
 
-### ComfyUI Setup Note
+Development builds use the project export directory. Packaged Electron builds use the application `userData/export` directory.
 
-ComfyUI integration is optional. Default connection settings are:
+#### Customer / Internal Separation
 
-- Host: `127.0.0.1`
-- Port: `8188`
+- Customer-facing portal, proposal map, estimate, contract sections, and proposal board must not expose internal cost, margin, PCE, vendor, labor, purchasing, receiving, variance, calibration, profit, or risk-score fields.
+- Internal quantity review, execution feedback, traceability, and space-map views remain operational control surfaces.
+- Customer proposal exports use sanitized payloads before PDF generation.
 
-If ComfyUI is not running, BOC must show the safe Korean message: `ComfyUI가 실행 중이 아닙니다.` Manual prompt copy and image attachment remain available.
+#### Validation Commands
 
-### Known Limitations
+```powershell
+Get-ChildItem electron/services -Filter *.js | ForEach-Object { node --check $_.FullName }
+node tests/lightbim-boc-release-flow.smoke.js
+node tests/lightbim-customer-safety-regression.smoke.js
+node tests/lightbim-proposal-board-integration.smoke.js
+node tests/lightbim-customer-proposal-map.smoke.js
+node tests/lightbim-interactive-space-map.smoke.js
+node tests/lightbim-traceability.smoke.js
+node tests/lightbim-execution-feedback.smoke.js
+node tests/lightbim-schedule-purchase-binding.smoke.js
+node tests/lightbim-quantity-review.smoke.js
+node tests/lightbim-quantity-binding.smoke.js
+node tests/lightbim-quantity-accuracy.smoke.js
+cd electron
+npm run build:ui
+npm run smoke:prod
+npm run smoke:release
+```
 
-- CAD parsing is not implemented.
-- Real-time 3D editing is not implemented.
-- External image APIs are not connected except the local ComfyUI adapter.
-- Accounting and bank transfer execution are not implemented.
-- Mobile optimization is partial; desktop operation is the primary target.
+#### Known Limitations
 
-### Git Commit Reference
+- No external DWG/DXF automatic parsing.
+- No full BIM object editor.
+- No real-time multi-user collaboration.
+- No accounting or bank transfer integration.
+- ComfyUI requires a local server when used.
+- Customer portal link remains a local/token placeholder.
+- Vite bundle size warning is non-blocking for RC-0.3.0 and is a future optimization target.
 
-- Commit: `TBD`
+---
+
+## Version: RC-0.2.0
+
+### Stability Goal
+
+BOC core release hardening for crash-proof startup, stable schemas, contract/payment execution, site operation continuity, and production smoke validation.
+
+### Included Modules
+
+- CEO Control Tower and drawer navigation
+- Estimate and PCE foundation
+- Bathroom, kitchen, and full remodeling estimate wizards
+- Customer and internal estimate PDF/Excel export
+- Contract generation and contract PDF export
+- Schedule and purchase order generation
+- Site execution, daily reports, change orders, inspections, defect handling, and receiving
+- Payment / cashflow control
+- Communication Center, Floorplan Center, AI Visualization Center, and Board Generation Center
+- Release readiness checks, diagnostics, backup/restore, and internal test-mode environment tools

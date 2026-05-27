@@ -165,7 +165,7 @@ export function LightBIMImportCenterView({ onOpenQuantityReview, onOpenExecution
 
       <section className="drawer-block">
         <h3>도면 정보</h3>
-        {!importResult ? <p className="empty-state">아직 가져온 LightBIM JSON이 없습니다.</p> : (
+        {!importResult ? <p className="empty-state">가져온 LightBIM 도면이 없습니다.</p> : (
           <div className="internal-kpi-grid">
             <div><span>프로젝트명</span><strong>{String(summary.projectName || '미입력')}</strong></div>
             <div><span>공간 개수</span><strong>{formatNumber(summary.spaceCount, '개')}</strong></div>

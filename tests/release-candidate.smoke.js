@@ -67,6 +67,14 @@ const releaseChecks = [
     script: 'lightbim-proposal-board-integration.smoke.js'
   },
   {
+    label: 'LightBIM BOC 릴리스 흐름',
+    script: 'lightbim-boc-release-flow.smoke.js'
+  },
+  {
+    label: 'LightBIM 고객 안전 회귀',
+    script: 'lightbim-customer-safety-regression.smoke.js'
+  },
+  {
     label: '견적 출력',
     script: 'estimate-export.smoke.js'
   },

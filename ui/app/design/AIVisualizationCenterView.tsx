@@ -302,7 +302,7 @@ export function AIVisualizationCenterView() {
         </div>
         <div className="button-row">
           <button className="primary-action" onClick={openBoardGenerationCenter}>디자인 보드 생성</button>
-          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimCustomerMap' }))}>고객 제안 맵 보기</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimCustomerMap' }))}>고객용 공간 제안 맵 보기</button>
         </div>
       </div>
 

@@ -168,7 +168,7 @@ export function LightBIMSpaceMapView({ estimateId = '' }: Props) {
                   <circle key={opening.id} className={`space-map-opening ${opening.type.toLowerCase()}`} cx={opening.point.x} cy={opening.point.y} r="85" />
                 ))}
               </svg>
-            ) : <p className="empty-state">표시할 도면 공간 정보가 없습니다.</p>}
+            ) : <p className="empty-state">표시할 공간 정보가 없습니다.</p>}
           </div>
 
           <div className="space-map-side">

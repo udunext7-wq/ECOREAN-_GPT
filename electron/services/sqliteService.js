@@ -130,6 +130,9 @@ function createSqliteService({ app }) {
   const reportExportDir = app && app.isPackaged
     ? path.join(app.getPath('userData'), 'export', 'reports')
     : path.join(__dirname, '..', '..', 'export', 'reports');
+  const lightBimExportDir = app && app.isPackaged
+    ? path.join(app.getPath('userData'), 'export', 'lightbim')
+    : path.join(__dirname, '..', '..', 'export', 'lightbim');
 
   [
     estimateExportDir,
@@ -138,7 +141,8 @@ function createSqliteService({ app }) {
     purchaseOrderExportDir,
     visualizationExportDir,
     boardExportDir,
-    reportExportDir
+    reportExportDir,
+    lightBimExportDir
   ].forEach((exportDir) => fs.mkdirSync(exportDir, { recursive: true }));
 
   const dbPaths = {
@@ -20047,6 +20051,7 @@ function createSqliteService({ app }) {
       scheduleExportDir,
       purchaseOrderExportDir,
       reportExportDir,
+      lightBimExportDir,
       constructionScheduleCount: countRows(db.project, 'construction_schedules'),
       constructionScheduleItemCount: countRows(db.project, 'construction_schedule_items'),
       purchaseOrderItemCount: countRows(db.project, 'purchase_order_items'),

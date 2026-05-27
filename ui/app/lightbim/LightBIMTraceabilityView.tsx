@@ -96,7 +96,7 @@ export function LightBIMTraceabilityView({ estimateId = '' }: Props) {
       const result = await getLightBIMTraceabilitySummary(id ? { estimateId: id } : {});
       setData(result as TraceData);
       setSelected((result as TraceData).items?.[0] || null);
-      setMessageKo((result as TraceData).items?.length ? '추적 연결 정보가 최신화되었습니다.' : '연결된 견적 항목이 없습니다.');
+      setMessageKo((result as TraceData).items?.length ? '추적 연결 정보가 최신화되었습니다.' : '추적 데이터가 없습니다.');
     } catch (error) {
       console.error('[LightBIM Traceability] load failed', error);
       setMessageKo('추적 데이터를 불러오지 못했습니다.');
@@ -183,7 +183,7 @@ export function LightBIMTraceabilityView({ estimateId = '' }: Props) {
             </tbody>
           </table>
         </div>
-        {!items.length ? <p className="empty-state">일부 연결 정보가 누락되었거나 아직 생성된 추적 데이터가 없습니다.</p> : null}
+        {!items.length ? <p className="empty-state">추적 데이터가 없습니다.</p> : null}
       </section>
 
       <section className="drawer-block">

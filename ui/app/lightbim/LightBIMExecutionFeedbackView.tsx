@@ -92,7 +92,7 @@ export function LightBIMExecutionFeedbackView({ projectId = '' }: Props) {
     try {
       const next = await getLightBIMExecutionFeedbackSummary(nextProjectId ? { projectId: nextProjectId } : {});
       setData(next as FeedbackData);
-      setMessageKo((next as FeedbackData).items?.length ? '실행 피드백이 최신화되었습니다.' : '등록된 실행 피드백이 없습니다.');
+      setMessageKo((next as FeedbackData).items?.length ? '실행 피드백이 최신화되었습니다.' : '실행 피드백 데이터가 없습니다.');
     } catch (error) {
       console.error('[LightBIM Execution Feedback] load failed', error);
       setMessageKo('데이터를 불러오지 못했습니다.');
@@ -222,7 +222,7 @@ export function LightBIMExecutionFeedbackView({ projectId = '' }: Props) {
             </tbody>
           </table>
         </div>
-        {!items.length ? <p className="empty-state">아직 실행 수량 피드백이 없습니다.</p> : null}
+        {!items.length ? <p className="empty-state">실행 피드백 데이터가 없습니다.</p> : null}
       </section>
 
       <section className="drawer-block">
