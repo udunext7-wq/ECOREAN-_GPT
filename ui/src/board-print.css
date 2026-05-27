@@ -45,6 +45,45 @@
     page-break-inside: avoid;
   }
 
+  .board-customer-map {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 10mm;
+    max-width: 100%;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .board-customer-map svg {
+    width: 100%;
+    height: auto;
+    max-height: 145mm;
+    overflow: hidden;
+  }
+
+  .board-customer-map.a4-portrait {
+    display: block;
+  }
+
+  .board-customer-map.a4-portrait svg {
+    max-height: 108mm;
+    margin-bottom: 7mm;
+  }
+
+  .board-customer-map-gallery {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .board-customer-map-gallery img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+  }
+
   .board-image-cover img {
     object-fit: cover;
   }

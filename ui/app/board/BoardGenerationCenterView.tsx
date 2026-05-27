@@ -66,6 +66,9 @@ export function BoardGenerationCenterView() {
     imageFitMode: 'CONTAIN',
     manualImagePath: '',
     includeCustomerProposalMap: true,
+    includeCustomerScopeTable: true,
+    autoMatchApprovedImages: true,
+    customerSafeMode: true,
     finalMarginRate: '0.35',
     hasMajorDefect: false,
     hasSevereClientComplaint: false
@@ -94,6 +97,7 @@ export function BoardGenerationCenterView() {
   const templates = data?.templates || [];
   const approvedImages = data?.approvedImages || [];
   const activeSections = data?.activeSections || [];
+  const activeMapSection = activeBoard?.boardLayout?.sections?.find((section: Record<string, any>) => section.sectionType === 'CUSTOMER_PROPOSAL_MAP');
 
   const selectedTemplate = useMemo(
     () => templates.find((template) => template.id === form.templateId),
@@ -116,6 +120,9 @@ export function BoardGenerationCenterView() {
       printFormat: form.printFormat,
       imageFitMode: form.imageFitMode,
       includeCustomerProposalMap: form.includeCustomerProposalMap,
+      includeCustomerScopeTable: form.includeCustomerScopeTable,
+      autoMatchApprovedImages: form.autoMatchApprovedImages,
+      customerSafeMode: form.customerSafeMode,
       selectedImageIds,
       manualImages,
       estimateSummary: {
@@ -219,7 +226,16 @@ export function BoardGenerationCenterView() {
           <div className="form-grid">
             <label>
               보드 유형
-              <select value={form.boardType} onChange={(event) => setForm({ ...form, boardType: event.target.value })}>
+              <select value={form.boardType} onChange={(event) => {
+                const boardType = event.target.value;
+                setForm({
+                  ...form,
+                  boardType,
+                  exportMode: boardType === 'CLIENT_PROPOSAL' ? 'CLIENT_PROPOSAL' : form.exportMode,
+                  includeCustomerProposalMap: boardType === 'CLIENT_PROPOSAL' ? true : form.includeCustomerProposalMap,
+                  customerSafeMode: boardType === 'CLIENT_PROPOSAL' ? true : form.customerSafeMode
+                });
+              }}>
                 {boardTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
@@ -277,7 +293,19 @@ export function BoardGenerationCenterView() {
           </div>
           <label className="toggle-row">
             <input type="checkbox" checked={form.includeCustomerProposalMap} onChange={(event) => setForm({ ...form, includeCustomerProposalMap: event.target.checked })} />
-            고객용 공간 제안 맵 포함
+            공간 제안 맵 포함
+          </label>
+          <label className="toggle-row">
+            <input type="checkbox" checked={form.includeCustomerScopeTable} onChange={(event) => setForm({ ...form, includeCustomerScopeTable: event.target.checked })} />
+            공간별 공사 범위 포함
+          </label>
+          <label className="toggle-row">
+            <input type="checkbox" checked={form.autoMatchApprovedImages} onChange={(event) => setForm({ ...form, autoMatchApprovedImages: event.target.checked })} />
+            승인 이미지 자동 매칭
+          </label>
+          <label className="toggle-row">
+            <input type="checkbox" checked={form.customerSafeMode} disabled={form.boardType === 'CLIENT_PROPOSAL'} onChange={(event) => setForm({ ...form, customerSafeMode: event.target.checked })} />
+            고객용 안전 모드
           </label>
         </div>
 
@@ -352,6 +380,17 @@ export function BoardGenerationCenterView() {
                 {activeSections.map((section) => <span className="status-pill" key={section.id}>{section.sectionTitle}</span>)}
               </div>
               {activeBoard.exportPath ? <p className="muted">PDF: {activeBoard.exportPath}</p> : null}
+              {activeMapSection ? (
+                <div className="proposal-map-preview-card">
+                  <strong>LightBIM 공간 맵</strong>
+                  <div className="proposal-map-preview-stats">
+                    <span>연결 공간 수 <b>{activeMapSection.spaces?.length || 0}</b></span>
+                    <span>승인 이미지 수 <b>{activeMapSection.approved_images?.length || 0}</b></span>
+                    <span>공사 범위 항목 수 <b>{activeMapSection.scope_summary?.length || 0}</b></span>
+                  </div>
+                  <p>{activeMapSection.customer_safe ? '고객용 안전 모드 확인됨' : '고객용 안전 검토 필요'}</p>
+                </div>
+              ) : <p className="empty-state">연결된 LightBIM 공간 맵이 없습니다.</p>}
             </>
           )}
         </div>

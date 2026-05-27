@@ -20,12 +20,13 @@ export type CustomerProposalMapData = {
     constructionScope: string[];
     finishDirectionKo: string[];
     progressStatusKo: string;
+    approvedImages: Array<{ id: string; imagePath: string; resultType: string }>;
     customerNoteKo: string;
   }>;
   publicScopeSummary: string[];
   publicScheduleStatus: { statusKo: string; progressRate: number; nextProcessKo: string };
-  designDirection: { style: string; colorTone: string; primaryMaterials: string; lightingMood: string };
-  approvedImages: Array<{ id: string; imagePath: string; resultType: string; spaceName: string }>;
+  designDirection: { style: string; colorTone: string; primaryMaterials: string; lightingMood: string; designKeywords: string };
+  approvedImages: Array<{ id: string; imagePath: string; resultType: string; spaceId: string; spaceName: string; spaceType: string }>;
   customerNotes: string[];
   safeWarnings: string[];
   statusKo: string;
@@ -53,7 +54,7 @@ export function emptyCustomerProposalMapData(messageKo = '표시할 공간 정�
     spaces: [],
     publicScopeSummary: [],
     publicScheduleStatus: { statusKo: '공사 예정', progressRate: 0, nextProcessKo: '다음 예정 공정 확인 중' },
-    designDirection: { style: '', colorTone: '', primaryMaterials: '', lightingMood: '' },
+    designDirection: { style: '', colorTone: '', primaryMaterials: '', lightingMood: '', designKeywords: '' },
     approvedImages: [],
     customerNotes: [],
     safeWarnings: [],
@@ -101,6 +102,11 @@ export function sanitizeLightBIMCustomerMapData(data: Record<string, any> | null
       constructionScope: Array.isArray(space.constructionScope) ? space.constructionScope.map(String) : [],
       finishDirectionKo: Array.isArray(space.finishDirectionKo) ? space.finishDirectionKo.map(String) : [],
       progressStatusKo: stringValue(space.progressStatusKo, '공사 예정'),
+      approvedImages: Array.isArray(space.approvedImages) ? space.approvedImages.map((image: any) => ({
+        id: stringValue(image.id),
+        imagePath: stringValue(image.imagePath),
+        resultType: stringValue(image.resultType, 'PERSPECTIVE')
+      })) : [],
       customerNoteKo: stringValue(space.customerNoteKo)
     })) : [],
     publicScopeSummary: Array.isArray(data.publicScopeSummary) ? data.publicScopeSummary.map(String) : [],
@@ -113,13 +119,16 @@ export function sanitizeLightBIMCustomerMapData(data: Record<string, any> | null
       style: stringValue(data.designDirection?.style),
       colorTone: stringValue(data.designDirection?.colorTone),
       primaryMaterials: stringValue(data.designDirection?.primaryMaterials),
-      lightingMood: stringValue(data.designDirection?.lightingMood)
+      lightingMood: stringValue(data.designDirection?.lightingMood),
+      designKeywords: stringValue(data.designDirection?.designKeywords)
     },
     approvedImages: Array.isArray(data.approvedImages) ? data.approvedImages.map((image: any) => ({
       id: stringValue(image.id),
       imagePath: stringValue(image.imagePath),
       resultType: stringValue(image.resultType, 'PERSPECTIVE'),
-      spaceName: stringValue(image.spaceName)
+      spaceId: stringValue(image.spaceId),
+      spaceName: stringValue(image.spaceName),
+      spaceType: stringValue(image.spaceType)
     })) : [],
     customerNotes: Array.isArray(data.customerNotes) ? data.customerNotes.map(String) : [],
     safeWarnings: Array.isArray(data.safeWarnings) ? data.safeWarnings.map(String) : [],

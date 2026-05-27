@@ -58,7 +58,7 @@ export function LightBIMCustomerProposalMapView({ estimateId = '', projectId = '
     void refresh(projectId || estimateId);
   }, [projectId, estimateId]);
 
-  const hasDesign = Boolean(data.designDirection.style || data.designDirection.colorTone || data.designDirection.primaryMaterials || data.designDirection.lightingMood);
+  const hasDesign = Boolean(data.designDirection.style || data.designDirection.colorTone || data.designDirection.primaryMaterials || data.designDirection.lightingMood || data.designDirection.designKeywords);
 
   return (
     <section className="customer-proposal-map">
@@ -111,6 +111,8 @@ export function LightBIMCustomerProposalMapView({ estimateId = '', projectId = '
               <div className="tag-row">{selected.constructionScope.map((scope) => <span key={scope} className="status-pill">{scope}</span>)}</div>
               <h4>주요 마감 방향</h4>
               {selected.finishDirectionKo.length ? selected.finishDirectionKo.map((finish) => <p key={finish}>{finish}</p>) : <p className="empty-state">공사 범위 정보가 없습니다.</p>}
+              <h4>관련 제안 이미지</h4>
+              <p>{selected.approvedImages.length ? `${selected.approvedImages.length}개 승인 이미지 연결` : '등록된 제안 이미지가 없습니다.'}</p>
               <p className="small-note">{selected.customerNoteKo}</p>
             </>
           ) : <p className="empty-state">표시할 공간 정보가 없습니다.</p>}
@@ -132,6 +134,7 @@ export function LightBIMCustomerProposalMapView({ estimateId = '', projectId = '
               <p>컬러 톤: {data.designDirection.colorTone || '-'}</p>
               <p>주요 자재: {data.designDirection.primaryMaterials || '-'}</p>
               <p>조명 분위기: {data.designDirection.lightingMood || '-'}</p>
+              <p>디자인 키워드: {data.designDirection.designKeywords || '-'}</p>
             </>
           ) : <p className="empty-state">등록된 디자인 방향이 없습니다.</p>}
         </section>

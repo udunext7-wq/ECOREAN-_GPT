@@ -6469,7 +6469,7 @@ function createSqliteService({ app }) {
       return db.project.prepare(`
         SELECT *
         FROM visualization_results
-        WHERE brief_id = ? AND (status = 'APPROVED' OR result_type = 'PROPOSAL')
+        WHERE brief_id = ? AND status = 'APPROVED'
         ORDER BY COALESCE(approved_at, created_at) DESC
         LIMIT 30
       `).all(briefId).map(mapVisualizationResult);
@@ -6479,7 +6479,7 @@ function createSqliteService({ app }) {
         SELECT vr.*
         FROM visualization_results vr
         JOIN visualization_briefs vb ON vb.id = vr.brief_id
-        WHERE vb.estimate_id = ? AND (vr.status = 'APPROVED' OR vr.result_type = 'PROPOSAL')
+        WHERE vb.estimate_id = ? AND vr.status = 'APPROVED'
         ORDER BY COALESCE(vr.approved_at, vr.created_at) DESC
         LIMIT 30
       `).all(estimateId).map(mapVisualizationResult);
@@ -6487,7 +6487,7 @@ function createSqliteService({ app }) {
     return db.project.prepare(`
       SELECT *
       FROM visualization_results
-      WHERE status = 'APPROVED' OR result_type = 'PROPOSAL'
+      WHERE status = 'APPROVED'
       ORDER BY COALESCE(approved_at, created_at) DESC
       LIMIT 30
     `).all().map(mapVisualizationResult);
@@ -6552,10 +6552,13 @@ function createSqliteService({ app }) {
     const boardId = payload.boardId || `BOARD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const boardType = String(payload.boardType || 'CLIENT_PROPOSAL').toUpperCase();
     const templateId = payload.templateId || 'TPL-PREMIUM-MINIMAL';
+    const customerSafeMode = boardType === 'CLIENT_PROPOSAL' || payload.customerSafeMode !== false;
     const selectedImageIds = Array.isArray(payload.selectedImageIds) ? payload.selectedImageIds : [];
     const autoUseApprovedImages = payload.useApprovedImages !== false;
     const selectedImages = selectedImageIds.length
-      ? db.project.prepare(`SELECT * FROM visualization_results WHERE id IN (${selectedImageIds.map(() => '?').join(',')})`).all(...selectedImageIds).map(mapVisualizationResult)
+      ? db.project.prepare(`SELECT * FROM visualization_results WHERE id IN (${selectedImageIds.map(() => '?').join(',')})`).all(...selectedImageIds)
+        .filter((image) => !customerSafeMode || image.status === 'APPROVED')
+        .map(mapVisualizationResult)
       : autoUseApprovedImages
         ? getApprovedVisualizationResults({ estimateId: payload.estimateId }).slice(0, 6)
         : [];
@@ -6585,6 +6588,8 @@ function createSqliteService({ app }) {
     }));
     const moodboardRow = payload.moodboardId
       ? db.project.prepare('SELECT * FROM moodboard_profiles WHERE id = ?').get(payload.moodboardId)
+      : payload.estimateId
+        ? db.project.prepare('SELECT * FROM moodboard_profiles WHERE estimate_id = ? ORDER BY updated_at DESC LIMIT 1').get(payload.estimateId)
       : floorplan
         ? db.project.prepare('SELECT * FROM moodboard_profiles WHERE floorplan_id = ? ORDER BY updated_at DESC LIMIT 1').get(floorplan.id)
         : null;
@@ -6598,9 +6603,18 @@ function createSqliteService({ app }) {
     const title = payload.title || (boardType === 'PORTFOLIO_BOARD' ? 'ECOREAN Portfolio Board' : 'ECOREAN Interior Proposal');
     const subtitle = payload.subtitle || (boardType === 'MATERIAL_BOARD' ? 'Material Selection Board' : 'Premium Interior Presentation');
     const projectName = payload.projectName || floorplan?.fileName || 'ECOREAN Project';
-    const customerProposalMap = payload.includeCustomerProposalMap
+    const includeCustomerProposalMap = payload.includeCustomerProposalMap === true
+      || (boardType === 'CLIENT_PROPOSAL' && payload.includeCustomerProposalMap !== false);
+    const rawCustomerProposalMap = includeCustomerProposalMap
       ? lightBIMCustomerMapService.getCustomerProposalMapByEstimate('', payload.estimateId || '')
       : null;
+    const customerProposalMap = rawCustomerProposalMap && payload.autoMatchApprovedImages === false
+      ? {
+        ...rawCustomerProposalMap,
+        approvedImages: [],
+        spaces: rawCustomerProposalMap.spaces.map((space) => ({ ...space, approvedImages: [] }))
+      }
+      : rawCustomerProposalMap;
     const layout = buildBoardLayout({
       boardType,
       exportMode: payload.exportMode || boardType,
@@ -6618,6 +6632,7 @@ function createSqliteService({ app }) {
       materialSelections: payload.materialSelections || [],
       constructionScope: payload.constructionScope || [],
       customerProposalMap,
+      includeCustomerScopeTable: payload.includeCustomerScopeTable !== false,
       imageFitMode: payload.imageFitMode || 'CONTAIN',
       printFormat: payload.printFormat || 'A3_LANDSCAPE'
     });

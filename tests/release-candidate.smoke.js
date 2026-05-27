@@ -63,6 +63,10 @@ const releaseChecks = [
     script: 'lightbim-customer-proposal-map.smoke.js'
   },
   {
+    label: 'LightBIM 제안 보드 통합',
+    script: 'lightbim-proposal-board-integration.smoke.js'
+  },
+  {
     label: '견적 출력',
     script: 'estimate-export.smoke.js'
   },

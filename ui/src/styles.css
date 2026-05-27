@@ -2902,6 +2902,37 @@ button:hover {
   color: #5a5f60;
 }
 
+.proposal-map-preview-card {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #d6ddd9;
+  border-radius: 8px;
+  background: #f8faf8;
+  display: grid;
+  gap: 10px;
+}
+
+.proposal-map-preview-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.proposal-map-preview-stats span {
+  padding: 8px;
+  border: 1px solid #e2e7e4;
+  border-radius: 6px;
+  color: #55615e;
+  font-size: 12px;
+}
+
+.proposal-map-preview-stats b {
+  display: block;
+  margin-top: 4px;
+  color: #16231f;
+  font-size: 18px;
+}
+
 @media (max-width: 1100px) {
   .estimate-entry-grid,
   .wizard-form-grid,
@@ -2927,6 +2958,10 @@ button:hover {
   }
 
   .customer-map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .proposal-map-preview-stats {
     grid-template-columns: 1fr;
   }
 }

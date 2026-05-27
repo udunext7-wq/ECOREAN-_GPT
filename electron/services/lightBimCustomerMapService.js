@@ -33,6 +33,10 @@ function safeNumber(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function normalizeMatchText(value) {
+  return cleanString(value).replace(/\s+/g, '').toUpperCase();
+}
+
 function finishLabel(value) {
   const labels = {
     engineered_wood: '강마루',
@@ -80,8 +84,19 @@ function mapSpace(space, selectedProcesses, publicStatus) {
       cleanString(space.ceiling_finish) ? `천장: ${finishLabel(space.ceiling_finish)}` : ''
     ].filter(Boolean),
     progressStatusKo: publicStatus,
+    approvedImages: [],
     customerNoteKo: '선정된 디자인 방향과 현장 여건에 따라 상세 사양을 협의합니다.'
   };
+}
+
+function imageMatchesSpace(image, space) {
+  if (image.spaceId && image.spaceId === space.id) return true;
+  const imageName = normalizeMatchText(image.spaceName);
+  const imageType = normalizeMatchText(image.spaceType);
+  return Boolean(
+    (imageName && imageName === normalizeMatchText(space.name))
+    || (imageType && imageType === normalizeMatchText(space.type))
+  );
 }
 
 function sanitizeLightBIMCustomerMapData(data = {}) {
@@ -122,6 +137,11 @@ function sanitizeLightBIMCustomerMapData(data = {}) {
       constructionScope: Array.isArray(space.constructionScope) ? space.constructionScope.map(String) : [],
       finishDirectionKo: Array.isArray(space.finishDirectionKo) ? space.finishDirectionKo.map(String) : [],
       progressStatusKo: cleanString(space.progressStatusKo, PUBLIC_STATUS_LABELS.PLANNED),
+      approvedImages: Array.isArray(space.approvedImages) ? space.approvedImages.map((image) => ({
+        id: cleanString(image.id),
+        imagePath: cleanString(image.imagePath),
+        resultType: cleanString(image.resultType, 'PERSPECTIVE')
+      })) : [],
       customerNoteKo: cleanString(space.customerNoteKo)
     })) : [],
     publicScopeSummary: Array.isArray(data.publicScopeSummary) ? data.publicScopeSummary.map(String) : [],
@@ -134,13 +154,16 @@ function sanitizeLightBIMCustomerMapData(data = {}) {
       style: cleanString(data.designDirection?.style),
       colorTone: cleanString(data.designDirection?.colorTone),
       primaryMaterials: cleanString(data.designDirection?.primaryMaterials),
-      lightingMood: cleanString(data.designDirection?.lightingMood)
+      lightingMood: cleanString(data.designDirection?.lightingMood),
+      designKeywords: cleanString(data.designDirection?.designKeywords)
     },
     approvedImages: Array.isArray(data.approvedImages) ? data.approvedImages.map((image) => ({
       id: cleanString(image.id),
       imagePath: cleanString(image.imagePath),
       resultType: cleanString(image.resultType, 'PERSPECTIVE'),
-      spaceName: cleanString(image.spaceName)
+      spaceId: cleanString(image.spaceId),
+      spaceName: cleanString(image.spaceName),
+      spaceType: cleanString(image.spaceType)
     })) : [],
     customerNotes: Array.isArray(data.customerNotes) ? data.customerNotes.map(String) : [],
     safeWarnings: Array.isArray(data.safeWarnings) ? data.safeWarnings.map(String) : [],
@@ -165,17 +188,19 @@ function createLightBIMCustomerMapService({ db, fromJson }) {
   function approvedImagesForEstimate(estimateId) {
     if (!estimateId) return [];
     return db.project.prepare(`
-      SELECT vr.id, vr.image_path, vr.result_type, vb.space_name
+      SELECT vr.id, vr.image_path, vr.result_type, vb.space_id, vb.space_name, vb.space_type
       FROM visualization_results vr
       JOIN visualization_briefs vb ON vb.id = vr.brief_id
-      WHERE vb.estimate_id = ? AND (vr.status = 'APPROVED' OR vr.result_type = 'PROPOSAL')
+      WHERE vb.estimate_id = ? AND vr.status = 'APPROVED'
       ORDER BY COALESCE(vr.approved_at, vr.created_at) DESC
       LIMIT 8
     `).all(estimateId).map((row) => ({
       id: row.id,
       imagePath: row.image_path,
       resultType: row.result_type,
-      spaceName: row.space_name
+      spaceId: row.space_id,
+      spaceName: row.space_name,
+      spaceType: row.space_type
     }));
   }
 
@@ -201,7 +226,8 @@ function createLightBIMCustomerMapService({ db, fromJson }) {
         style: moodboard.style,
         colorTone: moodboard.color_tone,
         primaryMaterials: moodboard.primary_materials,
-        lightingMood: moodboard.lighting_mood
+        lightingMood: moodboard.lighting_mood,
+        designKeywords: moodboard.reference_notes || ''
       };
     }
     const brief = db.project.prepare('SELECT * FROM visualization_briefs WHERE estimate_id = ? ORDER BY updated_at DESC LIMIT 1').get(estimateId);
@@ -209,7 +235,8 @@ function createLightBIMCustomerMapService({ db, fromJson }) {
       style: brief.style,
       colorTone: brief.color_tone,
       primaryMaterials: brief.material_keywords,
-      lightingMood: brief.lighting_mood
+      lightingMood: brief.lighting_mood,
+      designKeywords: brief.design_notes || ''
     } : {};
   }
 
@@ -219,8 +246,18 @@ function createLightBIMCustomerMapService({ db, fromJson }) {
     const project = raw.project || {};
     const estimateId = importRow.created_estimate_id || '';
     const scheduleStatus = publicSchedule(estimateId);
-    const selectedProcesses = Array.isArray(raw.bocEstimateInput?.selected_processes) ? raw.bocEstimateInput.selected_processes : [];
-    const spaces = Array.isArray(project.spaces) ? project.spaces.map((space) => mapSpace(space, selectedProcesses, scheduleStatus.statusKo)) : [];
+    const rawProcesses = raw.bocEstimateInput?.selected_processes;
+    const selectedProcesses = Array.isArray(rawProcesses)
+      ? rawProcesses
+      : Object.entries(rawProcesses || {}).filter(([, enabled]) => Boolean(enabled)).map(([key]) => key);
+    const approvedImages = approvedImagesForEstimate(estimateId);
+    const spaces = Array.isArray(project.spaces) ? project.spaces.map((space) => {
+      const safeSpace = mapSpace(space, selectedProcesses, scheduleStatus.statusKo);
+      return {
+        ...safeSpace,
+        approvedImages: approvedImages.filter((image) => imageMatchesSpace(image, safeSpace))
+      };
+    }) : [];
     const scopeSummary = Array.from(new Set(spaces.flatMap((space) => space.constructionScope)));
     return sanitizeLightBIMCustomerMapData({
       importId: importRow.id,
@@ -238,7 +275,7 @@ function createLightBIMCustomerMapService({ db, fromJson }) {
       publicScopeSummary: scopeSummary,
       publicScheduleStatus: scheduleStatus,
       designDirection: designDirectionForEstimate(estimateId),
-      approvedImages: approvedImagesForEstimate(estimateId),
+      approvedImages,
       customerNotes: ['공간별 마감과 시공 일정은 계약 확정 후 상세 안내드립니다.'],
       safeWarnings: spaces.length ? [] : ['표시할 공간 정보가 없습니다.'],
       statusKo: spaces.length ? '고객용 공간 맵을 불러왔습니다.' : '표시할 공간 정보가 없습니다.'

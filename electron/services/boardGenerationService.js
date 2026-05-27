@@ -262,6 +262,172 @@ function buildSection({ id, sortOrder, sectionType, titleKo, descriptionKo, imag
   };
 }
 
+function customerSafeEstimateSummary(summary = {}) {
+  return {
+    totalAmount: Number(summary.totalAmount || 0),
+    scheduleDays: Number(summary.scheduleDays || 0),
+    paymentConditionKo: String(summary.paymentConditionKo || '계약 시 협의'),
+    processGroups: (summary.processGroups || []).map((group) => ({
+      processKo: String(group.processKo || group.category || '공정'),
+      amount: Number(group.amount || group.customerTotal || 0)
+    }))
+  };
+}
+
+function safeMapGeometry(geometry = {}) {
+  return {
+    vertices: (geometry.vertices || []).map((vertex) => ({ id: String(vertex.id || ''), x: Number(vertex.x || 0), y: Number(vertex.y || 0) })),
+    walls: (geometry.walls || []).map((wall) => ({ id: String(wall.id || ''), v1Id: String(wall.v1Id || ''), v2Id: String(wall.v2Id || '') })),
+    openings: (geometry.openings || []).map((opening) => ({
+      id: String(opening.id || ''),
+      type: String(opening.type || 'opening'),
+      spaceId: String(opening.spaceId || ''),
+      x: Number(opening.x || 0),
+      y: Number(opening.y || 0)
+    }))
+  };
+}
+
+function customerMapPageLayout(printFormat) {
+  if (printFormat === 'A4_PORTRAIT') {
+    return { composition: 'MAP_THEN_TABLE', mapWidthPercent: 100, tableWidthPercent: 100, imagePosition: 'AFTER_TABLE' };
+  }
+  if (printFormat === 'A4_LANDSCAPE') {
+    return { composition: 'MAP_IMAGE_SPLIT', mapWidthPercent: 52, tableWidthPercent: 48, imagePosition: 'SIDE' };
+  }
+  return { composition: 'MAP_LEFT_SCOPE_RIGHT', mapWidthPercent: 58, tableWidthPercent: 42, imagePosition: 'LOWER_STRIP' };
+}
+
+function createCustomerProposalMapSection(customerMap = {}, options = {}) {
+  const safeMap = customerMap || {};
+  const spaces = (safeMap.spaces || []).map((space) => ({
+    id: String(space.id || ''),
+    name: String(space.name || '공간'),
+    type: String(space.type || 'ETC'),
+    areaM2: Number(space.areaM2 || 0),
+    constructionScope: (space.constructionScope || []).map(String),
+    finishDirectionKo: (space.finishDirectionKo || []).map(String),
+    progressStatusKo: String(space.progressStatusKo || '공사 예정'),
+    approvedImages: (space.approvedImages || []).map((image) => ({
+      id: String(image.id || ''),
+      imagePath: String(image.imagePath || ''),
+      resultType: String(image.resultType || 'PERSPECTIVE')
+    }))
+  }));
+  if (!spaces.length) return null;
+  const approvedImages = (safeMap.approvedImages || []).map((image) => ({
+    id: String(image.id || ''),
+    imagePath: String(image.imagePath || ''),
+    resultType: String(image.resultType || 'PERSPECTIVE'),
+    spaceId: String(image.spaceId || ''),
+    spaceName: String(image.spaceName || '')
+  }));
+  const designDirection = {
+    style: String(safeMap.designDirection?.style || ''),
+    colorTone: String(safeMap.designDirection?.colorTone || ''),
+    primaryMaterials: String(safeMap.designDirection?.primaryMaterials || ''),
+    lightingMood: String(safeMap.designDirection?.lightingMood || ''),
+    designKeywords: String(safeMap.designDirection?.designKeywords || '')
+  };
+  const estimateSummary = customerSafeEstimateSummary(options.estimateSummary);
+  const mapPayload = {
+    renderMode: 'SVG',
+    geometry: safeMapGeometry(safeMap.geometry),
+    layout: customerMapPageLayout(options.printFormat),
+    safeScaleMode: 'CONTAIN'
+  };
+  const images = approvedImages.map((image, index) => ({
+    imageId: image.id || `CUSTOMER-MAP-IMAGE-${index + 1}`,
+    imagePath: image.imagePath,
+    resultType: image.resultType,
+    role: index === 0 ? 'FEATURED' : 'SUPPORTING',
+    fitMode: 'CONTAIN',
+    preserveAspectRatio: true
+  }));
+  const section = buildSection({
+    id: 'SECTION-CUSTOMER-MAP',
+    sortOrder: options.sortOrder || 3,
+    sectionType: 'CUSTOMER_PROPOSAL_MAP',
+    titleKo: '공간 제안 맵',
+    descriptionKo: '도면 구성과 공간별 공사 범위, 디자인 방향, 승인된 제안 이미지를 함께 안내합니다.',
+    images,
+    table: spaces.map((space) => ({
+      labelKo: space.name,
+      valueKo: `${space.constructionScope.join(' / ') || '공사 범위 협의'} | ${space.finishDirectionKo.join(', ') || '디자인 협의'} | ${space.progressStatusKo}`
+    })),
+    notes: (safeMap.publicScopeSummary || []).map(String),
+    visibility: { customerSafe: true }
+  });
+  return {
+    ...section,
+    section_type: 'CUSTOMER_PROPOSAL_MAP',
+    customer_safe: true,
+    mapArea: mapPayload,
+    map_payload: mapPayload,
+    spaces,
+    scope_summary: (safeMap.publicScopeSummary || []).map(String),
+    design_direction: designDirection,
+    approved_images: approvedImages,
+    customer_estimate_summary: estimateSummary,
+    safe_empty_state: '표시할 공간 정보가 없습니다.'
+  };
+}
+
+function createCustomerScopeTableSection(mapSection, sortOrder = 4) {
+  if (!mapSection) return null;
+  return buildSection({
+    id: 'SECTION-CUSTOMER-SCOPE',
+    sortOrder,
+    sectionType: 'CUSTOMER_SPACE_SCOPE',
+    titleKo: '공간별 공사 범위',
+    descriptionKo: '공간별 시공 범위와 디자인 방향, 현재 진행 상태를 고객 안내 기준으로 정리합니다.',
+    table: mapSection.spaces.map((space) => ({
+      labelKo: space.name,
+      valueKo: `${space.constructionScope.join(' / ')} | ${space.finishDirectionKo.join(', ') || '디자인 방향 협의'} | ${space.progressStatusKo} | ${space.approvedImages.length ? '제안 이미지 연결' : '제안 이미지 준비 중'}`
+    })),
+    notes: ['세부 사양과 일정은 계약 확정 후 안내드립니다.'],
+    visibility: { customerSafe: true }
+  });
+}
+
+function createCustomerSafePdfPayload(layout) {
+  const allowedSections = (layout.sections || []).map((section) => ({
+    section_type: section.sectionType,
+    title: section.titleKo,
+    description: section.descriptionKo,
+    rows: (section.tableArea?.rows || []).map((row) => ({
+      label: String(row.labelKo || ''),
+      value: String(row.valueKo || '')
+    })),
+    images: (section.imageArea?.images || []).map((image) => ({
+      image_path: String(image.imagePath || ''),
+      fit_mode: String(image.fitMode || 'CONTAIN')
+    })),
+    ...(section.sectionType === 'CUSTOMER_PROPOSAL_MAP' ? {
+      map_payload: section.map_payload,
+      spaces: section.spaces,
+      scope_summary: section.scope_summary,
+      design_direction: section.design_direction,
+      approved_images: section.approved_images,
+      estimate_summary: section.customer_estimate_summary
+    } : {})
+  }));
+  return {
+    customer_safe: true,
+    project_name: String(layout.coverPage?.projectName || ''),
+    document_title: String(layout.coverPage?.titleKo || ''),
+    print_settings: {
+      format: layout.printSettings.format,
+      orientation: layout.printSettings.orientation,
+      print_safe_inset_mm: layout.printSettings.safeMarginMm,
+      prevent_overflow: true,
+      preserve_image_ratio: true,
+      safe_page_breaks: true
+    },
+    sections: allowedSections
+  };
+}
+
 function buildBoardLayout(input = {}) {
   const template = normalizeTemplate(input.templateId);
   const boardType = input.boardType || 'CLIENT_PROPOSAL';
@@ -282,6 +448,15 @@ function buildBoardLayout(input = {}) {
   const featuredImage = imagePlacements.find((image) => image.role === 'FEATURED') || imagePlacements[0];
   const conceptKeywords = [moodboard.style, moodboard.colorTone, moodboard.primaryMaterials].filter(Boolean);
   const areaM2 = Number(input.areaM2 || spaces.reduce((sum, space) => sum + Number(space.areaM2 || 0), 0));
+  const publicEstimateSummary = customerSafeEstimateSummary(estimateSummary);
+  const customerMapSection = createCustomerProposalMapSection(input.customerProposalMap, {
+    estimateSummary: publicEstimateSummary,
+    printFormat,
+    sortOrder: 3
+  });
+  const customerScopeSection = input.includeCustomerScopeTable !== false
+    ? createCustomerScopeTableSection(customerMapSection, 4)
+    : null;
 
   const coverPage = {
     id: 'PAGE-COVER',
@@ -311,7 +486,9 @@ function buildBoardLayout(input = {}) {
         { labelKo: '면적', valueKo: `${areaM2 || 0} m2` },
         { labelKo: '컨셉 키워드', valueKo: conceptKeywords.join(', ') || '미지정' }
       ],
-      notes: ['고객용 제안서에는 내부 원가와 마진 정보를 표시하지 않습니다.']
+      notes: exportMode === 'CLIENT_PROPOSAL'
+        ? ['공간 구성과 디자인 방향, 공사 범위를 중심으로 구성한 고객용 제안 자료입니다.']
+        : []
     }),
     moodboard: buildSection({
       id: 'SECTION-MOODBOARD',
@@ -373,9 +550,10 @@ function buildBoardLayout(input = {}) {
       titleKo: 'Estimate Summary',
       descriptionKo: '고객용 공정별 합계와 총 견적금액을 표시합니다.',
       table: [
-        { labelKo: '총 견적금액', valueKo: money(estimateSummary.totalAmount || 0) },
-        { labelKo: '예상 공기', valueKo: `${estimateSummary.scheduleDays || 0} days` },
-        ...(estimateSummary.processGroups || []).map((group) => ({ labelKo: group.processKo || group.category || '공정', valueKo: money(group.amount || group.customerTotal || 0) }))
+        { labelKo: '총 견적금액', valueKo: money(publicEstimateSummary.totalAmount) },
+        { labelKo: '예상 공기', valueKo: `${publicEstimateSummary.scheduleDays} days` },
+        { labelKo: '결제 조건', valueKo: publicEstimateSummary.paymentConditionKo },
+        ...publicEstimateSummary.processGroups.map((group) => ({ labelKo: group.processKo, valueKo: money(group.amount) }))
       ],
       visibility: { hideInternalCost: true, hideMargin: true, hidePce: true }
     }),
@@ -391,26 +569,8 @@ function buildBoardLayout(input = {}) {
         { labelKo: '결제 조건', valueKo: '계약 시 협의' }
       ]
     }),
-    customerProposalMap: input.customerProposalMap?.spaces?.length ? {
-      ...buildSection({
-      id: 'SECTION-CUSTOMER-MAP',
-      sortOrder: 9,
-      sectionType: 'CUSTOMER_PROPOSAL_MAP',
-      titleKo: '고객용 공간 제안 맵',
-      descriptionKo: '공간 구성과 공간별 공사 범위, 디자인 방향을 고객 안내용으로 정리합니다.',
-      table: input.customerProposalMap.spaces.map((space) => ({
-        labelKo: space.name,
-        valueKo: `${space.constructionScope.join(', ')} / ${space.progressStatusKo}`
-      })),
-      notes: input.customerProposalMap.publicScopeSummary
-      }),
-      mapArea: {
-        renderMode: 'SVG',
-        geometry: input.customerProposalMap.geometry,
-        placeholderKo: '공간 맵 미리보기'
-      },
-      designDirection: input.customerProposalMap.designDirection
-    } : null,
+    customerProposalMap: customerMapSection,
+    customerScopeTable: customerScopeSection,
     closingSignature: buildSection({
       id: 'SECTION-SIGNATURE',
       sortOrder: 9,
@@ -431,9 +591,14 @@ function buildBoardLayout(input = {}) {
       ...sectionMap[key],
       sortOrder: index + 1
     }));
-  if (sectionMap.customerProposalMap) {
+  if (sectionMap.customerProposalMap && exportMode === 'CLIENT_PROPOSAL') {
+    sections = ['conceptOverview', 'customerProposalMap', 'customerScopeTable', 'moodboard', 'perspectiveGallery', 'estimateSummary', 'constructionScope', 'closingSignature']
+      .filter((key) => sectionMap[key])
+      .map((key, index) => ({ ...sectionMap[key], sortOrder: index + 1 }));
+  } else if (sectionMap.customerProposalMap) {
     const insertionIndex = Math.max(0, sections.findIndex((section) => section.sectionType === 'FLOORPLAN') + 1);
     sections.splice(insertionIndex, 0, sectionMap.customerProposalMap);
+    if (sectionMap.customerScopeTable) sections.splice(insertionIndex + 1, 0, sectionMap.customerScopeTable);
     sections = sections.map((section, index) => ({ ...section, sortOrder: index + 1 }));
   }
 
@@ -450,7 +615,7 @@ function buildBoardLayout(input = {}) {
     }))
   ];
 
-  return {
+  const layout = {
     boardType,
     exportMode,
     exportModeKo: exportConfig.labelKo,
@@ -468,7 +633,10 @@ function buildBoardLayout(input = {}) {
       pageWidth: pageFormat.width,
       pageHeight: pageFormat.height,
       output: 'PDF',
-      footer: 'ECOREAN BOC'
+      footer: 'ECOREAN BOC',
+      preventOverflow: true,
+      preserveImageAspectRatio: true,
+      safePageBreaks: true
     },
     imageSettings: {
       fitMode: imageFitMode,
@@ -491,8 +659,20 @@ function buildBoardLayout(input = {}) {
       titleKo: section.titleKo,
       style: section.sectionType === 'CONCEPT_OVERVIEW' ? 'hero' : 'section'
     })),
-    sections
+    sections,
+    exportMetadata: {
+      includes_lightbim_customer_map: Boolean(customerMapSection),
+      space_count: customerMapSection?.spaces?.length || 0,
+      approved_image_count: customerMapSection?.approved_images?.length || 0,
+      customer_safe_checked: exportMode === 'CLIENT_PROPOSAL',
+      includesLightbimCustomerMap: Boolean(customerMapSection),
+      spaceCount: customerMapSection?.spaces?.length || 0,
+      approvedImageCount: customerMapSection?.approved_images?.length || 0,
+      customerSafeChecked: exportMode === 'CLIENT_PROPOSAL'
+    }
   };
+  layout.customerPdfPayload = exportMode === 'CLIENT_PROPOSAL' ? createCustomerSafePdfPayload(layout) : null;
+  return layout;
 }
 
 function linesForPage(board, layout, page) {
@@ -522,6 +702,13 @@ function linesForPage(board, layout, page) {
   (section.tableArea?.rows || []).slice(0, 18).forEach((row) => {
     lines.push(`${row.labelKo || row.categoryKo || 'Item'}: ${row.valueKo || row.value || row.amount || ''}`);
   });
+  if (section.sectionType === 'CUSTOMER_PROPOSAL_MAP') {
+    lines.push('');
+    lines.push(`Map Layout: ${section.map_payload?.layout?.composition || 'MAP'}`);
+    lines.push(`Approved Images: ${(section.approved_images || []).length}`);
+    lines.push(`Design Style: ${section.design_direction?.style || 'not specified'}`);
+    lines.push(`Color Tone: ${section.design_direction?.colorTone || 'not specified'}`);
+  }
   if (section.notes?.length) {
     lines.push('');
     section.notes.forEach((note) => lines.push(`Note: ${note}`));
@@ -557,6 +744,8 @@ module.exports = {
   EXPORT_MODES,
   PAGE_FORMATS,
   buildBoardLayout,
+  createCustomerProposalMapSection,
+  createCustomerSafePdfPayload,
   exportBoardPdf,
   normalizeExportMode,
   normalizePageFormat,
