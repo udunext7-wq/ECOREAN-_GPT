@@ -5,6 +5,11 @@ export type ProjectClosingData = {
   costLeaks: Array<Record<string, unknown>>;
   reports: Array<Record<string, unknown>>;
   calibrationRules: Array<Record<string, unknown>>;
+  executionFeedbackSummary?: {
+    summary?: Record<string, unknown>;
+    items?: Array<Record<string, unknown>>;
+    purchaseCalibrationRules?: Array<Record<string, unknown>>;
+  };
   statusLabelsKo: Record<string, string>;
 };
 

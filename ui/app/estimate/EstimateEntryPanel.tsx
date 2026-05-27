@@ -90,6 +90,7 @@ const secondaryActions: EntryAction[] = [
   { title: '경영 분석 센터', headline: '수익 / 위험 / 생산성 / 지점 KPI 분석', note: 'BI 분석', view: 'analytics', tone: 'warning' },
   { title: 'AI 운영 자동화', headline: '위험 감지 / 추천 / Draft / 승인 대기', note: 'AI Agent', view: 'aiAutomation', tone: 'warning' },
   { title: '현장 실행 관리', headline: '공사일보 / 출역 / 자재입고 / 검수', note: '현장 관리', view: 'executionManagement' },
+  { title: 'LightBIM 실행 피드백', headline: '발주 / 입고 / 실제 사용 / 수량 보정', note: '실행 수량', view: 'lightbimExecutionFeedback', tone: 'warning' },
   { title: '결제/현금흐름', headline: '입금 / 지급 / 연체 / 7일 현금흐름', note: '자금 관리', view: 'payment', tone: 'warning' },
   { title: '고객 포털', headline: '견적 / 계약 / 일정 / 결제 / 하자 접수', note: '고객 화면', view: 'clientPortal', tone: 'confirm' },
   { title: '커뮤니케이션 센터', headline: '고객 / 협력업체 메시지 생성', note: '발송 기록', view: 'communication' },

@@ -41,6 +41,12 @@ declare global {
         applyLightBIMQuantityReview: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         recalculateEstimateAfterQuantityReview: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getLightBIMQuantityReviewSummary: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createLightBIMExecutionFeedback: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getLightBIMExecutionFeedback: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        updateLightBIMActualUsedQuantity: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        closeLightBIMExecutionFeedback: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        generateLightBIMQuantityCalibration: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getLightBIMExecutionFeedbackSummary: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         calculateBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         saveBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         exportBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

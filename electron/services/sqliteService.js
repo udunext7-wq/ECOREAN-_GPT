@@ -26,6 +26,7 @@ const {
   createEstimateDraftFromLightBIM
 } = require('./lightBimImportService');
 const { createLightBIMQuantityReviewService } = require('./lightBimQuantityReviewService');
+const { createLightBIMExecutionFeedbackService } = require('./lightBimExecutionFeedbackService');
 const { exportEstimateDocument } = require('./estimateExportService');
 const { buildContractFromEstimate, exportContractPdf } = require('./contractService');
 const { buildScheduleFromEstimate } = require('./scheduleService');
@@ -151,6 +152,7 @@ function createSqliteService({ app }) {
     logs: openDatabase(dbPaths.logs)
   };
   const lightBIMQuantityReviewService = createLightBIMQuantityReviewService({ db, nowIso, toJson, fromJson });
+  const lightBIMExecutionFeedbackService = createLightBIMExecutionFeedbackService({ db, nowIso, toJson });
 
   const PROFIT_POLICY = {
     minimumBudget: 7000000,
@@ -241,6 +243,51 @@ function createSqliteService({ app }) {
         after_quantity REAL NOT NULL,
         reason TEXT,
         created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS lightbim_execution_quantity_feedback (
+        id TEXT PRIMARY KEY,
+        import_id TEXT,
+        estimate_type TEXT NOT NULL,
+        estimate_id TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        purchase_order_id TEXT NOT NULL,
+        purchase_order_item_id TEXT NOT NULL,
+        material_receiving_id TEXT,
+        item_name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        unit TEXT NOT NULL,
+        lightbim_quantity REAL NOT NULL,
+        reviewed_quantity REAL NOT NULL,
+        estimate_quantity REAL NOT NULL,
+        purchase_order_quantity REAL NOT NULL,
+        received_quantity REAL NOT NULL,
+        actual_used_quantity REAL NOT NULL,
+        remaining_quantity REAL NOT NULL,
+        waste_quantity REAL NOT NULL,
+        shortage_quantity REAL NOT NULL,
+        variance_quantity REAL NOT NULL,
+        variance_rate REAL NOT NULL,
+        variance_reason TEXT,
+        feedback_status TEXT NOT NULL,
+        confirmed_by TEXT,
+        photo_path TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS lightbim_purchase_quantity_calibration_rules (
+        id TEXT PRIMARY KEY,
+        item_category TEXT NOT NULL,
+        material_name TEXT NOT NULL,
+        unit TEXT NOT NULL,
+        current_waste_factor REAL NOT NULL,
+        recommended_waste_factor REAL NOT NULL,
+        reason TEXT NOT NULL,
+        source_feedback_ids TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS bathroom_estimates (
@@ -4604,6 +4651,54 @@ function createSqliteService({ app }) {
     return lightBIMQuantityReviewService.getReviewSummary(estimateType, estimateId);
   }
 
+  function createLightBIMExecutionFeedback(payload = {}) {
+    return lightBIMExecutionFeedbackService.createFeedbackFromPurchaseOrder({
+      estimateId: payload.estimateId || payload.estimate_id,
+      projectId: payload.projectId || payload.project_id || payload.estimateId || payload.estimate_id,
+      purchaseOrderId: payload.purchaseOrderId || payload.purchase_order_id,
+      estimateType: payload.estimateType || payload.estimate_type || 'FULL_REMODELING'
+    });
+  }
+
+  function getLightBIMExecutionFeedback(payload = {}) {
+    const estimateType = payload.estimateType || payload.estimate_type;
+    const estimateId = payload.estimateId || payload.estimate_id;
+    const projectId = payload.projectId || payload.project_id;
+    return projectId
+      ? lightBIMExecutionFeedbackService.getFeedbackByProject(projectId)
+      : lightBIMExecutionFeedbackService.getFeedbackByEstimate(estimateType, estimateId);
+  }
+
+  function updateLightBIMActualUsedQuantity(payload = {}) {
+    return lightBIMExecutionFeedbackService.updateActualUsedQuantity(
+      payload.feedbackId || payload.id,
+      payload.actualUsedQuantity ?? payload.actual_used_quantity,
+      payload.reason || payload.varianceReason || '',
+      {
+        remainingQuantity: payload.remainingQuantity ?? payload.remaining_quantity,
+        wasteQuantity: payload.wasteQuantity ?? payload.waste_quantity,
+        confirmedBy: payload.confirmedBy || payload.confirmed_by,
+        photoPath: payload.photoPath || payload.photo_path
+      }
+    );
+  }
+
+  function closeLightBIMExecutionFeedback(payload = {}) {
+    return lightBIMExecutionFeedbackService.closeFeedbackItem(payload.feedbackId || payload.id);
+  }
+
+  function generateLightBIMQuantityCalibration(payload = {}) {
+    return lightBIMExecutionFeedbackService.generateCalibrationRecommendation(payload.feedbackId || payload.id);
+  }
+
+  function getLightBIMExecutionFeedbackSummary(payload = {}) {
+    return lightBIMExecutionFeedbackService.getExecutionFeedbackSummary({
+      projectId: payload.projectId || payload.project_id || '',
+      estimateId: payload.estimateId || payload.estimate_id || '',
+      purchaseOrderId: payload.purchaseOrderId || payload.purchase_order_id || ''
+    });
+  }
+
   function prepareStoredQuantityItems(lineItems = [], estimateId, payload = {}) {
     const reviewState = payload.lightBimQuantityReviewState || payload.lightbimQuantityReviewState || {};
     const isLightBIMEstimate = Boolean(payload.lightBimSource);
@@ -5128,9 +5223,10 @@ function createSqliteService({ app }) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(purchaseOrderId, `EXEC-PENDING-${estimateId}`, estimateId, purchaseOrder.status, 1, toJson({ source: 'KITCHEN_ESTIMATE', itemCount: purchaseOrder.items.length, quantitySummary: purchaseOrder.quantitySummary }), createdAt, estimateId, contractId, purchaseOrder.orderNumber, purchaseOrder.supplierName, purchaseOrder.totalAmount, purchaseOrder.status, purchaseOrder.requiredDate, createdAt);
     persistPurchaseOrderItems(purchaseOrderId, purchaseOrder);
+    const executionFeedback = lightBIMExecutionFeedbackService.createFeedbackFromPurchaseOrder({ estimateId, projectId: estimateId, purchaseOrderId, estimateType: 'KITCHEN' });
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
-    return { purchaseOrderId, purchaseOrder, masterData: buildMasterDataUsageSummary('bathroom_remodel') };
+    return { purchaseOrderId, purchaseOrder, executionFeedback, masterData: buildMasterDataUsageSummary('bathroom_remodel') };
   }
 
   function calculateFullRemodelingEstimatePreview(payload = {}) {
@@ -5413,9 +5509,10 @@ function createSqliteService({ app }) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(purchaseOrderId, `EXEC-PENDING-${estimateId}`, estimateId, purchaseOrder.status, 1, toJson({ source: 'FULL_REMODELING_ESTIMATE', itemCount: purchaseOrder.items.length, quantitySummary: purchaseOrder.quantitySummary }), createdAt, estimateId, contractId, purchaseOrder.orderNumber, purchaseOrder.supplierName, purchaseOrder.totalAmount, purchaseOrder.status, purchaseOrder.requiredDate, createdAt);
     persistPurchaseOrderItems(purchaseOrderId, purchaseOrder);
+    const executionFeedback = lightBIMExecutionFeedbackService.createFeedbackFromPurchaseOrder({ estimateId, projectId: estimateId, purchaseOrderId, estimateType: 'FULL_REMODELING' });
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
-    return { purchaseOrderId, purchaseOrder, masterData: buildMasterDataUsageSummary('kitchen_remodel') };
+    return { purchaseOrderId, purchaseOrder, executionFeedback, masterData: buildMasterDataUsageSummary('kitchen_remodel') };
   }
 
   function mapFloorplan(row) {
@@ -7595,6 +7692,7 @@ function createSqliteService({ app }) {
   }
 
   function buildClosingReportPayload(snapshot, leaks, rules, templateCandidate) {
+    const executionFeedback = lightBIMExecutionFeedbackService.getExecutionFeedbackSummary({ projectId: snapshot.project_id });
     return {
       titleKo: '프로젝트 마감 리포트',
       projectId: snapshot.project_id,
@@ -7628,6 +7726,11 @@ function createSqliteService({ app }) {
       },
       costLeaks: leaks,
       estimateCalibrationRules: rules,
+      executionQuantityFeedback: {
+        summary: executionFeedback.summary,
+        items: executionFeedback.items,
+        purchaseCalibrationCandidates: executionFeedback.purchaseCalibrationRules
+      },
       templateCandidate
     };
   }
@@ -8170,6 +8273,7 @@ function createSqliteService({ app }) {
       totalActualMargin: snapshots.reduce((total, row) => total + Number(row.actual_margin || 0), 0),
       totalCostLeakAmount: costLeaks.reduce((total, row) => total + Number(row.variance_amount || 0), 0)
     };
+    const executionFeedbackSummary = lightBIMExecutionFeedbackService.getExecutionFeedbackSummary({ projectId: projectId || '' });
     return {
       snapshotDate: nowIso().slice(0, 10),
       summary,
@@ -8177,6 +8281,7 @@ function createSqliteService({ app }) {
       costLeaks,
       reports,
       calibrationRules,
+      executionFeedbackSummary,
       statusLabelsKo: {
         READY_TO_CLOSE: '마감 검토 가능',
         BLOCKED_BY_RECEIVABLE: '미수금으로 마감 불가',
@@ -8375,6 +8480,7 @@ function createSqliteService({ app }) {
       createdAt
     );
     persistPurchaseOrderItems(purchaseOrderId, purchaseOrder);
+    const executionFeedback = lightBIMExecutionFeedbackService.createFeedbackFromPurchaseOrder({ estimateId, projectId: estimateId, purchaseOrderId, estimateType: 'BATHROOM' });
     insertNotification({ level: 'WARNING', messageKo: `발주서 생성: ${purchaseOrder.orderNumber} / 실제 공급가 확인 필요`, relatedProjectId: estimateId, actionKo: '발주서 생성', createdAt });
     createCommunicationDraft({
       messageType: 'VENDOR_PURCHASE_ORDER',
@@ -8387,7 +8493,7 @@ function createSqliteService({ app }) {
     });
     syncVendorPaymentScheduleFromPurchaseOrder(purchaseOrderId, createdAt);
     syncCashflowSnapshot(createdAt);
-    return { purchaseOrderId, purchaseOrder, masterData: buildMasterDataUsageSummary('full_remodel') };
+    return { purchaseOrderId, purchaseOrder, executionFeedback, masterData: buildMasterDataUsageSummary('full_remodel') };
   }
 
   function profitGateForWonLead({ lead, payload = {}, actor = 'CEO', createdAt = nowIso() }) {
@@ -14671,6 +14777,7 @@ function createSqliteService({ app }) {
         row.expectedQuantityBasisKey
       );
     });
+    const executionFeedback = lightBIMExecutionFeedbackService.syncReceivingQuantities(purchaseOrderId, projectId);
     const shortages = rows.filter((row) => row.missingQuantity > 0);
     if (shortages.length > 0) {
       upsertEventTrigger({
@@ -14708,7 +14815,7 @@ function createSqliteService({ app }) {
         createdAt
       });
     }
-    return { dashboardData: getDashboardData(), receivingCount: rows.length, shortageCount: shortages.length, shortages };
+    return { dashboardData: getDashboardData(), receivingCount: rows.length, shortageCount: shortages.length, shortages, executionFeedback };
   }
 
   function createInspectionChecklistFromSchedule({ projectId, scheduleId = null, processNameKo = '욕실 공정', actor = 'CEO' }) {
@@ -19828,6 +19935,8 @@ function createSqliteService({ app }) {
       crewAttendanceLogCount: countRows(db.project, 'crew_attendance_logs'),
       materialDeliveryCheckCount: countRows(db.project, 'material_delivery_checks'),
       materialReceivingLogCount: countRows(db.project, 'material_receiving_logs'),
+      lightBimExecutionFeedbackCount: countRows(db.project, 'lightbim_execution_quantity_feedback'),
+      lightBimPurchaseCalibrationRuleCount: countRows(db.project, 'lightbim_purchase_quantity_calibration_rules'),
       siteMediaFileCount: countRows(db.project, 'site_media_files'),
       fieldSignatureCount: countRows(db.project, 'field_signatures'),
       fieldRiskReportCount: countRows(db.project, 'field_risk_reports'),
@@ -19928,6 +20037,12 @@ function createSqliteService({ app }) {
     applyLightBIMQuantityReview,
     recalculateEstimateAfterQuantityReview,
     getLightBIMQuantityReviewSummary,
+    createLightBIMExecutionFeedback,
+    getLightBIMExecutionFeedback,
+    updateLightBIMActualUsedQuantity,
+    closeLightBIMExecutionFeedback,
+    generateLightBIMQuantityCalibration,
+    getLightBIMExecutionFeedbackSummary,
     calculateBathroomEstimatePreview,
     saveBathroomEstimate,
     exportBathroomEstimateDocument,

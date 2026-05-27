@@ -77,12 +77,17 @@ export function ProjectClosingCenterView() {
     window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'calibration' }));
   }
 
+  function openExecutionFeedback() {
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimExecutionFeedback' }));
+  }
+
   if (!data) return <div className="drawer-block">Project Closing Center 로딩 중</div>;
 
   const labels = data.statusLabelsKo || {};
   const leaks = data.costLeaks || [];
   const rules = data.calibrationRules || [];
   const reports = data.reports || [];
+  const feedback = data.executionFeedbackSummary?.summary || {};
 
   return (
     <div className="execution-panel">
@@ -107,6 +112,7 @@ export function ProjectClosingCenterView() {
           <button onClick={() => runFinalize(true)}>관리자 예외 마감</button>
           <button onClick={runTemplateSave}>고마진 템플릿 저장</button>
           <button onClick={openCalibrationCenter}>실제 보정 센터</button>
+          <button onClick={openExecutionFeedback}>LightBIM 실행 피드백</button>
         </div>
         <p>{messageKo}</p>
       </div>
@@ -154,6 +160,23 @@ export function ProjectClosingCenterView() {
           <p>종료: {String(selectedSnapshot?.actual_end_date || '데이터 없음')}</p>
         </section>
       </div>
+
+      <section className="drawer-block">
+        <div className="section-header">
+          <div>
+            <span className="eyebrow">QUANTITY FEEDBACK</span>
+            <h3>도면 수량 대비 실제 사용량 차이</h3>
+          </div>
+          <button onClick={openExecutionFeedback}>상세 검토</button>
+        </div>
+        <div className="kpi-grid">
+          <div className="kpi-card"><span>검토 수량</span><strong>{String(feedback.totalCount || 0)}건</strong></div>
+          <div className="kpi-card"><span>과다 사용</span><strong>{String(feedback.overUsedCount || 0)}건</strong></div>
+          <div className="kpi-card"><span>입고 부족</span><strong>{String(feedback.shortageCount || 0)}건</strong></div>
+          <div className="kpi-card"><span>손실/잔량 높음</span><strong>{String(feedback.wasteHighCount || 0)}건</strong></div>
+        </div>
+        <p>다음 견적 보정 후보와 다음 발주 보정 후보는 승인 후 반영됩니다.</p>
+      </section>
 
       <section className="drawer-block">
         <div className="section-header">

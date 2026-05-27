@@ -47,6 +47,10 @@ const releaseChecks = [
     script: 'lightbim-schedule-purchase-binding.smoke.js'
   },
   {
+    label: 'LightBIM 실행 피드백',
+    script: 'lightbim-execution-feedback.smoke.js'
+  },
+  {
     label: '견적 출력',
     script: 'estimate-export.smoke.js'
   },

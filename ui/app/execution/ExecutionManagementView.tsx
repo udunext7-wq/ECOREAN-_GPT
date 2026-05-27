@@ -50,11 +50,21 @@ export function ExecutionManagementView({ project }: Props) {
         </div>
         <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'fieldMobile' }))}>현장 모바일 열기</button>
       </div>
+      <div className="estimate-save-bar">
+        <div>
+          <strong>LightBIM 실행 피드백</strong>
+          <span>도면, 발주, 입고, 실제 사용 수량의 차이를 확인하고 보정 후보를 등록합니다.</span>
+        </div>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimExecutionFeedback' }))}>실행 피드백 열기</button>
+      </div>
       <p className="small-note">{messageKo}</p>
       <div className="case-library-grid">
         <DailySiteReportView onCreate={() => run('공사일보', () => createDailySiteReportFromSchedule(project.projectId))} />
         <CrewAttendanceView onCreate={() => run('출역일보', () => createCrewAttendanceReport(project.projectId))} />
-        <MaterialReceivingView onCreate={() => run('자재입고', () => createMaterialReceivingLog(project.projectId))} />
+        <MaterialReceivingView
+          onCreate={() => run('자재입고', () => createMaterialReceivingLog(project.projectId))}
+          onOpenFeedback={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimExecutionFeedback' }))}
+        />
         <InspectionChecklistView onCreate={() => run('검수 체크리스트', () => createInspectionChecklist(project.projectId))} />
         <ChangeOrderView onCreate={() => run('추가공사 승인 요청', () => createExecutionChangeOrder(project.projectId))} />
         <DefectManagementView onCreate={() => run('하자관리', () => createDefectReport(project.projectId))} />

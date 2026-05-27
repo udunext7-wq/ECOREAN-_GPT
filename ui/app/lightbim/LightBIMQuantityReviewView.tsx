@@ -164,6 +164,7 @@ export function LightBIMQuantityReviewView() {
           <div className="button-row">
             <button onClick={confirmAll} disabled={!reviews.length}>전체 확인</button>
             <button onClick={recalculate} disabled={!reviews.length}>재계산</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimExecutionFeedback' }))}>실행 피드백 열기</button>
           </div>
         </div>
 

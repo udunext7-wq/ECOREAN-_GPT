@@ -3,6 +3,10 @@ export function PurchaseOrderView() {
     window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'vendorIntelligence' }));
   }
 
+  function openExecutionFeedback() {
+    window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimExecutionFeedback' }));
+  }
+
   return (
     <section className="wizard-panel professional-output-panel">
       <h3>발주 관리</h3>
@@ -22,7 +26,10 @@ export function PurchaseOrderView() {
         </table>
       </div>
       <p className="empty-state">생성된 발주서가 없습니다. 견적 또는 LightBIM 도면 수량에서 발주서를 생성하세요.</p>
-      <button onClick={openVendorIntelligence}>협력업체 단가 지능화 열기</button>
+      <div className="button-row">
+        <button onClick={openVendorIntelligence}>협력업체 단가 지능화 열기</button>
+        <button onClick={openExecutionFeedback}>LightBIM 실행 피드백</button>
+      </div>
     </section>
   );
 }
