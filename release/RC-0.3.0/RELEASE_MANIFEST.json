@@ -10,6 +10,11 @@
   "installer_output_path": null,
   "test_status": "PASSED",
   "final_user_test_decision": "실사용 가능",
+  "packaged_real_use_test_status": "PASSED",
+  "final_packaged_decision": "패키지 실사용 가능",
+  "fixed_packaged_issues": [
+    "RC030-S1-001 repeated packaged userData initialization SQLite forecast duplicate fixed"
+  ],
   "known_warnings": [
     "Vite bundle size warning is non-blocking for RC-0.3.0"
   ],
@@ -39,6 +44,7 @@
     "release/RC-0.3.0/README_RUN_RC_0_3_0.md",
     "release/RC-0.3.0/BACKUP_RESTORE_GUIDE.md",
     "release/RC-0.3.0/USER_TEST_GUIDE.md",
+    "release/RC-0.3.0/PACKAGED_APP_REAL_USE_TEST_REPORT.md",
     "docs/RC_0_3_0_USER_TEST_CHECKLIST.md",
     "docs/RC_0_3_0_ACCEPTANCE_CRITERIA.md",
     "docs/RC_0_3_0_USER_TEST_REPORT.md",

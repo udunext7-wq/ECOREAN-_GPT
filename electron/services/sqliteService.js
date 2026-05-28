@@ -3932,7 +3932,7 @@ function createSqliteService({ app }) {
 
   function rebuildCompanyCashflowForecast(monthKey = currentMonthKey()) {
     const createdAt = nowIso();
-    db.project.prepare('DELETE FROM company_cashflow_forecast WHERE forecast_date LIKE ?').run(`${monthKey}%`);
+    db.project.prepare('DELETE FROM company_cashflow_forecast WHERE forecast_id LIKE ?').run(`CFF-${monthKey}-%`);
     const rows = [];
     db.project.prepare("SELECT * FROM receivables WHERE receivable_status != 'RECEIVED'").all().forEach((row) => {
       rows.push({ type: 'INFLOW', sourceType: 'receivable', projectId: row.project_id, fixedCostId: null, amount: Number(row.amount || 0), date: row.due_date, status: row.receivable_status, notesKo: row.notes_ko });

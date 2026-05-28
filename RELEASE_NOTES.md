@@ -47,6 +47,20 @@ LightBIM is now stabilized as the spatial quantity source for the BOC operating 
 - Packaged readiness smoke: PASSED.
 - Known warnings: Vite bundle size warning and electron-builder missing description/author warnings are non-blocking for RC-0.3.0.
 
+#### RC-0.3.0 Packaged App Real Use Test
+
+- Packaged app launch: PASSED.
+- Dev server requirement: not required in packaged mode.
+- userData path: `%APPDATA%/ecorean-boc-electron`.
+- Export path: `%APPDATA%/ecorean-boc-electron/export`.
+- LightBIM import in packaged environment: PASSED.
+- Estimate/PCE result: FULL_REMODELING estimate created, PCE `SCALE`.
+- Export result: customer estimate PDF, internal estimate Excel, and proposal board PDF created in userData export folders.
+- Persistence result: saved estimate remained available after packaged service restart and could export again.
+- Customer safety result: PASSED.
+- Fixed packaged-only S1 issue `RC030-S1-001`: repeated packaged userData initialization no longer causes `company_cashflow_forecast.forecast_id` duplicate errors.
+- Final packaged decision: `패키지 실사용 가능`.
+
 #### Verified End-To-End Flow
 
 `MiniCAD / LightBIM -> JSON Export -> BOC Import -> Quantity Review -> Estimate / PCE -> Contract -> Schedule -> Purchase Order -> Material Receiving -> Execution Feedback -> Traceability -> Space Map -> Customer Proposal Map -> Proposal Board / Export -> Project Closing / Calibration`

@@ -2,11 +2,11 @@
 
 ## Must Fix Before Use
 
-현재 남아 있는 S1/S2 이슈 없음.
+현재 남아 있는 S1/S2 이슈 없음. 패키지 실사용 테스트 중 발견된 S1은 즉시 수정 후 재검증 완료.
 
 | Issue ID | Severity | Screen | Description | Reproduction Steps | Decision | Fix Status | Target Version |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| - | - | - | - | - | - | - | - |
+| RC030-S1-001 | S1 | Packaged App / SQLite Startup | 동일 userData DB에서 packaged service를 반복 초기화하면 `company_cashflow_forecast.forecast_id` 중복으로 SQLite 제약 오류가 발생 | packaged real-use smoke를 기존 userData에서 반복 실행 | 즉시 수정 | FIXED | RC-0.3.0 |
 
 ## Fix Soon
 
