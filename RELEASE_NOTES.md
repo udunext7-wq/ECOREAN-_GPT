@@ -2,6 +2,70 @@
 
 ## Version: RC-0.3.0
 
+### RC-0.3.0 Operational Release Candidate — Finalized
+
+- Finalized date: 2026-05-29
+- Validated functional commit: `1c421a6 Run RC-0.3.0 real price import user test`
+- Final tag target: `v0.3.0-rc`
+- Final decision: `RC-0.3.0 = 운영 기준선 사용 가능`
+- Packaged app path: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- userData path: `%APPDATA%/ecorean-boc-electron`
+- DB path: `%APPDATA%/ecorean-boc-electron/storage/sqlite`
+- export path: `%APPDATA%/ecorean-boc-electron/export`
+- backup path: `%APPDATA%/ecorean-boc-electron/backups`
+
+Confirmed flows:
+
+- MiniCAD / LightBIM JSON export and BOC import
+- LightBIM quantity review, override, traceability, space map, customer map
+- Bathroom, kitchen, and full remodeling estimates
+- PCE, contract, schedule, purchase order, material receiving, execution feedback
+- Initial master data setup
+- Real price calibration
+- CSV price workbook import and real price import user test
+- Customer/internal data separation
+- Desktop packaged app real-use and persistence
+- Backup/restore data safety
+
+Final validation summary:
+
+- Service syntax check: PASSED
+- Real price import user test: PASSED
+- Price workbook import: PASSED
+- Real price calibration: PASSED
+- Initial master data setup: PASSED
+- Backup/restore data safety: PASSED
+- Packaged real use: PASSED
+- LightBIM BOC release flow: PASSED
+- Customer safety regression: PASSED
+- UI build: PASSED
+- prod smoke: PASSED
+- release smoke: PASSED
+
+Known non-blocking warnings:
+
+- Vite bundle size warning
+- electron-builder description/author metadata warning
+- SQLite experimental warning
+- Node deprecation warning may appear depending on runtime
+
+Known limitations:
+
+- No automatic DWG/DXF parsing
+- No full BIM editor
+- No cloud sync
+- No real-time multi-user collaboration
+- No accounting/bank integration
+- ComfyUI requires local server
+- Customer portal public link is still local/token placeholder
+- XLSX direct parsing deferred; CSV is supported
+
+Next version direction:
+
+- RC-0.3.1: XLSX direct import, price import matching polish, packaged metadata cleanup, bundle optimization, bugfixes.
+- RC-0.4.0: LightBIM object editing, better DXF import/export, multi-project dashboard polish, accounting pre-layer.
+- RC-1.0: installer/signing, production data migration policy, full backup/restore verification, customer portal deployment strategy.
+
 ### RC-0.3.0 LightBIM + BOC Release Flow
 
 LightBIM is now stabilized as the spatial quantity source for the BOC operating flow. The release verifies the path from MiniCAD drawing export through estimate, execution planning, field feedback, traceability, and customer proposal output.
