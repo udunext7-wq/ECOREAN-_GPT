@@ -135,6 +135,10 @@ const releaseChecks = [
     script: 'master-data-management.smoke.js'
   },
   {
+    label: '초기 기준 데이터 세팅',
+    script: 'initial-master-data-setup.smoke.js'
+  },
+  {
     label: '프랜차이즈 복제',
     script: 'franchise-replication.smoke.js'
   },

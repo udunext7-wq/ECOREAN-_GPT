@@ -76,6 +76,17 @@ LightBIM is now stabilized as the spatial quantity source for the BOC operating 
 - Backup controls are internal-only and are not exposed to customer portal or customer proposal map screens.
 - Limitation: no cloud backup, external storage integration, account login, or automatic remote restore in RC-0.3.0.
 
+#### RC-0.3.0 Initial Master Data Setup Package
+
+- Added internal `초기 기준 데이터 세팅` center for preparing editable RC-0.3.0 starting data.
+- Seeds process, material, labor, equipment, standard estimate item, and default estimate package data with source marker `INITIAL_RC_0_3_0`.
+- Adds seed tracking through `initial_master_data_seed_logs`.
+- Adds default packages through `estimate_default_packages`.
+- Seed execution is idempotent and does not overwrite existing edited rows unless explicitly requested.
+- Full setup creates a pre-seed backup through the local backup restore service when available.
+- All starting prices are marked as estimated / needs update and must be calibrated against real vendor and labor conditions before live use.
+- Documentation added in `docs/RC_0_3_0_INITIAL_MASTER_DATA_SETUP.md`.
+
 #### Verified End-To-End Flow
 
 `MiniCAD / LightBIM -> JSON Export -> BOC Import -> Quantity Review -> Estimate / PCE -> Contract -> Schedule -> Purchase Order -> Material Receiving -> Execution Feedback -> Traceability -> Space Map -> Customer Proposal Map -> Proposal Board / Export -> Project Closing / Calibration`

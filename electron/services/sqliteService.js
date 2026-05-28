@@ -3200,6 +3200,34 @@ function createSqliteService({ app }) {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS estimate_default_packages (
+        id TEXT PRIMARY KEY,
+        package_name TEXT NOT NULL,
+        estimate_type TEXT NOT NULL,
+        included_items_json TEXT NOT NULL,
+        default_options_json TEXT NOT NULL,
+        margin_target REAL NOT NULL,
+        risk_buffer REAL NOT NULL,
+        notes TEXT NOT NULL,
+        source_marker TEXT NOT NULL,
+        is_active INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS initial_master_data_seed_logs (
+        id TEXT PRIMARY KEY,
+        seed_key TEXT NOT NULL,
+        seed_type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        inserted_count INTEGER NOT NULL,
+        skipped_count INTEGER NOT NULL,
+        updated_count INTEGER NOT NULL,
+        source_marker TEXT NOT NULL,
+        notes TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS master_data_validation_logs (
         id TEXT PRIMARY KEY,
         entity_type TEXT NOT NULL,
@@ -3430,6 +3458,15 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'material_receiving_logs', 'expected_quantity_source', 'expected_quantity_source TEXT');
     ensureColumn(db.project, 'material_receiving_logs', 'expected_quantity_basis_key', 'expected_quantity_basis_key TEXT');
     ensureColumn(db.project, 'user_test_runs', 'test_scenario', "test_scenario TEXT NOT NULL DEFAULT '전체 사용자 테스트'");
+    ensureColumn(db.master, 'process_master', 'source_marker', "source_marker TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.master, 'material_master', 'price_status', "price_status TEXT NOT NULL DEFAULT 'NEEDS_UPDATE'");
+    ensureColumn(db.master, 'material_master', 'source_marker', "source_marker TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.master, 'labor_master', 'price_status', "price_status TEXT NOT NULL DEFAULT 'NEEDS_UPDATE'");
+    ensureColumn(db.master, 'labor_master', 'source_marker', "source_marker TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.master, 'equipment_master', 'price_status', "price_status TEXT NOT NULL DEFAULT 'NEEDS_UPDATE'");
+    ensureColumn(db.master, 'equipment_master', 'source_marker', "source_marker TEXT NOT NULL DEFAULT ''");
+    ensureColumn(db.master, 'standard_estimate_items', 'price_status', "price_status TEXT NOT NULL DEFAULT 'NEEDS_UPDATE'");
+    ensureColumn(db.master, 'standard_estimate_items', 'source_marker', "source_marker TEXT NOT NULL DEFAULT ''");
   }
 
   function countRows(database, tableName) {
@@ -20416,6 +20453,8 @@ function createSqliteService({ app }) {
       laborMasterCount: countRows(db.master, 'labor_master'),
       equipmentMasterCount: countRows(db.master, 'equipment_master'),
       standardEstimateItemCount: countRows(db.master, 'standard_estimate_items'),
+      estimateDefaultPackageCount: countRows(db.master, 'estimate_default_packages'),
+      initialMasterDataSeedLogCount: countRows(db.master, 'initial_master_data_seed_logs'),
       masterDataValidationLogCount: countRows(db.master, 'master_data_validation_logs'),
       franchiseBranchCount: countRows(db.master, 'franchise_branches'),
       franchiseDistributionPackageCount: countRows(db.master, 'franchise_distribution_packages'),

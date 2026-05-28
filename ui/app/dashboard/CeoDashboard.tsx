@@ -83,7 +83,8 @@ export function CeoDashboard() {
       openAIVisualization: 'aiVisualization',
       openLightBIMImport: 'lightbimImport',
       openUserTestCenter: 'userTestCenter',
-      openBackupRestore: 'backupRestore'
+      openBackupRestore: 'backupRestore',
+      openInitialMasterData: 'initialMasterData'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
@@ -296,10 +297,11 @@ export function CeoDashboard() {
         <button onClick={() => openView('lightbimImport', 'confirm')}>LightBIM 도면 가져오기</button>
         <button onClick={() => openView('userTestCenter', 'confirm')}>RC-0.3.0 사용자 테스트</button>
         <button onClick={() => openView('backupRestore', 'warning')}>백업 / 복구</button>
+        <button onClick={() => openView('initialMasterData', 'warning')}>초기 기준 데이터</button>
         <button onClick={() => openView('floorplanCenter', 'click')}>평면도 / 아이소메트릭</button>
         <button onClick={() => openView('aiVisualization', 'click')}>AI 투시도 생성</button>
         <button onClick={() => openView('project', 'click')}>Project Drill Down</button>
-        <button onClick={() => openView('masterDb', 'click')}>Master DB Review</button>
+        <button onClick={() => openView('masterDb', 'click')}>기준 데이터 관리</button>
         <button onClick={() => openView('costCapture', 'warning')}>Cost Capture</button>
         <button onClick={() => openView('marginSafety', 'warning')}>Margin Safety</button>
         <button onClick={() => openView('vendorPrice', 'click')}>Vendor Price</button>

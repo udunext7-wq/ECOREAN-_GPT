@@ -103,6 +103,7 @@ export function BackupRestoreCenterView() {
           <button onClick={() => runAction(createFullBackup, '전체 백업 생성')}>전체 백업 생성</button>
           <button onClick={() => runAction(createPreUpdateBackup, '업데이트 전 백업 생성')}>업데이트 전 백업 생성</button>
           <button onClick={() => void runIntegrity()}>현재 DB 무결성 검사</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'initialMasterData' }))}>초기 기준 데이터 세팅</button>
           <button onClick={() => void refresh()}>백업 목록 새로고침</button>
         </div>
         {message ? <p className="assistant-message">{message}</p> : null}

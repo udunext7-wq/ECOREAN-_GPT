@@ -3,6 +3,7 @@ const path = require('path');
 const { createSqliteService } = require('./services/sqliteService');
 const { createBackupService } = require('./services/backupService');
 const { createBackupRestoreService } = require('./services/backupRestoreService');
+const { createInitialMasterDataService } = require('./services/initialMasterDataService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -10,6 +11,7 @@ const isSmokeTest = process.env.ECOREAN_SMOKE_TEST === '1';
 let sqliteService;
 let backupService;
 let backupRestoreService;
+let initialMasterDataService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -76,6 +78,19 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:backup-restore:validate-db', () => backupRestoreService.validateCurrentDatabase());
   ipcMain.handle('boc:backup-restore:restore-plan', (_event, payload = {}) => backupRestoreService.prepareRestorePlan(payload));
   ipcMain.handle('boc:backup-restore:restore', (_event, payload = {}) => backupRestoreService.restoreFromBackup(payload));
+  ipcMain.handle('boc:initial-master-data:status', () => initialMasterDataService.getInitialMasterDataStatus());
+  ipcMain.handle('boc:initial-master-data:seed-process', (_event, payload = {}) => initialMasterDataService.seedInitialProcessMaster(payload));
+  ipcMain.handle('boc:initial-master-data:seed-material', (_event, payload = {}) => initialMasterDataService.seedInitialMaterialMaster(payload));
+  ipcMain.handle('boc:initial-master-data:seed-labor', (_event, payload = {}) => initialMasterDataService.seedInitialLaborMaster(payload));
+  ipcMain.handle('boc:initial-master-data:seed-equipment', (_event, payload = {}) => initialMasterDataService.seedInitialEquipmentMaster(payload));
+  ipcMain.handle('boc:initial-master-data:seed-standard-items', (_event, payload = {}) => initialMasterDataService.seedInitialStandardEstimateItems(payload));
+  ipcMain.handle('boc:initial-master-data:seed-bathroom-package', (_event, payload = {}) => initialMasterDataService.seedBathroomDefaultPackage(payload));
+  ipcMain.handle('boc:initial-master-data:seed-kitchen-package', (_event, payload = {}) => initialMasterDataService.seedKitchenDefaultPackage(payload));
+  ipcMain.handle('boc:initial-master-data:seed-full-package', (_event, payload = {}) => initialMasterDataService.seedFullRemodelingDefaultPackage(payload));
+  ipcMain.handle('boc:initial-master-data:validate', () => initialMasterDataService.validateInitialMasterData());
+  ipcMain.handle('boc:initial-master-data:backup', (_event, payload = {}) => initialMasterDataService.createInitialMasterDataBackup(payload));
+  ipcMain.handle('boc:initial-master-data:reset-logs', () => initialMasterDataService.resetInitialSeedStatus());
+  ipcMain.handle('boc:initial-master-data:run-setup', (_event, payload = {}) => initialMasterDataService.runInitialMasterDataSetup(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
@@ -293,6 +308,7 @@ app.whenReady().then(() => {
   sqliteService = createSqliteService({ app });
   backupService = createBackupService({ dbPaths: sqliteService.dbPaths, databaseDir: path.dirname(sqliteService.dbPaths.project) });
   backupRestoreService = createBackupRestoreService({ app, sqliteService });
+  initialMasterDataService = createInitialMasterDataService({ sqliteService, backupRestoreService });
   registerIpcHandlers();
   createWindow();
 

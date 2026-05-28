@@ -101,6 +101,17 @@ export function MasterDataCenterView() {
         </strong>
       </section>
 
+      <section className="cost-capture-panel warning-row">
+        <div className="section-header compact">
+          <div>
+            <span className="eyebrow">INITIAL SETUP</span>
+            <h3>초기 기준 데이터 세팅</h3>
+          </div>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'initialMasterData' }))}>초기 세팅 열기</button>
+        </div>
+        <p>공정, 자재, 노무, 장비, 표준 품목 기본값이 없다면 먼저 초기 세팅을 실행하세요.</p>
+      </section>
+
       <section className="cost-kpi-grid live-margin-grid">
         <div><span>공정</span><strong>{String(data.summary.processCount || 0)}건</strong></div>
         <div><span>자재</span><strong>{String(data.summary.materialCount || 0)}건</strong></div>
