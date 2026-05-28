@@ -43,6 +43,7 @@ export function UserTestCenterView() {
   const [message, setMessage] = useState('');
   const [testerName, setTesterName] = useState('');
   const [testEnvironment, setTestEnvironment] = useState('Windows Desktop / Local DB');
+  const [testScenario, setTestScenario] = useState('전체 사용자 테스트');
   const [runNotes, setRunNotes] = useState('');
   const [conclusion, setConclusion] = useState('');
   const [edits, setEdits] = useState<Record<string, StepEdit>>({});
@@ -77,7 +78,7 @@ export function UserTestCenterView() {
       return;
     }
     try {
-      const result = await createUserTestRun({ testerName: testerName.trim(), testEnvironment, notes: runNotes });
+      const result = await createUserTestRun({ testerName: testerName.trim(), testEnvironment, testScenario, notes: runNotes });
       setData(result);
       setEdits(Object.fromEntries(result.steps.map((step) => [step.id, toEdit(step)])));
       setMessage('새 RC-0.3.0 사용자 테스트 회차가 시작되었습니다.');
@@ -136,6 +137,7 @@ export function UserTestCenterView() {
         <div className="form-grid">
           <label>테스터<input value={testerName} onChange={(event) => setTesterName(event.target.value)} placeholder="테스터 이름" /></label>
           <label>테스트 환경<input value={testEnvironment} onChange={(event) => setTestEnvironment(event.target.value)} /></label>
+          <label>시나리오<input value={testScenario} onChange={(event) => setTestScenario(event.target.value)} placeholder="전체 사용자 테스트" /></label>
           <label>회차 메모<input value={runNotes} onChange={(event) => setRunNotes(event.target.value)} placeholder="기기, 빌드, 특이사항" /></label>
         </div>
         <div className="button-row">
@@ -164,7 +166,7 @@ export function UserTestCenterView() {
           <div className="button-row">
             {data.runs.slice(0, 5).map((run) => (
               <button key={run.id} onClick={() => void refresh(run.id)}>
-                {run.testerName} / {statusLabel(run.status)}
+                {run.testerName} / {run.testScenario || '전체 사용자 테스트'} / {statusLabel(run.status)}
               </button>
             ))}
           </div>

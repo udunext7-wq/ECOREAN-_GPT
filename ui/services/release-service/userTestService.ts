@@ -22,6 +22,7 @@ export type UserTestRun = {
   releaseVersion: string;
   testerName: string;
   testEnvironment: string;
+  testScenario: string;
   status: UserTestRunStatus;
   conclusion: string;
   notes: string;
@@ -63,7 +64,7 @@ export async function getUserTestCenterData(payload: { runId?: string } = {}) {
   return (await bridge().getUserTestCenterData(payload)) as UserTestCenterData;
 }
 
-export async function createUserTestRun(payload: { testerName: string; testEnvironment: string; notes?: string }) {
+export async function createUserTestRun(payload: { testerName: string; testEnvironment: string; testScenario?: string; notes?: string }) {
   return (await bridge().createUserTestRun(payload)) as UserTestCenterData;
 }
 

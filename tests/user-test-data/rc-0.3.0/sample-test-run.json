@@ -2,6 +2,7 @@
   "releaseVersion": "RC-0.3.0",
   "testerName": "현장 검증 담당자",
   "testEnvironment": "Windows Desktop / Local DB",
+  "testScenario": "전체 사용자 테스트",
   "status": "IN_PROGRESS",
   "notes": "실제 사용자 테스트 입력 예시입니다.",
   "steps": [

@@ -39,10 +39,12 @@ assert.ok(empty.emptyMessageKo.includes('시작된 사용자 테스트'), 'Safe 
 let runData = service.createUserTestRun({
   testerName: '릴리스 검증 담당자',
   testEnvironment: 'Windows Desktop / Local DB',
+  testScenario: '전체 사용자 테스트',
   notes: 'RC 사용자 테스트 스모크'
 });
 assert.ok(runData.activeRun.id, 'Test run is created');
 assert.strictEqual(runData.activeRun.status, 'IN_PROGRESS', 'New run is in progress');
+assert.strictEqual(runData.activeRun.testScenario, '전체 사용자 테스트', 'Scenario name is stored with the run');
 assert.strictEqual(runData.steps.length, 12, 'Run creates all steps');
 
 const premature = service.completeUserTestRun({ runId: runData.activeRun.id });

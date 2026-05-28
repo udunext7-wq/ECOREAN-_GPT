@@ -359,6 +359,7 @@ function createSqliteService({ app }) {
         release_version TEXT NOT NULL,
         tester_name TEXT NOT NULL,
         test_environment TEXT NOT NULL,
+        test_scenario TEXT NOT NULL DEFAULT '전체 사용자 테스트',
         status TEXT NOT NULL,
         conclusion TEXT,
         notes TEXT,
@@ -3415,6 +3416,7 @@ function createSqliteService({ app }) {
     ensureColumn(db.project, 'purchase_order_items', 'quantity_note', 'quantity_note TEXT');
     ensureColumn(db.project, 'material_receiving_logs', 'expected_quantity_source', 'expected_quantity_source TEXT');
     ensureColumn(db.project, 'material_receiving_logs', 'expected_quantity_basis_key', 'expected_quantity_basis_key TEXT');
+    ensureColumn(db.project, 'user_test_runs', 'test_scenario', "test_scenario TEXT NOT NULL DEFAULT '전체 사용자 테스트'");
   }
 
   function countRows(database, tableName) {
@@ -20056,6 +20058,7 @@ function createSqliteService({ app }) {
       releaseVersion: row.release_version,
       testerName: row.tester_name,
       testEnvironment: row.test_environment,
+      testScenario: row.test_scenario || '전체 사용자 테스트',
       status: row.status,
       conclusion: row.conclusion || '',
       notes: row.notes || '',
@@ -20132,15 +20135,15 @@ function createSqliteService({ app }) {
     };
   }
 
-  function createUserTestRun({ testerName = '테스터 미입력', testEnvironment = 'LOCAL_DESKTOP', notes = '' } = {}) {
+  function createUserTestRun({ testerName = '테스터 미입력', testEnvironment = 'LOCAL_DESKTOP', testScenario = '전체 사용자 테스트', notes = '' } = {}) {
     const createdAt = nowIso();
     const runId = `UTRUN-RC030-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     db.project.prepare(`
       INSERT INTO user_test_runs (
-        id, release_version, tester_name, test_environment, status, conclusion,
+        id, release_version, tester_name, test_environment, test_scenario, status, conclusion,
         notes, started_at, completed_at, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(runId, USER_TEST_RELEASE, testerName || '테스터 미입력', testEnvironment || 'LOCAL_DESKTOP', 'IN_PROGRESS', null, notes || '', createdAt, null, createdAt, createdAt);
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(runId, USER_TEST_RELEASE, testerName || '테스터 미입력', testEnvironment || 'LOCAL_DESKTOP', testScenario || '전체 사용자 테스트', 'IN_PROGRESS', null, notes || '', createdAt, null, createdAt, createdAt);
     const insertStep = db.project.prepare(`
       INSERT INTO user_test_steps (
         id, run_id, step_code, step_order, module_name, task_name, expected_result,

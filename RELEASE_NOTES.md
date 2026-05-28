@@ -21,9 +21,19 @@ LightBIM is now stabilized as the spatial quantity source for the BOC operating 
 
 - Added the in-app `RC-0.3.0 사용자 테스트` center for starting test runs, recording evidence and severity, and completing a release verdict.
 - Persists test runs and twelve release workflow steps in `user_test_runs` and `user_test_steps`.
+- Stores the selected test scenario, including `전체 사용자 테스트`, on each run for clearer release audit history.
 - Provides executable sample inputs in `tests/user-test-data/rc-0.3.0`.
 - Provides checklist, bug report, acceptance criteria, and report templates in `docs/RC_0_3_0_*.md`.
 - Release acceptance requires customer/internal data separation checks and no unresolved high-impact blocking defects.
+
+#### RC-0.3.0 User Test Execution
+
+- Test run: `UTRUN-RC030-1779961488230-1035`
+- Scenario: `전체 사용자 테스트`
+- Result: `실사용 가능`
+- S1/S2 issues found: none.
+- Fixed issue: `RC030-S3-001` added scenario persistence and display to the User Test Center.
+- Deferred issue: `RC030-S4-001` Vite bundle size warning remains non-blocking and is tracked for later optimization.
 
 #### Verified End-To-End Flow
 
