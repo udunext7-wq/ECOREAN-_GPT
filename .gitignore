@@ -5,6 +5,7 @@ build/
 *.db
 storage/sqlite/
 backups/
+userData/
 .env
 
 # packaged release artifacts kept locally

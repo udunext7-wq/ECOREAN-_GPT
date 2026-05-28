@@ -143,6 +143,7 @@ export function UserTestCenterView() {
         <div className="button-row">
           <button className="primary-action" onClick={() => void startRun()}>새 테스트 회차 시작</button>
           <button onClick={() => void refresh(activeRun?.id || '')}>새로고침</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'backupRestore' }))}>백업 / 복구 센터</button>
         </div>
         {message ? <p className="assistant-message">{message}</p> : null}
       </section>

@@ -61,6 +61,21 @@ LightBIM is now stabilized as the spatial quantity source for the BOC operating 
 - Fixed packaged-only S1 issue `RC030-S1-001`: repeated packaged userData initialization no longer causes `company_cashflow_forecast.forecast_id` duplicate errors.
 - Final packaged decision: `패키지 실사용 가능`.
 
+#### RC-0.3.0 Backup Restore and Data Safety Layer
+
+- Added internal `백업 / 복구 센터` for RC-0.3.0 packaged desktop use.
+- Backup root: `%APPDATA%/ecorean-boc-electron/backups`.
+- Supported backup types:
+  - DB backup under `backups/db`
+  - Export folder backup under `backups/export`
+  - Full userData backup under `backups/full`
+  - Pre-update full backup placeholder
+- Each backup generates a manifest under `backups/manifests` and a `backup_history` record in SQLite.
+- Current DB validation checks DB file presence, openability, key table availability, and SQLite `PRAGMA integrity_check`.
+- Restore is intentionally plan-first in RC-0.3.0 and does not silently overwrite current operating data.
+- Backup controls are internal-only and are not exposed to customer portal or customer proposal map screens.
+- Limitation: no cloud backup, external storage integration, account login, or automatic remote restore in RC-0.3.0.
+
 #### Verified End-To-End Flow
 
 `MiniCAD / LightBIM -> JSON Export -> BOC Import -> Quantity Review -> Estimate / PCE -> Contract -> Schedule -> Purchase Order -> Material Receiving -> Execution Feedback -> Traceability -> Space Map -> Customer Proposal Map -> Proposal Board / Export -> Project Closing / Calibration`

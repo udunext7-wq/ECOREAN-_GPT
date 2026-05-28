@@ -66,6 +66,17 @@ declare global {
         createUserTestRun: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
         updateUserTestStep: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         completeUserTestRun: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getBackupRestorePaths: () => Promise<Record<string, unknown>>;
+        getBackupRestoreStatus: () => Promise<Record<string, unknown>>;
+        createBackupRestoreDatabaseBackup: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createBackupRestoreExportBackup: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createBackupRestoreFullBackup: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createBackupRestorePreUpdateBackup: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        listBackupRestoreBackups: () => Promise<Array<Record<string, unknown>>>;
+        verifyBackupRestoreBackup: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        validateBackupRestoreDatabase: () => Promise<Record<string, unknown>>;
+        prepareBackupRestorePlan: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        restoreBackupRestoreBackup: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         calculateBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         saveBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         exportBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

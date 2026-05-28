@@ -86,6 +86,7 @@ const primaryActions: EntryAction[] = [
 
 const secondaryActions: EntryAction[] = [
   { title: 'RC-0.3.0 사용자 테스트', headline: '체크리스트 실행 / 결과 기록 / 버그 보고', note: '릴리스 검증', view: 'userTestCenter', tone: 'confirm' },
+  { title: '백업 / 복구 센터', headline: 'DB / Export / 전체 백업과 무결성 검사', note: '데이터 보호', view: 'backupRestore', tone: 'warning' },
   { title: 'CEO Control Tower', headline: '오늘의 위험과 승인 대기', note: '운영 통제', view: 'ceoControlTower', tone: 'warning' },
   { title: '현장 모바일', headline: '출역 / 공사일보 / 사진 / 검수 / 위험 보고', note: '모바일 현장', view: 'fieldMobile', tone: 'confirm' },
   { title: '경영 분석 센터', headline: '수익 / 위험 / 생산성 / 지점 KPI 분석', note: 'BI 분석', view: 'analytics', tone: 'warning' },

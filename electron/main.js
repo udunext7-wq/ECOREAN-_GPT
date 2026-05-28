@@ -2,12 +2,14 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const { createSqliteService } = require('./services/sqliteService');
 const { createBackupService } = require('./services/backupService');
+const { createBackupRestoreService } = require('./services/backupRestoreService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
 const isSmokeTest = process.env.ECOREAN_SMOKE_TEST === '1';
 let sqliteService;
 let backupService;
+let backupRestoreService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -63,6 +65,17 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:user-test:create-run', (_event, payload = {}) => sqliteService.createUserTestRun(payload));
   ipcMain.handle('boc:user-test:update-step', (_event, payload) => sqliteService.updateUserTestStep(payload));
   ipcMain.handle('boc:user-test:complete-run', (_event, payload) => sqliteService.completeUserTestRun(payload));
+  ipcMain.handle('boc:backup-restore:paths', () => backupRestoreService.getDataPaths());
+  ipcMain.handle('boc:backup-restore:status', () => backupRestoreService.getBackupStatus());
+  ipcMain.handle('boc:backup-restore:db', (_event, payload = {}) => backupRestoreService.createDatabaseBackup(payload));
+  ipcMain.handle('boc:backup-restore:export', (_event, payload = {}) => backupRestoreService.createExportFolderBackup(payload));
+  ipcMain.handle('boc:backup-restore:full', (_event, payload = {}) => backupRestoreService.createFullUserDataBackup(payload));
+  ipcMain.handle('boc:backup-restore:pre-update', (_event, payload = {}) => backupRestoreService.createPreUpdateBackup(payload));
+  ipcMain.handle('boc:backup-restore:list', () => backupRestoreService.listBackups());
+  ipcMain.handle('boc:backup-restore:verify', (_event, payload = {}) => backupRestoreService.verifyBackup(payload));
+  ipcMain.handle('boc:backup-restore:validate-db', () => backupRestoreService.validateCurrentDatabase());
+  ipcMain.handle('boc:backup-restore:restore-plan', (_event, payload = {}) => backupRestoreService.prepareRestorePlan(payload));
+  ipcMain.handle('boc:backup-restore:restore', (_event, payload = {}) => backupRestoreService.restoreFromBackup(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
@@ -279,6 +292,7 @@ function createWindow() {
 app.whenReady().then(() => {
   sqliteService = createSqliteService({ app });
   backupService = createBackupService({ dbPaths: sqliteService.dbPaths, databaseDir: path.dirname(sqliteService.dbPaths.project) });
+  backupRestoreService = createBackupRestoreService({ app, sqliteService });
   registerIpcHandlers();
   createWindow();
 

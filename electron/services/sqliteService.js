@@ -386,6 +386,19 @@ function createSqliteService({ app }) {
         UNIQUE(run_id, step_code)
       );
 
+      CREATE TABLE IF NOT EXISTS backup_history (
+        id TEXT PRIMARY KEY,
+        backup_id TEXT NOT NULL,
+        backup_type TEXT NOT NULL,
+        backup_path TEXT NOT NULL,
+        manifest_path TEXT NOT NULL,
+        status TEXT NOT NULL,
+        file_size INTEGER NOT NULL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        verified_at TEXT
+      );
+
       CREATE TABLE IF NOT EXISTS bathroom_estimates (
         id TEXT PRIMARY KEY,
         customer_name TEXT NOT NULL,
