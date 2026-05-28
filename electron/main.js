@@ -4,6 +4,7 @@ const { createSqliteService } = require('./services/sqliteService');
 const { createBackupService } = require('./services/backupService');
 const { createBackupRestoreService } = require('./services/backupRestoreService');
 const { createInitialMasterDataService } = require('./services/initialMasterDataService');
+const { createRealPriceCalibrationService } = require('./services/realPriceCalibrationService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -12,6 +13,7 @@ let sqliteService;
 let backupService;
 let backupRestoreService;
 let initialMasterDataService;
+let realPriceCalibrationService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -91,6 +93,19 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:initial-master-data:backup', (_event, payload = {}) => initialMasterDataService.createInitialMasterDataBackup(payload));
   ipcMain.handle('boc:initial-master-data:reset-logs', () => initialMasterDataService.resetInitialSeedStatus());
   ipcMain.handle('boc:initial-master-data:run-setup', (_event, payload = {}) => initialMasterDataService.runInitialMasterDataSetup(payload));
+  ipcMain.handle('boc:real-price:needs-update', () => realPriceCalibrationService.getNeedsUpdatePriceItems());
+  ipcMain.handle('boc:real-price:priority-list', () => realPriceCalibrationService.getPriceUpdatePriorityList());
+  ipcMain.handle('boc:real-price:vendor-quote', (_event, payload = {}) => realPriceCalibrationService.createVendorQuotePriceUpdate(payload));
+  ipcMain.handle('boc:real-price:actual-purchase', (_event, payload = {}) => realPriceCalibrationService.createActualPurchasePriceUpdate(payload));
+  ipcMain.handle('boc:real-price:labor-rate', (_event, payload = {}) => realPriceCalibrationService.createLaborRateUpdate(payload));
+  ipcMain.handle('boc:real-price:approve', (_event, payload = {}) => realPriceCalibrationService.approvePriceUpdate(payload.queueId, payload.note));
+  ipcMain.handle('boc:real-price:reject', (_event, payload = {}) => realPriceCalibrationService.rejectPriceUpdate(payload.queueId, payload.reason));
+  ipcMain.handle('boc:real-price:apply', (_event, payload = {}) => realPriceCalibrationService.applyApprovedPriceUpdate(payload.queueId, payload));
+  ipcMain.handle('boc:real-price:apply-bulk', (_event, payload = {}) => realPriceCalibrationService.applyApprovedPriceUpdates(payload.queueIds || []));
+  ipcMain.handle('boc:real-price:history', () => realPriceCalibrationService.getPriceUpdateHistory());
+  ipcMain.handle('boc:real-price:queue', () => realPriceCalibrationService.getQueueItems());
+  ipcMain.handle('boc:real-price:summary', () => realPriceCalibrationService.getRealPriceCalibrationSummary());
+  ipcMain.handle('boc:real-price:report', () => realPriceCalibrationService.createPriceCalibrationReport());
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
@@ -309,6 +324,7 @@ app.whenReady().then(() => {
   backupService = createBackupService({ dbPaths: sqliteService.dbPaths, databaseDir: path.dirname(sqliteService.dbPaths.project) });
   backupRestoreService = createBackupRestoreService({ app, sqliteService });
   initialMasterDataService = createInitialMasterDataService({ sqliteService, backupRestoreService });
+  realPriceCalibrationService = createRealPriceCalibrationService({ sqliteService, backupRestoreService });
   registerIpcHandlers();
   createWindow();
 

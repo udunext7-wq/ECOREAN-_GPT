@@ -87,6 +87,16 @@ LightBIM is now stabilized as the spatial quantity source for the BOC operating 
 - All starting prices are marked as estimated / needs update and must be calibrated against real vendor and labor conditions before live use.
 - Documentation added in `docs/RC_0_3_0_INITIAL_MASTER_DATA_SETUP.md`.
 
+#### RC-0.3.0 Real Price Calibration Package
+
+- Added internal `실제 단가 보정` center for replacing estimated defaults with user-entered real vendor, purchase, and labor prices.
+- Adds `real_price_update_queue` and `real_price_update_history`.
+- Supports NEEDS_UPDATE price lists, HIGH/MEDIUM/LOW priority classification, vendor quote input, actual purchase input, labor rate input, variance analysis, approval, backup, and apply.
+- Approved prices are applied only after backup and are recorded in history with old/new price values.
+- Updated master records move from `NEEDS_UPDATE` to `CONFIRMED`.
+- Customer-facing views remain separated and do not expose vendor quote details, internal unit cost, labor rate, price variance, approval queue, or calibration history.
+- Documentation added in `docs/RC_0_3_0_REAL_PRICE_CALIBRATION_GUIDE.md`.
+
 #### Verified End-To-End Flow
 
 `MiniCAD / LightBIM -> JSON Export -> BOC Import -> Quantity Review -> Estimate / PCE -> Contract -> Schedule -> Purchase Order -> Material Receiving -> Execution Feedback -> Traceability -> Space Map -> Customer Proposal Map -> Proposal Board / Export -> Project Closing / Calibration`

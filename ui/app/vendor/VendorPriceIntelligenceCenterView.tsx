@@ -95,9 +95,12 @@ export function VendorPriceIntelligenceCenterView() {
           <h2>협력업체 단가 지능화</h2>
           <p>자재 단가 이력, 업체 신뢰도, 실제 매입가를 연결해 다음 견적의 원가 방어선을 강화합니다.</p>
         </div>
-        <strong className={data.summary.criticalAlertCount > 0 ? 'red-kpi' : 'green-kpi'}>
-          경고 {data.summary.openAlertCount}건
-        </strong>
+        <div className="button-row">
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realPriceCalibration' }))}>실제 단가 보정</button>
+          <strong className={data.summary.criticalAlertCount > 0 ? 'red-kpi' : 'green-kpi'}>
+            경고 {data.summary.openAlertCount}건
+          </strong>
+        </div>
       </section>
 
       <section className="cost-kpi-grid live-margin-grid">

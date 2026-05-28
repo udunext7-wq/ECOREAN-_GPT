@@ -3228,6 +3228,45 @@ function createSqliteService({ app }) {
         created_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS real_price_update_queue (
+        id TEXT PRIMARY KEY,
+        target_type TEXT NOT NULL,
+        target_id TEXT NOT NULL,
+        target_name TEXT NOT NULL,
+        current_price REAL NOT NULL,
+        proposed_price REAL NOT NULL,
+        unit TEXT NOT NULL,
+        price_source TEXT NOT NULL,
+        vendor_id TEXT,
+        vendor_name TEXT,
+        evidence_note TEXT,
+        evidence_file_path TEXT,
+        variance_amount REAL NOT NULL,
+        variance_rate REAL,
+        priority TEXT NOT NULL,
+        status TEXT NOT NULL,
+        approval_note TEXT,
+        backup_id TEXT,
+        created_at TEXT NOT NULL,
+        approved_at TEXT,
+        applied_at TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS real_price_update_history (
+        id TEXT PRIMARY KEY,
+        queue_id TEXT NOT NULL,
+        target_type TEXT NOT NULL,
+        target_id TEXT NOT NULL,
+        target_name TEXT NOT NULL,
+        old_price REAL NOT NULL,
+        new_price REAL NOT NULL,
+        unit TEXT NOT NULL,
+        source TEXT NOT NULL,
+        applied_by TEXT NOT NULL,
+        backup_id TEXT,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS master_data_validation_logs (
         id TEXT PRIMARY KEY,
         entity_type TEXT NOT NULL,
@@ -20455,6 +20494,8 @@ function createSqliteService({ app }) {
       standardEstimateItemCount: countRows(db.master, 'standard_estimate_items'),
       estimateDefaultPackageCount: countRows(db.master, 'estimate_default_packages'),
       initialMasterDataSeedLogCount: countRows(db.master, 'initial_master_data_seed_logs'),
+      realPriceUpdateQueueCount: countRows(db.master, 'real_price_update_queue'),
+      realPriceUpdateHistoryCount: countRows(db.master, 'real_price_update_history'),
       masterDataValidationLogCount: countRows(db.master, 'master_data_validation_logs'),
       franchiseBranchCount: countRows(db.master, 'franchise_branches'),
       franchiseDistributionPackageCount: countRows(db.master, 'franchise_distribution_packages'),

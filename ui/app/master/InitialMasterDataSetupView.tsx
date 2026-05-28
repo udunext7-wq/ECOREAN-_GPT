@@ -129,6 +129,7 @@ export function InitialMasterDataSetupView() {
           <button className="command command-approve" disabled={busy} onClick={() => void handleFullSetup()}>백업 후 실행</button>
           <button disabled={busy} onClick={() => void runAction('초기 백업', createInitialMasterDataBackup)}>초기 백업</button>
           <button disabled={busy} onClick={() => void handleValidate()}>데이터 검증</button>
+          <button disabled={busy} onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realPriceCalibration' }))}>실제 단가 보정</button>
           <button disabled={busy} onClick={() => void runAction('세팅 로그 초기화', resetInitialSeedStatus)}>세팅 로그 초기화</button>
         </div>
         {messageKo ? <p className="save-message">{messageKo}</p> : null}

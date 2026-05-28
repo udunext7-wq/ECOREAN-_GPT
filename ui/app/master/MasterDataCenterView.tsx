@@ -105,11 +105,14 @@ export function MasterDataCenterView() {
         <div className="section-header compact">
           <div>
             <span className="eyebrow">INITIAL SETUP</span>
-            <h3>초기 기준 데이터 세팅</h3>
+            <h3>초기 기준 데이터 / 실제 단가 보정</h3>
           </div>
-          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'initialMasterData' }))}>초기 세팅 열기</button>
+          <div className="button-row">
+            <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'initialMasterData' }))}>초기 세팅 열기</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realPriceCalibration' }))}>실제 단가 보정</button>
+          </div>
         </div>
-        <p>공정, 자재, 노무, 장비, 표준 품목 기본값이 없다면 먼저 초기 세팅을 실행하세요.</p>
+        <p>초기 세팅 후 `수정 필요` 단가는 업체 견적, 실제 매입가, 노무 단가로 승인 반영하세요.</p>
       </section>
 
       <section className="cost-kpi-grid live-margin-grid">
