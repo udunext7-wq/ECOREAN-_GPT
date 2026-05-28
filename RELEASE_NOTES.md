@@ -109,6 +109,18 @@ LightBIM is now stabilized as the spatial quantity source for the BOC operating 
 - Limitation: CSV is the primary supported format in RC-0.3.0. XLSX is available only if a local parser dependency is present; no external market verification is performed.
 - Documentation added in `docs/RC_0_3_0_PRICE_WORKBOOK_IMPORT_GUIDE.md`.
 
+#### RC-0.3.0 Real Price Import User Test
+
+- Added realistic user-test CSV files under `tests/user-test-data/rc-0.3.0/price-import`.
+- Verified material, vendor quote, actual purchase, labor rate, and standard estimate item CSV import flows.
+- Verified column mapping, master data matching, unmatched/invalid row handling, variance analysis, and approval queue creation.
+- Verified imported prices are not applied before approval.
+- Verified approval applies updates only after backup and records old/new price history.
+- Verified updated material, labor, and standard estimate item prices appear in master data and the next estimate can read updated master data or safely fallback.
+- Verified customer-facing payloads hide vendor quote, unit cost, labor rate, price variance, approval queue, import history, calibration history, internal cost, margin, and PCE.
+- Final result: `실사용 가능`.
+- Deferred: XLSX parser support and automatic new master-data creation for unmatched rows.
+
 #### Verified End-To-End Flow
 
 `MiniCAD / LightBIM -> JSON Export -> BOC Import -> Quantity Review -> Estimate / PCE -> Contract -> Schedule -> Purchase Order -> Material Receiving -> Execution Feedback -> Traceability -> Space Map -> Customer Proposal Map -> Proposal Board / Export -> Project Closing / Calibration`

@@ -147,6 +147,10 @@ const releaseChecks = [
     script: 'price-workbook-import.smoke.js'
   },
   {
+    label: '실제 단가표 가져오기 사용자 테스트',
+    script: 'real-price-import-user-test.smoke.js'
+  },
+  {
     label: '프랜차이즈 복제',
     script: 'franchise-replication.smoke.js'
   },
