@@ -35,6 +35,18 @@ LightBIM is now stabilized as the spatial quantity source for the BOC operating 
 - Fixed issue: `RC030-S3-001` added scenario persistence and display to the User Test Center.
 - Deferred issue: `RC030-S4-001` Vite bundle size warning remains non-blocking and is tracked for later optimization.
 
+#### RC-0.3.0 Desktop Release Package
+
+- Packaging script used: `npm run dist` from `electron/`.
+- Package output: `electron/release/win-unpacked`.
+- Packaged executable: `electron/release/win-unpacked/ECOREAN BOC CEO Dashboard.exe`.
+- Packaged launch check: PASSED, main window title `ECOREAN BOC CEO Dashboard`.
+- Packaged userData path: `%APPDATA%/ecorean-boc-electron`.
+- Packaged export folders created under `%APPDATA%/ecorean-boc-electron/export`.
+- Release docs and manifest created under `release/RC-0.3.0`.
+- Packaged readiness smoke: PASSED.
+- Known warnings: Vite bundle size warning and electron-builder missing description/author warnings are non-blocking for RC-0.3.0.
+
 #### Verified End-To-End Flow
 
 `MiniCAD / LightBIM -> JSON Export -> BOC Import -> Quantity Review -> Estimate / PCE -> Contract -> Schedule -> Purchase Order -> Material Receiving -> Execution Feedback -> Traceability -> Space Map -> Customer Proposal Map -> Proposal Board / Export -> Project Closing / Calibration`

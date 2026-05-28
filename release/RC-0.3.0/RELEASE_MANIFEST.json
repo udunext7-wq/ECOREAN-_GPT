@@ -1,0 +1,47 @@
+{
+  "version": "RC-0.3.0",
+  "commit": "cef7cd5",
+  "branch": "main",
+  "build_date": "2026-05-28",
+  "platform": "win32-x64",
+  "app_name": "ECOREAN BOC CEO Dashboard",
+  "package_type": "electron-builder win-unpacked directory",
+  "package_output_path": "electron/release/win-unpacked",
+  "installer_output_path": null,
+  "test_status": "PASSED",
+  "final_user_test_decision": "실사용 가능",
+  "known_warnings": [
+    "Vite bundle size warning is non-blocking for RC-0.3.0"
+  ],
+  "known_limitations": [
+    "No external DWG/DXF automatic parsing",
+    "No full BIM object editor",
+    "No real-time multi-user collaboration",
+    "No accounting or bank transfer integration",
+    "ComfyUI requires a local server when used",
+    "Customer portal link remains a local/token placeholder"
+  ],
+  "output_paths": {
+    "packaged_app": "electron/release/win-unpacked/ECOREAN BOC CEO Dashboard.exe",
+    "user_data": "%APPDATA%/ecorean-boc-electron",
+    "sqlite": "%APPDATA%/ecorean-boc-electron/storage/sqlite",
+    "exports": "%APPDATA%/ecorean-boc-electron/export",
+    "estimates": "%APPDATA%/ecorean-boc-electron/export/estimates",
+    "contracts": "%APPDATA%/ecorean-boc-electron/export/contracts",
+    "schedules": "%APPDATA%/ecorean-boc-electron/export/schedules",
+    "purchase_orders": "%APPDATA%/ecorean-boc-electron/export/purchase-orders",
+    "visualizations": "%APPDATA%/ecorean-boc-electron/export/visualizations",
+    "boards": "%APPDATA%/ecorean-boc-electron/export/boards",
+    "reports": "%APPDATA%/ecorean-boc-electron/export/reports",
+    "lightbim": "%APPDATA%/ecorean-boc-electron/export/lightbim"
+  },
+  "included_docs": [
+    "release/RC-0.3.0/README_RUN_RC_0_3_0.md",
+    "release/RC-0.3.0/BACKUP_RESTORE_GUIDE.md",
+    "release/RC-0.3.0/USER_TEST_GUIDE.md",
+    "docs/RC_0_3_0_USER_TEST_CHECKLIST.md",
+    "docs/RC_0_3_0_ACCEPTANCE_CRITERIA.md",
+    "docs/RC_0_3_0_USER_TEST_REPORT.md",
+    "docs/RC_0_3_0_ISSUE_BACKLOG.md"
+  ]
+}
