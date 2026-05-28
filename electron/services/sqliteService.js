@@ -3267,6 +3267,44 @@ function createSqliteService({ app }) {
         created_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS price_workbook_imports (
+        id TEXT PRIMARY KEY,
+        import_id TEXT NOT NULL,
+        import_type TEXT NOT NULL,
+        file_name TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        row_count INTEGER NOT NULL,
+        valid_count INTEGER NOT NULL,
+        invalid_count INTEGER NOT NULL,
+        matched_count INTEGER NOT NULL,
+        unmatched_count INTEGER NOT NULL,
+        queue_created_count INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        error_message TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS price_workbook_import_rows (
+        id TEXT PRIMARY KEY,
+        import_id TEXT NOT NULL,
+        row_index INTEGER NOT NULL,
+        raw_json TEXT NOT NULL,
+        normalized_json TEXT NOT NULL,
+        match_status TEXT NOT NULL,
+        matched_target_type TEXT,
+        matched_target_id TEXT,
+        matched_target_name TEXT,
+        proposed_price REAL NOT NULL,
+        current_price REAL NOT NULL,
+        unit TEXT,
+        variance_amount REAL NOT NULL,
+        variance_rate REAL,
+        validation_status TEXT NOT NULL,
+        validation_message TEXT,
+        queue_id TEXT,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS master_data_validation_logs (
         id TEXT PRIMARY KEY,
         entity_type TEXT NOT NULL,
@@ -20496,6 +20534,8 @@ function createSqliteService({ app }) {
       initialMasterDataSeedLogCount: countRows(db.master, 'initial_master_data_seed_logs'),
       realPriceUpdateQueueCount: countRows(db.master, 'real_price_update_queue'),
       realPriceUpdateHistoryCount: countRows(db.master, 'real_price_update_history'),
+      priceWorkbookImportCount: countRows(db.master, 'price_workbook_imports'),
+      priceWorkbookImportRowCount: countRows(db.master, 'price_workbook_import_rows'),
       masterDataValidationLogCount: countRows(db.master, 'master_data_validation_logs'),
       franchiseBranchCount: countRows(db.master, 'franchise_branches'),
       franchiseDistributionPackageCount: countRows(db.master, 'franchise_distribution_packages'),

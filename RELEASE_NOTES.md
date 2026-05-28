@@ -97,6 +97,18 @@ LightBIM is now stabilized as the spatial quantity source for the BOC operating 
 - Customer-facing views remain separated and do not expose vendor quote details, internal unit cost, labor rate, price variance, approval queue, or calibration history.
 - Documentation added in `docs/RC_0_3_0_REAL_PRICE_CALIBRATION_GUIDE.md`.
 
+#### RC-0.3.0 Price Workbook Import Layer
+
+- Added internal `단가표 일괄 가져오기` center for bulk CSV price input.
+- Supports 자재 단가표, 업체 견적 단가표, 실제 매입 단가표, 노무 단가표, 장비 단가표, 표준 견적 품목 단가표 import types.
+- Adds `price_workbook_imports` and `price_workbook_import_rows` for import audit history.
+- Provides Korean CSV templates under `templates/price-import`.
+- Import flow parses, previews, infers columns, validates rows, matches master data, calculates variance, and creates `PENDING_REVIEW` queue items.
+- Imported prices do not update master data directly; approval, backup, and apply remain in the Real Price Calibration Center.
+- Customer-facing screens do not expose imported vendor quotes, unit cost, labor rates, variance, approval queue, import history, or calibration history.
+- Limitation: CSV is the primary supported format in RC-0.3.0. XLSX is available only if a local parser dependency is present; no external market verification is performed.
+- Documentation added in `docs/RC_0_3_0_PRICE_WORKBOOK_IMPORT_GUIDE.md`.
+
 #### Verified End-To-End Flow
 
 `MiniCAD / LightBIM -> JSON Export -> BOC Import -> Quantity Review -> Estimate / PCE -> Contract -> Schedule -> Purchase Order -> Material Receiving -> Execution Feedback -> Traceability -> Space Map -> Customer Proposal Map -> Proposal Board / Export -> Project Closing / Calibration`

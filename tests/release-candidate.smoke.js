@@ -143,6 +143,10 @@ const releaseChecks = [
     script: 'real-price-calibration.smoke.js'
   },
   {
+    label: '단가표 일괄 가져오기',
+    script: 'price-workbook-import.smoke.js'
+  },
+  {
     label: '프랜차이즈 복제',
     script: 'franchise-replication.smoke.js'
   },

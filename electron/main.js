@@ -5,6 +5,7 @@ const { createBackupService } = require('./services/backupService');
 const { createBackupRestoreService } = require('./services/backupRestoreService');
 const { createInitialMasterDataService } = require('./services/initialMasterDataService');
 const { createRealPriceCalibrationService } = require('./services/realPriceCalibrationService');
+const { createPriceWorkbookImportService } = require('./services/priceWorkbookImportService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -14,6 +15,7 @@ let backupService;
 let backupRestoreService;
 let initialMasterDataService;
 let realPriceCalibrationService;
+let priceWorkbookImportService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -106,6 +108,25 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:real-price:queue', () => realPriceCalibrationService.getQueueItems());
   ipcMain.handle('boc:real-price:summary', () => realPriceCalibrationService.getRealPriceCalibrationSummary());
   ipcMain.handle('boc:real-price:report', () => realPriceCalibrationService.createPriceCalibrationReport());
+  ipcMain.handle('boc:price-workbook:select-file', async (event) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    const result = await dialog.showOpenDialog(owner, {
+      title: '단가표 파일 선택',
+      properties: ['openFile'],
+      filters: [
+        { name: 'CSV 단가표', extensions: ['csv'] },
+        { name: 'Excel 단가표', extensions: ['xlsx', 'xls'] }
+      ]
+    });
+    if (result.canceled || !result.filePaths.length) return { canceled: true };
+    return { canceled: false, filePath: result.filePaths[0] };
+  });
+  ipcMain.handle('boc:price-workbook:preview', (_event, payload = {}) => priceWorkbookImportService.previewPriceImport(payload.filePath, payload.importType));
+  ipcMain.handle('boc:price-workbook:match', (_event, payload = {}) => priceWorkbookImportService.matchImportedRowsToMasterData(payload.importId || payload.rows || payload));
+  ipcMain.handle('boc:price-workbook:create-queue', (_event, payload = {}) => priceWorkbookImportService.createPriceUpdateQueueFromImport(payload));
+  ipcMain.handle('boc:price-workbook:history', () => priceWorkbookImportService.getPriceImportHistory());
+  ipcMain.handle('boc:price-workbook:detail', (_event, payload = {}) => priceWorkbookImportService.getPriceImportDetail(payload.importId || payload));
+  ipcMain.handle('boc:price-workbook:report', (_event, payload = {}) => priceWorkbookImportService.createImportReport(payload.importId || payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
@@ -325,6 +346,7 @@ app.whenReady().then(() => {
   backupRestoreService = createBackupRestoreService({ app, sqliteService });
   initialMasterDataService = createInitialMasterDataService({ sqliteService, backupRestoreService });
   realPriceCalibrationService = createRealPriceCalibrationService({ sqliteService, backupRestoreService });
+  priceWorkbookImportService = createPriceWorkbookImportService({ sqliteService });
   registerIpcHandlers();
   createWindow();
 

@@ -124,6 +124,7 @@ export function RealPriceCalibrationCenterView() {
           <button className="command command-approve" onClick={() => void submitQueue('VENDOR_QUOTE')}>업체 견적 입력</button>
           <button onClick={() => void submitQueue('ACTUAL_PURCHASE')}>실제 매입 단가 입력</button>
           <button onClick={() => void submitQueue('LABOR_RATE')}>노무 단가 입력</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'priceWorkbookImport' }))}>단가표 일괄 가져오기</button>
           <button onClick={() => void createReport()}>리포트 생성</button>
         </div>
         {messageKo ? <p className="save-message">{messageKo}</p> : null}

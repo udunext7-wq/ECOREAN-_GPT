@@ -103,6 +103,13 @@ declare global {
         getRealPriceUpdateQueue: () => Promise<Array<Record<string, unknown>>>;
         getRealPriceCalibrationSummary: () => Promise<Record<string, unknown>>;
         createRealPriceCalibrationReport: () => Promise<Record<string, unknown>>;
+        selectPriceWorkbookFile: () => Promise<Record<string, unknown>>;
+        previewPriceWorkbookImport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        matchPriceWorkbookImportRows: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createPriceUpdateQueueFromWorkbook: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getPriceWorkbookImportHistory: () => Promise<Array<Record<string, unknown>>>;
+        getPriceWorkbookImportDetail: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createPriceWorkbookImportReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         calculateBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         saveBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         exportBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

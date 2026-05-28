@@ -97,6 +97,7 @@ export function VendorPriceIntelligenceCenterView() {
         </div>
         <div className="button-row">
           <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realPriceCalibration' }))}>실제 단가 보정</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'priceWorkbookImport' }))}>단가표 가져오기</button>
           <strong className={data.summary.criticalAlertCount > 0 ? 'red-kpi' : 'green-kpi'}>
             경고 {data.summary.openAlertCount}건
           </strong>
