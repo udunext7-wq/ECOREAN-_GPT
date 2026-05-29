@@ -147,8 +147,24 @@ const releaseChecks = [
     script: 'price-workbook-import.smoke.js'
   },
   {
+    label: '단가표 수동 매칭 UX',
+    script: 'price-import-manual-matching.smoke.js'
+  },
+  {
     label: '실제 단가표 가져오기 사용자 테스트',
     script: 'real-price-import-user-test.smoke.js'
+  },
+  {
+    label: 'RC-0.3.1 운영 데이터 입력',
+    script: 'operational-data-onboarding.smoke.js'
+  },
+  {
+    label: 'RC-0.3.1 첫 운영 데이터 입력 테스트',
+    script: 'rc-0-3-1-first-operational-onboarding.smoke.js'
+  },
+  {
+    label: 'RC-0.3.1 브랜치 안정화',
+    script: 'rc-0-3-1-branch-stabilization.smoke.js'
   },
   {
     label: '프랜차이즈 복제',

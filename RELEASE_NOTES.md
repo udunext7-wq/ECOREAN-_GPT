@@ -1,5 +1,86 @@
 # ECOREAN BOC Release Notes
 
+## Version: RC-0.3.1
+
+### RC-0.3.1 Operational Data Onboarding Started
+
+- Branch: `rc-0.3.1-operational-data-onboarding`
+- Baseline tag preserved: `v0.3.0-rc`
+- Purpose: guide real operating data entry without changing the RC-0.3.0 operational baseline.
+- Added workflow focus:
+  - 실제 업체 정보 입력
+  - 실제 자재/노무 단가표 가져오기
+  - 단가 승인 및 Master Data 반영
+  - 첫 실제 프로젝트 생성
+  - 첫 LightBIM 도면 가져오기
+  - 첫 견적/PCE 확인
+  - 고객용 견적서와 내부 원가표 출력 확인
+  - 고객 화면 내부정보 비노출 확인
+  - 문제 기록 및 RC-0.3.1 수정 후보 정리
+- Customer safety remains unchanged: onboarding issue details, backup paths, vendor data, labor cost, internal cost, margin, PCE, purchase/receiving data, variance, and calibration data are not customer-facing.
+
+### RC-0.3.1 First Operational Data Onboarding Test
+
+- Test date: 2026-05-29
+- Branch: `rc-0.3.1-operational-data-onboarding`
+- Onboarding run ID: `OOR-1780056032648-BDE1Y6`
+- Result: `운영 시작 가능`
+- Backup: `FULL-2026-05-29_210032`
+- Material price CSV: 7 rows parsed, 6 matched, 1 intentionally unmatched.
+- Labor rate CSV: 5 rows parsed, 5 matched.
+- Price queue apply: approved updates were applied only after backup.
+- First LightBIM project import: `LIGHTBIM-IMPORT-1780056034605`
+- First estimate: `RC031-FIRST-OPERATIONAL-PROJECT`
+- PCE decision: `SCALE`
+- Customer safety: PASSED for customer estimate, client portal, customer proposal map, proposal board payload, and contract customer section.
+- Deferred item: Vite bundle size warning remains non-blocking and is tracked for optimization.
+
+### RC-0.3.1 Price Import Manual Matching UX
+
+- Improved `단가표 일괄 가져오기` for unmatched and multiple-matched rows.
+- Added Master Data candidate search for material, labor, equipment, standard estimate item, and package targets.
+- Added manual match save flow:
+  - `UNMATCHED` / `MULTIPLE_MATCHES`
+  - search/select Master Data target
+  - save as `MATCHED_MANUAL`
+  - recalculate variance
+  - make row eligible for approval Queue
+- Added row exclusion flow with `EXCLUDED` status.
+- Added queue readiness summary:
+  - matched rows
+  - manually matched rows
+  - unmatched rows
+  - multiple match rows
+  - invalid rows
+  - excluded rows
+  - queue eligible rows
+- Customer safety remains unchanged: import rows, match logs, unit cost, labor rate, variance, approval queue, and calibration history stay internal only.
+
+### RC-0.3.1 Operational Data Onboarding Branch Stabilization
+
+- Branch: `rc-0.3.1-operational-data-onboarding`
+- Base tag preserved: `v0.3.0-rc`
+- Stabilization decision: `MERGE_READY`
+- Verified:
+  - operational onboarding run creation and completion
+  - full backup
+  - material/labor CSV import
+  - unmatched row manual matching
+  - queue readiness after manual match
+  - approval queue creation
+  - backup before apply
+  - Master Data price update
+  - first LightBIM project import
+  - estimate/PCE
+  - customer/internal output separation
+  - customer safety regression
+- Deferred:
+  - XLSX direct parsing
+  - advanced fuzzy matching
+  - new Master Data auto-create from unmatched rows
+  - Vite bundle optimization
+  - packaged app metadata cleanup
+
 ## Version: RC-0.3.0
 
 ### RC-0.3.0 Operational Release Candidate — Finalized
@@ -260,3 +341,4 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Payment / cashflow control
 - Communication Center, Floorplan Center, AI Visualization Center, and Board Generation Center
 - Release readiness checks, diagnostics, backup/restore, and internal test-mode environment tools
+

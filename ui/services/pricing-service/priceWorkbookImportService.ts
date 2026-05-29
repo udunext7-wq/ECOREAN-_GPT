@@ -35,6 +35,34 @@ export async function createPriceUpdateQueueFromWorkbook(payload: { importId: st
   return bocDb()?.createPriceUpdateQueueFromWorkbook?.(payload) || { createdCount: 0 };
 }
 
+export async function searchPriceImportMatchCandidates(payload: { importType: PriceWorkbookImportType; keyword: string; filters?: Record<string, unknown> }) {
+  return bocDb()?.searchPriceImportMatchCandidates?.(payload) || { candidates: [] };
+}
+
+export async function manuallyMatchPriceImportRow(payload: { importRowId: string | number; targetType: string; targetId: string | number; note?: string }) {
+  return bocDb()?.manuallyMatchPriceImportRow?.(payload) || null;
+}
+
+export async function clearPriceImportRowMatch(payload: { importRowId: string | number }) {
+  return bocDb()?.clearPriceImportRowMatch?.(payload) || null;
+}
+
+export async function excludePriceImportRow(payload: { importRowId: string | number; reason?: string }) {
+  return bocDb()?.excludePriceImportRow?.(payload) || null;
+}
+
+export async function getUnmatchedPriceImportRows(importId: string) {
+  return bocDb()?.getUnmatchedPriceImportRows?.({ importId }) || [];
+}
+
+export async function getMultipleMatchPriceImportRows(importId: string) {
+  return bocDb()?.getMultipleMatchPriceImportRows?.({ importId }) || [];
+}
+
+export async function getPriceImportQueueReadiness(importId: string) {
+  return bocDb()?.getPriceImportQueueReadiness?.({ importId }) || null;
+}
+
 export async function getPriceWorkbookImportHistory() {
   return bocDb()?.getPriceWorkbookImportHistory?.() || [];
 }

@@ -86,7 +86,8 @@ export function CeoDashboard() {
       openBackupRestore: 'backupRestore',
       openInitialMasterData: 'initialMasterData',
       openRealPriceCalibration: 'realPriceCalibration',
-      openPriceWorkbookImport: 'priceWorkbookImport'
+      openPriceWorkbookImport: 'priceWorkbookImport',
+      openOperationalOnboarding: 'operationalOnboarding'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
@@ -188,6 +189,7 @@ export function CeoDashboard() {
               <button className="command command-order" onClick={() => openView('analytics', 'warning')}>분석</button>
               <button className="command command-block" onClick={() => openView('aiAutomation', 'warning')}>AI</button>
               <button className="command command-block" onClick={() => openView('ceoControlTower', 'warning')}>Control</button>
+              <button className="command command-approve" onClick={() => openView('operationalOnboarding', 'confirm')}>RC-0.3.1</button>
             </div>
             <div className="today-action-list">
               {dashboard.data.immediateActions.map((action) => (

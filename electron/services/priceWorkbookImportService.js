@@ -138,6 +138,10 @@ function classifyPriority(targetType, text) {
   return 'MEDIUM';
 }
 
+function matchTargetTypeFromImport(importType) {
+  return TARGET_TYPE_BY_IMPORT_TYPE[importType] || 'MATERIAL';
+}
+
 function parseCsvLine(line) {
   const cells = [];
   let cell = '';
@@ -343,6 +347,20 @@ function createPriceWorkbookImportService({ sqliteService, reportsDir = null }) 
         queue_id TEXT,
         created_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS price_workbook_import_match_logs (
+        id TEXT PRIMARY KEY,
+        import_id TEXT NOT NULL,
+        row_id TEXT NOT NULL,
+        action TEXT NOT NULL,
+        before_match_status TEXT,
+        after_match_status TEXT,
+        before_target_type TEXT,
+        before_target_id TEXT,
+        after_target_type TEXT,
+        after_target_id TEXT,
+        note TEXT,
+        created_at TEXT NOT NULL
+      );
       CREATE TABLE IF NOT EXISTS real_price_update_queue (
         id TEXT PRIMARY KEY,
         target_type TEXT NOT NULL,
@@ -368,35 +386,113 @@ function createPriceWorkbookImportService({ sqliteService, reportsDir = null }) 
       );
     `);
     ensureColumn(database, 'price_workbook_import_rows', 'queue_id', 'queue_id TEXT');
+    ensureColumn(database, 'price_workbook_import_rows', 'manual_match_note', 'manual_match_note TEXT');
+    ensureColumn(database, 'price_workbook_import_rows', 'excluded_reason', 'excluded_reason TEXT');
+    ensureColumn(database, 'price_workbook_import_rows', 'matched_by', 'matched_by TEXT');
+    ensureColumn(database, 'price_workbook_import_rows', 'matched_at', 'matched_at TEXT');
   }
 
   function targetRows(database, targetType) {
     if (targetType === 'MATERIAL') {
       return database.prepare(`
         SELECT id, material_name AS target_name, material_category AS category, specification AS spec,
-               brand, unit, latest_unit_price AS current_price, applied_process AS process
+               brand, unit, latest_unit_price AS current_price, applied_process AS process,
+               price_status
         FROM material_master
       `).all();
     }
     if (targetType === 'LABOR') {
       return database.prepare(`
         SELECT id, role AS target_name, process AS category, process, ? AS unit,
-               default_daily_wage AS current_price, skill_level AS spec, '' AS brand
+               default_daily_wage AS current_price, skill_level AS spec, '' AS brand,
+               price_status
         FROM labor_master
       `).all('일');
     }
     if (targetType === 'EQUIPMENT') {
       return database.prepare(`
         SELECT id, equipment_name AS target_name, equipment_type AS category, applied_process AS process,
-               unit, default_unit_price AS current_price, '' AS spec, '' AS brand
+               unit, default_unit_price AS current_price, '' AS spec, '' AS brand,
+               price_status
         FROM equipment_master
       `).all();
     }
+    if (targetType === 'PACKAGE') {
+      return database.prepare(`
+        SELECT id, package_name AS target_name, estimate_type AS category, estimate_type AS process,
+               ? AS unit, 0 AS current_price, '' AS spec, '' AS brand,
+               'NEEDS_UPDATE' AS price_status
+        FROM estimate_default_packages
+      `).all('식');
+    }
     return database.prepare(`
       SELECT id, item_name AS target_name, process AS category, estimate_type AS process,
-             default_unit AS unit, default_customer_unit_price AS current_price, '' AS spec, '' AS brand
+             default_unit AS unit, default_customer_unit_price AS current_price, '' AS spec, '' AS brand,
+             price_status
       FROM standard_estimate_items
     `).all();
+  }
+
+  function getTargetRow(database, targetType, targetId) {
+    return targetRows(database, targetType).find((row) => String(row.id) === String(targetId)) || null;
+  }
+
+  function logMatchAction(database, row, action, after, note = '') {
+    database.prepare(`
+      INSERT INTO price_workbook_import_match_logs (
+        id, import_id, row_id, action, before_match_status, after_match_status,
+        before_target_type, before_target_id, after_target_type, after_target_id,
+        note, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id('PWIML'),
+      row.import_id,
+      row.id,
+      action,
+      row.match_status || '',
+      after.matchStatus || '',
+      row.matched_target_type || '',
+      row.matched_target_id || '',
+      after.targetType || '',
+      after.targetId || '',
+      note || '',
+      nowIso()
+    );
+  }
+
+  function decorateCandidate(row, targetType, keyword, filters = {}) {
+    const keywordKey = normalizeText(keyword);
+    const nameKey = normalizeText(row.target_name);
+    const categoryKey = normalizeText(row.category || row.process);
+    const unitMatch = !filters.unit || normalizeText(filters.unit) === normalizeText(row.unit);
+    let score = 30;
+    const reasons = [];
+    if (keywordKey && nameKey === keywordKey) {
+      score += 55;
+      reasons.push('항목명 정확 일치');
+    } else if (keywordKey && (nameKey.includes(keywordKey) || keywordKey.includes(nameKey))) {
+      score += 35;
+      reasons.push('항목명 유사 일치');
+    }
+    if (filters.category && categoryKey.includes(normalizeText(filters.category))) {
+      score += 10;
+      reasons.push('분류 일치');
+    }
+    if (unitMatch) {
+      score += 10;
+      reasons.push('단위 일치');
+    }
+    return {
+      target_type: targetType,
+      target_id: row.id,
+      target_name: row.target_name,
+      category: row.category || row.process || '',
+      unit: row.unit || '',
+      current_price: Number(row.current_price || 0),
+      price_status: row.price_status || '',
+      match_score: Math.min(score, 100),
+      reason: reasons.join(' / ') || '검색 후보'
+    };
   }
 
   function chooseMatch(row, candidates) {
@@ -458,7 +554,7 @@ function createPriceWorkbookImportService({ sqliteService, reportsDir = null }) 
       if (row.validation_status === 'INVALID') {
         return { ...row, match_status: 'INVALID' };
       }
-      const targetType = row.target_type || TARGET_TYPE_BY_IMPORT_TYPE[row.import_type] || 'MATERIAL';
+      const targetType = row.target_type || matchTargetTypeFromImport(row.import_type);
       if (!cache[targetType]) cache[targetType] = targetRows(database, targetType);
       const result = chooseMatch(row, cache[targetType]);
       const target = result.matches[0] || {};
@@ -491,7 +587,7 @@ function createPriceWorkbookImportService({ sqliteService, reportsDir = null }) 
         COUNT(*) AS row_count,
         SUM(CASE WHEN validation_status = 'VALID' THEN 1 ELSE 0 END) AS valid_count,
         SUM(CASE WHEN validation_status = 'INVALID' THEN 1 ELSE 0 END) AS invalid_count,
-        SUM(CASE WHEN match_status = 'MATCHED' THEN 1 ELSE 0 END) AS matched_count,
+        SUM(CASE WHEN match_status IN ('MATCHED', 'MATCHED_MANUAL') THEN 1 ELSE 0 END) AS matched_count,
         SUM(CASE WHEN match_status IN ('UNMATCHED', 'MULTIPLE_MATCHES', 'INVALID') THEN 1 ELSE 0 END) AS unmatched_count,
         SUM(CASE WHEN queue_id IS NOT NULL AND queue_id != '' THEN 1 ELSE 0 END) AS queue_created_count
       FROM price_workbook_import_rows
@@ -585,8 +681,11 @@ function createPriceWorkbookImportService({ sqliteService, reportsDir = null }) 
       rowCount: rows.length,
       validCount: rows.filter((row) => row.validation_status === 'VALID').length,
       invalidCount: rows.filter((row) => row.validation_status === 'INVALID').length,
-      matchedCount: rows.filter((row) => row.match_status === 'MATCHED').length,
-      unmatchedCount: rows.filter((row) => row.match_status !== 'MATCHED').length,
+      matchedCount: rows.filter((row) => row.match_status === 'MATCHED' || row.match_status === 'MATCHED_MANUAL').length,
+      manuallyMatchedCount: rows.filter((row) => row.match_status === 'MATCHED_MANUAL').length,
+      unmatchedCount: rows.filter((row) => row.match_status === 'UNMATCHED').length,
+      multipleMatchCount: rows.filter((row) => row.match_status === 'MULTIPLE_MATCHES').length,
+      excludedCount: rows.filter((row) => row.match_status === 'EXCLUDED').length,
       highVarianceCount: rows.filter((row) => row.variance_severity === 'HIGH').length
     };
   }
@@ -603,7 +702,7 @@ function createPriceWorkbookImportService({ sqliteService, reportsDir = null }) 
         const selected = selectedRowIds.size === 0 && selectedRowIndexes.size === 0
           ? true
           : selectedRowIds.has(String(row.id)) || selectedRowIndexes.has(Number(row.row_index));
-        return selected && row.validation_status === 'VALID' && row.match_status === 'MATCHED' && !row.queue_id;
+        return selected && row.validation_status === 'VALID' && (row.match_status === 'MATCHED' || row.match_status === 'MATCHED_MANUAL') && !row.queue_id;
       });
       const created = eligible.map((row) => {
         const normalized = parseJson(row.normalized_json);
@@ -662,7 +761,210 @@ function createPriceWorkbookImportService({ sqliteService, reportsDir = null }) 
       raw: parseJson(row.raw_json),
       normalized: parseJson(row.normalized_json)
     }));
-    return { import: importRecord, rows };
+    const readiness = getImportQueueReadinessFromDb(database, importId);
+    return { import: importRecord, rows, readiness };
+  }
+
+  function getRowById(database, importRowId) {
+    const row = database.prepare('SELECT * FROM price_workbook_import_rows WHERE id = ?').get(importRowId);
+    if (!row) throw new Error('가져오기 행을 찾을 수 없습니다.');
+    return row;
+  }
+
+  function updateRowVariance(database, importRowId) {
+    const row = getRowById(database, importRowId);
+    if (!row.matched_target_type || !row.matched_target_id || row.match_status === 'EXCLUDED') return row;
+    const target = getTargetRow(database, row.matched_target_type, row.matched_target_id);
+    if (!target) return row;
+    const variance = calculatePriceVariance(target.current_price, row.proposed_price);
+    database.prepare(`
+      UPDATE price_workbook_import_rows
+      SET current_price = ?, variance_amount = ?, variance_rate = ?, validation_status = ?,
+          validation_message = ?
+      WHERE id = ?
+    `).run(
+      Number(target.current_price || 0),
+      variance.varianceAmount,
+      variance.varianceRate ?? null,
+      row.validation_status === 'INVALID' ? 'INVALID' : 'VALID',
+      row.validation_status === 'INVALID' ? row.validation_message : `수동 매칭 기준 차이율 재계산: ${variance.labelKo}`,
+      importRowId
+    );
+    updateImportCounts(database, row.import_id, null);
+    return getRowById(database, importRowId);
+  }
+
+  function searchPriceImportMatchCandidates(importType, keyword = '', filters = {}) {
+    const normalizedPayload = typeof importType === 'object'
+      ? { importType: importType.importType, keyword: importType.keyword, filters: importType.filters || importType }
+      : { importType, keyword, filters };
+    return withDb((database) => {
+      const targetType = normalizedPayload.filters?.targetType || normalizedPayload.filters?.target_type || matchTargetTypeFromImport(normalizedPayload.importType);
+      const rows = targetRows(database, targetType);
+      const keywordKey = normalizeText(normalizedPayload.keyword || '');
+      const categoryKey = normalizeText(normalizedPayload.filters?.category || '');
+      const unitKey = normalizeText(normalizedPayload.filters?.unit || '');
+      const candidates = rows
+        .filter((row) => {
+          const haystack = normalizeText(`${row.target_name} ${row.category} ${row.process} ${row.spec} ${row.brand}`);
+          const keywordOk = !keywordKey || haystack.includes(keywordKey) || keywordKey.includes(normalizeText(row.target_name));
+          const categoryOk = !categoryKey || normalizeText(`${row.category} ${row.process}`).includes(categoryKey);
+          const unitOk = !unitKey || normalizeText(row.unit) === unitKey;
+          return keywordOk && categoryOk && unitOk;
+        })
+        .map((row) => decorateCandidate(row, targetType, normalizedPayload.keyword, normalizedPayload.filters))
+        .sort((a, b) => b.match_score - a.match_score || String(a.target_name).localeCompare(String(b.target_name), 'ko-KR'))
+        .slice(0, 30);
+      return { importType: normalizedPayload.importType, targetType, keyword: normalizedPayload.keyword || '', candidates };
+    });
+  }
+
+  function manuallyMatchImportRow(importRowId, targetType, targetId, note = '') {
+    const normalized = typeof importRowId === 'object'
+      ? { importRowId: importRowId.importRowId || importRowId.rowId, targetType: importRowId.targetType, targetId: importRowId.targetId, note: importRowId.note || '' }
+      : { importRowId, targetType, targetId, note };
+    return withDb((database) => {
+      const row = getRowById(database, normalized.importRowId);
+      if (row.queue_id) throw new Error('이미 Queue가 생성된 행은 매칭을 변경할 수 없습니다.');
+      const target = getTargetRow(database, normalized.targetType, normalized.targetId);
+      if (!target) throw new Error('선택한 마스터 항목을 찾을 수 없습니다.');
+      const variance = calculatePriceVariance(target.current_price, row.proposed_price);
+      const action = row.match_status === 'MULTIPLE_MATCHES' ? 'MULTIPLE_MATCH_RESOLVED' : 'MANUAL_MATCH';
+      database.prepare(`
+        UPDATE price_workbook_import_rows
+        SET match_status = 'MATCHED_MANUAL',
+            matched_target_type = ?,
+            matched_target_id = ?,
+            matched_target_name = ?,
+            current_price = ?,
+            variance_amount = ?,
+            variance_rate = ?,
+            validation_status = CASE WHEN validation_status = 'INVALID' THEN 'INVALID' ELSE 'VALID' END,
+            validation_message = CASE WHEN validation_status = 'INVALID' THEN validation_message ELSE ? END,
+            manual_match_note = ?,
+            excluded_reason = '',
+            matched_by = ?,
+            matched_at = ?
+        WHERE id = ?
+      `).run(
+        normalized.targetType,
+        target.id,
+        target.target_name,
+        Number(target.current_price || 0),
+        variance.varianceAmount,
+        variance.varianceRate ?? null,
+        `수동 매칭이 저장되었습니다. ${variance.labelKo}`,
+        normalized.note || '',
+        'CEO',
+        nowIso(),
+        normalized.importRowId
+      );
+      logMatchAction(database, row, action, { matchStatus: 'MATCHED_MANUAL', targetType: normalized.targetType, targetId: target.id }, normalized.note);
+      updateImportCounts(database, row.import_id, 'MATCHED');
+      return { row: detailRow(database, normalized.importRowId), readiness: getImportQueueReadinessFromDb(database, row.import_id) };
+    });
+  }
+
+  function clearImportRowMatch(importRowId) {
+    const normalized = typeof importRowId === 'object' ? importRowId.importRowId || importRowId.rowId : importRowId;
+    return withDb((database) => {
+      const row = getRowById(database, normalized);
+      if (row.queue_id) throw new Error('이미 Queue가 생성된 행은 매칭을 해제할 수 없습니다.');
+      database.prepare(`
+        UPDATE price_workbook_import_rows
+        SET match_status = 'UNMATCHED',
+            matched_target_type = NULL,
+            matched_target_id = NULL,
+            matched_target_name = NULL,
+            current_price = 0,
+            variance_amount = 0,
+            variance_rate = NULL,
+            validation_message = '마스터 데이터와 매칭되지 않았습니다.',
+            manual_match_note = '',
+            excluded_reason = '',
+            matched_by = '',
+            matched_at = NULL
+        WHERE id = ?
+      `).run(normalized);
+      logMatchAction(database, row, 'CLEAR_MATCH', { matchStatus: 'UNMATCHED', targetType: '', targetId: '' }, '매칭 해제');
+      updateImportCounts(database, row.import_id, 'MATCHED');
+      return { row: detailRow(database, normalized), readiness: getImportQueueReadinessFromDb(database, row.import_id) };
+    });
+  }
+
+  function excludeImportRow(importRowId, reason = '') {
+    const normalized = typeof importRowId === 'object'
+      ? { importRowId: importRowId.importRowId || importRowId.rowId, reason: importRowId.reason || importRowId.excludedReason || '' }
+      : { importRowId, reason };
+    return withDb((database) => {
+      const row = getRowById(database, normalized.importRowId);
+      if (row.queue_id) throw new Error('이미 Queue가 생성된 행은 제외할 수 없습니다.');
+      database.prepare(`
+        UPDATE price_workbook_import_rows
+        SET match_status = 'EXCLUDED',
+            validation_message = '제외된 행은 Queue 생성 대상에서 제외됩니다.',
+            excluded_reason = ?,
+            matched_by = ?,
+            matched_at = ?
+        WHERE id = ?
+      `).run(normalized.reason || '사용자 제외', 'CEO', nowIso(), normalized.importRowId);
+      logMatchAction(database, row, 'EXCLUDE_ROW', { matchStatus: 'EXCLUDED', targetType: row.matched_target_type || '', targetId: row.matched_target_id || '' }, normalized.reason || '사용자 제외');
+      updateImportCounts(database, row.import_id, 'MATCHED');
+      return { row: detailRow(database, normalized.importRowId), readiness: getImportQueueReadinessFromDb(database, row.import_id) };
+    });
+  }
+
+  function detailRow(database, rowId) {
+    const row = getRowById(database, rowId);
+    return { ...row, raw: parseJson(row.raw_json), normalized: parseJson(row.normalized_json) };
+  }
+
+  function getUnmatchedImportRows(importId) {
+    const normalized = typeof importId === 'object' ? importId.importId || importId.id : importId;
+    return withDb((database) => database.prepare(`
+      SELECT * FROM price_workbook_import_rows
+      WHERE import_id = ? AND match_status = 'UNMATCHED'
+      ORDER BY row_index
+    `).all(normalized).map((row) => ({ ...row, raw: parseJson(row.raw_json), normalized: parseJson(row.normalized_json) })));
+  }
+
+  function getMultipleMatchImportRows(importId) {
+    const normalized = typeof importId === 'object' ? importId.importId || importId.id : importId;
+    return withDb((database) => database.prepare(`
+      SELECT * FROM price_workbook_import_rows
+      WHERE import_id = ? AND match_status = 'MULTIPLE_MATCHES'
+      ORDER BY row_index
+    `).all(normalized).map((row) => ({ ...row, raw: parseJson(row.raw_json), normalized: parseJson(row.normalized_json) })));
+  }
+
+  function recalculateImportRowVariance(importRowId) {
+    const normalized = typeof importRowId === 'object' ? importRowId.importRowId || importRowId.rowId : importRowId;
+    return withDb((database) => ({ row: updateRowVariance(database, normalized) }));
+  }
+
+  function getImportQueueReadiness(importId) {
+    const normalized = typeof importId === 'object' ? importId.importId || importId.id : importId;
+    return withDb((database) => getImportQueueReadinessFromDb(database, normalized));
+  }
+
+  function getImportQueueReadinessFromDb(database, importId) {
+    const rows = database.prepare('SELECT * FROM price_workbook_import_rows WHERE import_id = ?').all(importId);
+    const queueEligibleRows = rows.filter((row) => row.validation_status === 'VALID' && (row.match_status === 'MATCHED' || row.match_status === 'MATCHED_MANUAL') && !row.queue_id);
+    const queueBlockedRows = rows.filter((row) => !queueEligibleRows.includes(row) && !row.queue_id);
+    return {
+      importId,
+      totalRows: rows.length,
+      matchedRows: rows.filter((row) => row.match_status === 'MATCHED').length,
+      manuallyMatchedRows: rows.filter((row) => row.match_status === 'MATCHED_MANUAL').length,
+      unmatchedRows: rows.filter((row) => row.match_status === 'UNMATCHED').length,
+      multipleMatchRows: rows.filter((row) => row.match_status === 'MULTIPLE_MATCHES').length,
+      invalidRows: rows.filter((row) => row.validation_status === 'INVALID').length,
+      excludedRows: rows.filter((row) => row.match_status === 'EXCLUDED').length,
+      queueEligibleRows: queueEligibleRows.length,
+      queueBlockedRows: queueBlockedRows.length,
+      queueCreatedRows: rows.filter((row) => row.queue_id).length,
+      statusKo: queueEligibleRows.length > 0 ? 'Queue 생성 가능' : rows.some((row) => row.match_status === 'UNMATCHED' || row.match_status === 'MULTIPLE_MATCHES') ? '매칭 필요' : rows.some((row) => row.validation_status === 'INVALID') ? '검증 오류' : '제외됨'
+    };
   }
 
   function createImportReport(importId) {
@@ -701,6 +1003,14 @@ function createPriceWorkbookImportService({ sqliteService, reportsDir = null }) 
     previewPriceImport,
     matchImportedRowsToMasterData,
     createPriceUpdateQueueFromImport,
+    searchPriceImportMatchCandidates,
+    manuallyMatchImportRow,
+    clearImportRowMatch,
+    excludeImportRow,
+    getUnmatchedImportRows,
+    getMultipleMatchImportRows,
+    recalculateImportRowVariance,
+    getImportQueueReadiness,
     getPriceImportHistory,
     getPriceImportDetail,
     validateImportedPriceRows: validateImportedPriceRowsPublic,

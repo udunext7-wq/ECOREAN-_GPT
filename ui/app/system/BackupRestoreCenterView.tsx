@@ -105,6 +105,7 @@ export function BackupRestoreCenterView() {
           <button onClick={() => void runIntegrity()}>현재 DB 무결성 검사</button>
           <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'initialMasterData' }))}>초기 기준 데이터 세팅</button>
           <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realPriceCalibration' }))}>실제 단가 보정</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'operationalOnboarding' }))}>운영 데이터 입력</button>
           <button onClick={() => void refresh()}>백업 목록 새로고침</button>
         </div>
         {message ? <p className="assistant-message">{message}</p> : null}
