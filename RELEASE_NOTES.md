@@ -81,6 +81,32 @@
   - Vite bundle optimization
   - packaged app metadata cleanup
 
+### RC-0.3.1 Operational Data Onboarding — Merged to Main
+
+- Merge commit: `0da5513`
+- Source branch: `rc-0.3.1-operational-data-onboarding`
+- Base tag preserved: `v0.3.0-rc`
+- Included improvements:
+  - operational data onboarding center and 12-step workflow
+  - first operational onboarding test package
+  - price import manual matching for unmatched and multiple-matched rows
+  - queue readiness and match log checks
+  - stabilization smoke and MERGE_READY report
+- Tests passed:
+  - pre-merge RC-0.3.1 stabilization suite
+  - post-merge main validation suite
+  - `npm run build:ui`
+  - `npm run smoke:prod`
+  - `npm run smoke:release`
+- Customer safety: PASSED. Customer-facing payloads do not expose internal cost, margin, PCE, vendor/labor data, purchase/receiving data, variance, calibration, backup paths, onboarding issues, import rows, manual matching logs, or approval queue details.
+- Final decision: `RC-0.3.1 = main 반영 가능 / 운영 데이터 입력 개선 완료`
+- Deferred:
+  - XLSX direct parsing
+  - advanced fuzzy matching
+  - unmatched row new Master Data auto-create
+  - Vite bundle optimization
+  - package metadata cleanup
+
 ## Version: RC-0.3.0
 
 ### RC-0.3.0 Operational Release Candidate — Finalized
