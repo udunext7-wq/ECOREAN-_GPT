@@ -107,6 +107,32 @@
   - Vite bundle optimization
   - package metadata cleanup
 
+### RC-0.3.1 Desktop Release Package
+
+- Package source commit: `d519304`
+- Tag: `v0.3.1-rc`
+- Packaging script: `npm run dist`
+- Package type: `electron-builder --win --x64 --dir`
+- Local package output: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked`
+- Executable: `ECOREAN BOC CEO Dashboard.exe`
+- Packaged launch result: PASSED
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: NO
+- userData path: `%APPDATA%\ecorean-boc-electron`
+- DB path: `%APPDATA%\ecorean-boc-electron\storage\sqlite`
+- export path: `%APPDATA%\ecorean-boc-electron\export`
+- backup path: `%APPDATA%\ecorean-boc-electron\backups`
+- Verified:
+  - RC-0.3.1 onboarding service and 12-step flow
+  - price import manual matching smoke
+  - customer safety regression
+  - export folder creation
+  - backup folder creation
+  - production UI dist
+- Customer safety: PASSED
+- Final decision: `RC-0.3.1 패키지 실사용 가능`
+- Binary policy: packaged binaries are generated locally under `electron/release` and are not committed.
+
 ## Version: RC-0.3.0
 
 ### RC-0.3.0 Operational Release Candidate — Finalized

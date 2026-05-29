@@ -1,0 +1,51 @@
+{
+  "version": "RC-0.3.1",
+  "tag": "v0.3.1-rc",
+  "branch": "main",
+  "commit": "d519304",
+  "build_date": "2026-05-29",
+  "package_type": "electron-builder win-unpacked",
+  "package_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked",
+  "executable_name": "ECOREAN BOC CEO Dashboard.exe",
+  "executable_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked\\ECOREAN BOC CEO Dashboard.exe",
+  "userData_path": "%APPDATA%\\ecorean-boc-electron",
+  "db_path": "%APPDATA%\\ecorean-boc-electron\\storage\\sqlite",
+  "export_path": "%APPDATA%\\ecorean-boc-electron\\export",
+  "backup_path": "%APPDATA%\\ecorean-boc-electron\\backups",
+  "test_status": "PASSED",
+  "customer_safety_status": "PASSED",
+  "packaged_launch": {
+    "status": "PASSED",
+    "window_title": "ECOREAN BOC CEO Dashboard",
+    "dev_server_required": false
+  },
+  "known_warnings": [
+    "Vite bundle size warning",
+    "SQLite experimental warning",
+    "electron-builder missing description/author metadata warning",
+    "Node DEP0190 warning from electron-builder child process shell option"
+  ],
+  "known_limitations": [
+    "No automatic DWG/DXF parsing",
+    "No full BIM editor",
+    "No cloud sync",
+    "No real-time multi-user collaboration",
+    "No accounting/bank integration",
+    "ComfyUI requires a local server if used",
+    "Customer portal public link is still local/token placeholder",
+    "XLSX direct parsing deferred; CSV import is supported"
+  ],
+  "included_changes": [
+    "Operational Data Onboarding Flow",
+    "First Operational Data Onboarding Test",
+    "Price Import Manual Matching UX",
+    "RC-0.3.1 Stabilization",
+    "Main merge and v0.3.1-rc tag"
+  ],
+  "included_docs": [
+    "README_RUN_RC_0_3_1.md",
+    "PACKAGED_APP_TEST_REPORT.md",
+    "RELEASE_MANIFEST.json"
+  ],
+  "binary_commit_policy": "Packaged binaries are generated locally under electron/release and are not committed."
+}
