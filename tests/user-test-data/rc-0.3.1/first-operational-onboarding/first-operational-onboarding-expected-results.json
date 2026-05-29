@@ -1,0 +1,30 @@
+{
+  "version": "RC-0.3.1",
+  "scenario": "첫 운영 데이터 입력 테스트",
+  "expected": {
+    "onboarding_step_count": 12,
+    "backup_required": true,
+    "material_price_import_matched_min": 5,
+    "labor_rate_import_matched_min": 5,
+    "lightbim_estimate_type": "FULL_REMODELING",
+    "customer_safety_required": true,
+    "final_decision": "운영 시작 가능"
+  },
+  "forbidden_customer_terms": [
+    "internal cost",
+    "margin",
+    "PCE",
+    "vendor",
+    "labor",
+    "purchase",
+    "receiving",
+    "actual_used",
+    "variance",
+    "calibration",
+    "backup path",
+    "onboarding issue details",
+    "internal",
+    "profit",
+    "risk_score"
+  ]
+}

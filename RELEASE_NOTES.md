@@ -19,6 +19,22 @@
   - 문제 기록 및 RC-0.3.1 수정 후보 정리
 - Customer safety remains unchanged: onboarding issue details, backup paths, vendor data, labor cost, internal cost, margin, PCE, purchase/receiving data, variance, and calibration data are not customer-facing.
 
+### RC-0.3.1 First Operational Data Onboarding Test
+
+- Test date: 2026-05-29
+- Branch: `rc-0.3.1-operational-data-onboarding`
+- Onboarding run ID: `OOR-1780056032648-BDE1Y6`
+- Result: `운영 시작 가능`
+- Backup: `FULL-2026-05-29_210032`
+- Material price CSV: 7 rows parsed, 6 matched, 1 intentionally unmatched.
+- Labor rate CSV: 5 rows parsed, 5 matched.
+- Price queue apply: approved updates were applied only after backup.
+- First LightBIM project import: `LIGHTBIM-IMPORT-1780056034605`
+- First estimate: `RC031-FIRST-OPERATIONAL-PROJECT`
+- PCE decision: `SCALE`
+- Customer safety: PASSED for customer estimate, client portal, customer proposal map, proposal board payload, and contract customer section.
+- Deferred item: Vite bundle size warning remains non-blocking and is tracked for optimization.
+
 ## Version: RC-0.3.0
 
 ### RC-0.3.0 Operational Release Candidate — Finalized
@@ -279,3 +295,4 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Payment / cashflow control
 - Communication Center, Floorplan Center, AI Visualization Center, and Board Generation Center
 - Release readiness checks, diagnostics, backup/restore, and internal test-mode environment tools
+

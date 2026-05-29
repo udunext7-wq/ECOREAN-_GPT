@@ -155,6 +155,10 @@ const releaseChecks = [
     script: 'operational-data-onboarding.smoke.js'
   },
   {
+    label: 'RC-0.3.1 첫 운영 데이터 입력 테스트',
+    script: 'rc-0-3-1-first-operational-onboarding.smoke.js'
+  },
+  {
     label: '프랜차이즈 복제',
     script: 'franchise-replication.smoke.js'
   },

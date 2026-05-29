@@ -1,0 +1,25 @@
+{
+  "note": "RC-0.3.1 운영 입력 테스트용 업체 데이터입니다. 실제 운영 전 수정 필요.",
+  "vendors": [
+    {
+      "vendorName": "RC031 테스트 타일 협력사",
+      "vendorType": "supplier",
+      "processScope": "타일 / 방수",
+      "contact": "010-0000-0311",
+      "region": "서울/경기",
+      "defaultPaymentTerms": "월말 정산",
+      "reliabilityScore": 82,
+      "notes": "RC-0.3.1 첫 운영 입력 테스트용 업체입니다."
+    },
+    {
+      "vendorName": "RC031 테스트 노무팀",
+      "vendorType": "labor",
+      "processScope": "목공 / 도배 / 전기",
+      "contact": "010-0000-0312",
+      "region": "서울/경기",
+      "defaultPaymentTerms": "작업 완료 후 정산",
+      "reliabilityScore": 80,
+      "notes": "RC-0.3.1 운영 입력 테스트용 노무 협력팀입니다."
+    }
+  ]
+}

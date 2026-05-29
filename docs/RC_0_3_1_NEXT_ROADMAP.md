@@ -12,6 +12,10 @@
 - bugfix release
 - 미매칭 단가표 행의 수동 매칭 UX 개선
 - release docs wording polish
+- 첫 운영 데이터 입력 테스트 결과 반영:
+  - 미매칭 단가표 행의 수동 매칭 UX는 후속 개선으로 유지
+  - Vite bundle size warning은 비차단 최적화 후보로 유지
+  - S1/S2 차단 이슈는 현재 없음
 
 ## RC-0.4.0
 
