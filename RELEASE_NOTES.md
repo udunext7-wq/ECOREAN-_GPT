@@ -1,5 +1,24 @@
 # ECOREAN BOC Release Notes
 
+## Version: RC-0.3.1
+
+### RC-0.3.1 Operational Data Onboarding Started
+
+- Branch: `rc-0.3.1-operational-data-onboarding`
+- Baseline tag preserved: `v0.3.0-rc`
+- Purpose: guide real operating data entry without changing the RC-0.3.0 operational baseline.
+- Added workflow focus:
+  - 실제 업체 정보 입력
+  - 실제 자재/노무 단가표 가져오기
+  - 단가 승인 및 Master Data 반영
+  - 첫 실제 프로젝트 생성
+  - 첫 LightBIM 도면 가져오기
+  - 첫 견적/PCE 확인
+  - 고객용 견적서와 내부 원가표 출력 확인
+  - 고객 화면 내부정보 비노출 확인
+  - 문제 기록 및 RC-0.3.1 수정 후보 정리
+- Customer safety remains unchanged: onboarding issue details, backup paths, vendor data, labor cost, internal cost, margin, PCE, purchase/receiving data, variance, and calibration data are not customer-facing.
+
 ## Version: RC-0.3.0
 
 ### RC-0.3.0 Operational Release Candidate — Finalized

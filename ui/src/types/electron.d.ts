@@ -110,6 +110,14 @@ declare global {
         getPriceWorkbookImportHistory: () => Promise<Array<Record<string, unknown>>>;
         getPriceWorkbookImportDetail: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createPriceWorkbookImportReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createOperationalOnboardingRun: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getOperationalOnboardingRuns: () => Promise<Array<Record<string, unknown>>>;
+        getOperationalOnboardingRun: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        updateOperationalOnboardingStep: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createOperationalOnboardingIssue: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getOperationalOnboardingSummary: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        completeOperationalOnboardingRun: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        generateOperationalOnboardingReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         calculateBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         saveBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         exportBathroomEstimate: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

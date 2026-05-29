@@ -6,6 +6,7 @@ const { createBackupRestoreService } = require('./services/backupRestoreService'
 const { createInitialMasterDataService } = require('./services/initialMasterDataService');
 const { createRealPriceCalibrationService } = require('./services/realPriceCalibrationService');
 const { createPriceWorkbookImportService } = require('./services/priceWorkbookImportService');
+const { createOperationalOnboardingService } = require('./services/operationalOnboardingService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -16,6 +17,7 @@ let backupRestoreService;
 let initialMasterDataService;
 let realPriceCalibrationService;
 let priceWorkbookImportService;
+let operationalOnboardingService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -127,6 +129,14 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:price-workbook:history', () => priceWorkbookImportService.getPriceImportHistory());
   ipcMain.handle('boc:price-workbook:detail', (_event, payload = {}) => priceWorkbookImportService.getPriceImportDetail(payload.importId || payload));
   ipcMain.handle('boc:price-workbook:report', (_event, payload = {}) => priceWorkbookImportService.createImportReport(payload.importId || payload));
+  ipcMain.handle('boc:operational-onboarding:create-run', (_event, payload = {}) => operationalOnboardingService.createOperationalOnboardingRun(payload));
+  ipcMain.handle('boc:operational-onboarding:runs', () => operationalOnboardingService.getOperationalOnboardingRuns());
+  ipcMain.handle('boc:operational-onboarding:get-run', (_event, payload = {}) => operationalOnboardingService.getOperationalOnboardingRun(payload.runId || payload.id || payload));
+  ipcMain.handle('boc:operational-onboarding:update-step', (_event, payload = {}) => operationalOnboardingService.updateOperationalOnboardingStep(payload));
+  ipcMain.handle('boc:operational-onboarding:create-issue', (_event, payload = {}) => operationalOnboardingService.createOperationalOnboardingIssue(payload));
+  ipcMain.handle('boc:operational-onboarding:summary', (_event, payload = {}) => operationalOnboardingService.getOperationalOnboardingSummary(payload.runId || payload.id || payload));
+  ipcMain.handle('boc:operational-onboarding:complete', (_event, payload = {}) => operationalOnboardingService.completeOperationalOnboardingRun(payload.runId || payload.id || payload));
+  ipcMain.handle('boc:operational-onboarding:report', (_event, payload = {}) => operationalOnboardingService.generateOperationalOnboardingReport(payload.runId || payload.id || payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
@@ -347,6 +357,7 @@ app.whenReady().then(() => {
   initialMasterDataService = createInitialMasterDataService({ sqliteService, backupRestoreService });
   realPriceCalibrationService = createRealPriceCalibrationService({ sqliteService, backupRestoreService });
   priceWorkbookImportService = createPriceWorkbookImportService({ sqliteService });
+  operationalOnboardingService = createOperationalOnboardingService({ sqliteService });
   registerIpcHandlers();
   createWindow();
 

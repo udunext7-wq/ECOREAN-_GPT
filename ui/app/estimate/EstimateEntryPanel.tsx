@@ -85,6 +85,7 @@ const primaryActions: EntryAction[] = [
 ];
 
 const secondaryActions: EntryAction[] = [
+  { title: 'RC-0.3.1 운영 데이터 입력', headline: '실제 업체 / 단가 / 첫 프로젝트 / 첫 출력 흐름 기록', note: '운영 시작', view: 'operationalOnboarding', tone: 'confirm' },
   { title: 'RC-0.3.0 사용자 테스트', headline: '체크리스트 실행 / 결과 기록 / 버그 보고', note: '릴리스 검증', view: 'userTestCenter', tone: 'confirm' },
   { title: '백업 / 복구 센터', headline: 'DB / Export / 전체 백업과 무결성 검사', note: '데이터 보호', view: 'backupRestore', tone: 'warning' },
   { title: '초기 기준 데이터 세팅', headline: '공정 / 자재 / 노무 / 표준 품목 기본값 생성', note: '운영 준비', view: 'initialMasterData', tone: 'warning' },

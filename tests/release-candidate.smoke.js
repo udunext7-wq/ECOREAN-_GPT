@@ -151,6 +151,10 @@ const releaseChecks = [
     script: 'real-price-import-user-test.smoke.js'
   },
   {
+    label: 'RC-0.3.1 운영 데이터 입력',
+    script: 'operational-data-onboarding.smoke.js'
+  },
+  {
     label: '프랜차이즈 복제',
     script: 'franchise-replication.smoke.js'
   },

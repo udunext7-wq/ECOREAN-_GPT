@@ -141,6 +141,7 @@ export function PriceWorkbookImportCenterView() {
           <button disabled={!importId || busy} onClick={() => void createQueue()}>승인 대기 생성</button>
           <button disabled={!importId || busy} onClick={() => void createReport()}>가져오기 리포트</button>
           <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realPriceCalibration' }))}>실제 단가 보정으로 이동</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'operationalOnboarding' }))}>운영 데이터 입력으로 이동</button>
         </div>
         {messageKo ? <p className="save-message">{messageKo}</p> : null}
       </section>

@@ -111,6 +111,7 @@ export function MasterDataCenterView() {
             <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'initialMasterData' }))}>초기 세팅 열기</button>
             <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realPriceCalibration' }))}>실제 단가 보정</button>
             <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'priceWorkbookImport' }))}>단가표 일괄 가져오기</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'operationalOnboarding' }))}>운영 데이터 입력</button>
           </div>
         </div>
         <p>초기 세팅 후 `수정 필요` 단가는 업체 견적, 실제 매입가, 노무 단가로 승인 반영하세요.</p>
