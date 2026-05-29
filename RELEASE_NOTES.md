@@ -56,6 +56,31 @@
   - queue eligible rows
 - Customer safety remains unchanged: import rows, match logs, unit cost, labor rate, variance, approval queue, and calibration history stay internal only.
 
+### RC-0.3.1 Operational Data Onboarding Branch Stabilization
+
+- Branch: `rc-0.3.1-operational-data-onboarding`
+- Base tag preserved: `v0.3.0-rc`
+- Stabilization decision: `MERGE_READY`
+- Verified:
+  - operational onboarding run creation and completion
+  - full backup
+  - material/labor CSV import
+  - unmatched row manual matching
+  - queue readiness after manual match
+  - approval queue creation
+  - backup before apply
+  - Master Data price update
+  - first LightBIM project import
+  - estimate/PCE
+  - customer/internal output separation
+  - customer safety regression
+- Deferred:
+  - XLSX direct parsing
+  - advanced fuzzy matching
+  - new Master Data auto-create from unmatched rows
+  - Vite bundle optimization
+  - packaged app metadata cleanup
+
 ## Version: RC-0.3.0
 
 ### RC-0.3.0 Operational Release Candidate — Finalized

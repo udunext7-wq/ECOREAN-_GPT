@@ -163,6 +163,10 @@ const releaseChecks = [
     script: 'rc-0-3-1-first-operational-onboarding.smoke.js'
   },
   {
+    label: 'RC-0.3.1 브랜치 안정화',
+    script: 'rc-0-3-1-branch-stabilization.smoke.js'
+  },
+  {
     label: '프랜차이즈 복제',
     script: 'franchise-replication.smoke.js'
   },
