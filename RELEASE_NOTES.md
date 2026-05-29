@@ -35,6 +35,27 @@
 - Customer safety: PASSED for customer estimate, client portal, customer proposal map, proposal board payload, and contract customer section.
 - Deferred item: Vite bundle size warning remains non-blocking and is tracked for optimization.
 
+### RC-0.3.1 Price Import Manual Matching UX
+
+- Improved `단가표 일괄 가져오기` for unmatched and multiple-matched rows.
+- Added Master Data candidate search for material, labor, equipment, standard estimate item, and package targets.
+- Added manual match save flow:
+  - `UNMATCHED` / `MULTIPLE_MATCHES`
+  - search/select Master Data target
+  - save as `MATCHED_MANUAL`
+  - recalculate variance
+  - make row eligible for approval Queue
+- Added row exclusion flow with `EXCLUDED` status.
+- Added queue readiness summary:
+  - matched rows
+  - manually matched rows
+  - unmatched rows
+  - multiple match rows
+  - invalid rows
+  - excluded rows
+  - queue eligible rows
+- Customer safety remains unchanged: import rows, match logs, unit cost, labor rate, variance, approval queue, and calibration history stay internal only.
+
 ## Version: RC-0.3.0
 
 ### RC-0.3.0 Operational Release Candidate — Finalized

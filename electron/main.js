@@ -126,6 +126,13 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:price-workbook:preview', (_event, payload = {}) => priceWorkbookImportService.previewPriceImport(payload.filePath, payload.importType));
   ipcMain.handle('boc:price-workbook:match', (_event, payload = {}) => priceWorkbookImportService.matchImportedRowsToMasterData(payload.importId || payload.rows || payload));
   ipcMain.handle('boc:price-workbook:create-queue', (_event, payload = {}) => priceWorkbookImportService.createPriceUpdateQueueFromImport(payload));
+  ipcMain.handle('boc:price-workbook:search-candidates', (_event, payload = {}) => priceWorkbookImportService.searchPriceImportMatchCandidates(payload.importType, payload.keyword, payload.filters || payload));
+  ipcMain.handle('boc:price-workbook:manual-match', (_event, payload = {}) => priceWorkbookImportService.manuallyMatchImportRow(payload));
+  ipcMain.handle('boc:price-workbook:clear-match', (_event, payload = {}) => priceWorkbookImportService.clearImportRowMatch(payload));
+  ipcMain.handle('boc:price-workbook:exclude-row', (_event, payload = {}) => priceWorkbookImportService.excludeImportRow(payload));
+  ipcMain.handle('boc:price-workbook:unmatched', (_event, payload = {}) => priceWorkbookImportService.getUnmatchedImportRows(payload.importId || payload));
+  ipcMain.handle('boc:price-workbook:multiple', (_event, payload = {}) => priceWorkbookImportService.getMultipleMatchImportRows(payload.importId || payload));
+  ipcMain.handle('boc:price-workbook:readiness', (_event, payload = {}) => priceWorkbookImportService.getImportQueueReadiness(payload.importId || payload));
   ipcMain.handle('boc:price-workbook:history', () => priceWorkbookImportService.getPriceImportHistory());
   ipcMain.handle('boc:price-workbook:detail', (_event, payload = {}) => priceWorkbookImportService.getPriceImportDetail(payload.importId || payload));
   ipcMain.handle('boc:price-workbook:report', (_event, payload = {}) => priceWorkbookImportService.createImportReport(payload.importId || payload));

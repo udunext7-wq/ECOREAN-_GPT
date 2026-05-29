@@ -10,12 +10,19 @@
 - packaged app metadata cleanup
 - bundle size optimization
 - bugfix release
-- 미매칭 단가표 행의 수동 매칭 UX 개선
 - release docs wording polish
 - 첫 운영 데이터 입력 테스트 결과 반영:
-  - 미매칭 단가표 행의 수동 매칭 UX는 후속 개선으로 유지
+  - 미매칭 단가표 행의 수동 매칭 UX는 RC-0.3.1에서 1차 개선 완료
   - Vite bundle size warning은 비차단 최적화 후보로 유지
   - S1/S2 차단 이슈는 현재 없음
+
+### RC-0.3.1 완료
+
+- Price Workbook Import 미매칭/다중매칭 행 수동 매칭 UX
+- Master Data 후보 검색
+- 수동 매칭 저장 / 매칭 해제 / 행 제외
+- Queue 생성 가능 여부 요약
+- 수동 매칭 로그 기록
 
 ## RC-0.4.0
 

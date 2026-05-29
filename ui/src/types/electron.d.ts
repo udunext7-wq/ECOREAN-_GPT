@@ -107,6 +107,13 @@ declare global {
         previewPriceWorkbookImport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         matchPriceWorkbookImportRows: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createPriceUpdateQueueFromWorkbook: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        searchPriceImportMatchCandidates: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        manuallyMatchPriceImportRow: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        clearPriceImportRowMatch: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        excludePriceImportRow: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getUnmatchedPriceImportRows: (payload: Record<string, unknown>) => Promise<Array<Record<string, unknown>>>;
+        getMultipleMatchPriceImportRows: (payload: Record<string, unknown>) => Promise<Array<Record<string, unknown>>>;
+        getPriceImportQueueReadiness: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getPriceWorkbookImportHistory: () => Promise<Array<Record<string, unknown>>>;
         getPriceWorkbookImportDetail: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createPriceWorkbookImportReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
