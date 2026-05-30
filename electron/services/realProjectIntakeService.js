@@ -25,7 +25,9 @@ const FORBIDDEN_CUSTOMER_TERMS = [
   'approval queue',
   'internal',
   'profit',
-  'risk_score'
+  'risk_score',
+  'detailed_address',
+  'detailed address'
 ];
 
 const VALID_ESTIMATE_TYPES = new Set(['BATHROOM', 'KITCHEN', 'FULL_REMODELING']);

@@ -23,6 +23,19 @@
 - Customer safety: customer output is blocked if internal cost, margin, PCE, vendor/labor/purchase/receiving, variance, calibration, backup path, onboarding/import/matching logs, approval queue, profit, or risk-score terms appear in customer payload.
 - Status: package implementation started on RC-0.3.2 branch; not merged to main and not tagged.
 
+### RC-0.3.2 First Real Project Intake Test
+
+- Test date: 2026-05-30
+- Intake ID: `RPI-RC032-FIRST-TEST`
+- Test data path: `tests/user-test-data/rc-0.3.2/real-project-intake`
+- Result: `접수 흐름 사용 가능`
+- Price readiness: `PARTIAL`
+- LightBIM connection: PASSED
+- Estimate/PCE: PASSED, PCE decision `SCALE`
+- Customer safety: PASSED
+- Injected leak check: detailed address, internal cost, margin, and PCE were blocked with S1 issue creation.
+- Documentation: `docs/RC_0_3_2_FIRST_REAL_PROJECT_INTAKE_TEST_REPORT.md`
+
 ## Version: RC-0.3.1
 
 ### RC-0.3.1 Operational Data Onboarding Started

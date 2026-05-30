@@ -1,0 +1,16 @@
+{
+  "version": "RC-0.3.2",
+  "intake_id": "RPI-RC032-FIRST-TEST",
+  "expected": {
+    "initial_status": "DRAFT",
+    "estimate_type": "FULL_REMODELING",
+    "total_area_m2": 84,
+    "budget_grade": "STANDARD",
+    "minimum_space_count": 7,
+    "validation_status": "READY_FOR_ESTIMATE",
+    "price_readiness_allowed": ["READY", "PARTIAL", "NEEDS_UPDATE"],
+    "customer_safety": true,
+    "leak_blocks_output": true,
+    "final_decision": "접수 흐름 사용 가능"
+  }
+}
