@@ -44,6 +44,12 @@
 - packaged app metadata cleanup
 - 실제 고객 데이터 투입 후 세부 UI friction 재확인
 
+## RC-0.3.2 시작
+
+- RC-0.3.2 real project intake package started
+- 실제 고객/현장 데이터 입력 전 접수 항목, 개인정보 최소 입력, LightBIM 연결, 단가 준비 상태, 견적/PCE 생성, 고객 출력 전 안전성 검사를 하나의 운영 흐름으로 정리
+- RC-0.3.0 / RC-0.3.1 태그는 보존하며 `rc-0.3.2-real-project-intake` 브랜치에서 진행
+
 ## RC-0.4.0
 
 - LightBIM object editing improvement

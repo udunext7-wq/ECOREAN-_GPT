@@ -199,7 +199,10 @@ export function PriceWorkbookImportCenterView() {
           <h2>단가표 일괄 가져오기</h2>
           <p>CSV 단가표를 미리보기, 컬럼 매핑, 자동 매칭, 차이율 분석 후 승인 대기 큐로 보냅니다.</p>
         </div>
-        <strong className="green-kpi">승인 후 반영</strong>
+        <div className="button-row">
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realProjectIntake' }))}>실제 프로젝트 접수</button>
+          <strong className="green-kpi">승인 후 반영</strong>
+        </div>
       </section>
 
       <section className="cost-capture-panel warning-row">

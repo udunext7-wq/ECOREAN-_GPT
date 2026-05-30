@@ -159,6 +159,7 @@ export function LightBIMImportCenterView({ onOpenQuantityReview, onOpenExecution
             <input type="file" accept="application/json,.json" onChange={handleBrowserFile} style={{ display: 'none' }} />
           </label>
           <button onClick={() => handleCreateDraft()} disabled={isBusy || !importResult?.ok}>추천 견적 초안 생성</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realProjectIntake' }))}>실제 프로젝트 접수 열기</button>
         </div>
         <p className="assistant-message">{messageKo}</p>
       </section>

@@ -7,6 +7,7 @@ const { createInitialMasterDataService } = require('./services/initialMasterData
 const { createRealPriceCalibrationService } = require('./services/realPriceCalibrationService');
 const { createPriceWorkbookImportService } = require('./services/priceWorkbookImportService');
 const { createOperationalOnboardingService } = require('./services/operationalOnboardingService');
+const { createRealProjectIntakeService } = require('./services/realProjectIntakeService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -18,6 +19,7 @@ let initialMasterDataService;
 let realPriceCalibrationService;
 let priceWorkbookImportService;
 let operationalOnboardingService;
+let realProjectIntakeService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -144,6 +146,18 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:operational-onboarding:summary', (_event, payload = {}) => operationalOnboardingService.getOperationalOnboardingSummary(payload.runId || payload.id || payload));
   ipcMain.handle('boc:operational-onboarding:complete', (_event, payload = {}) => operationalOnboardingService.completeOperationalOnboardingRun(payload.runId || payload.id || payload));
   ipcMain.handle('boc:operational-onboarding:report', (_event, payload = {}) => operationalOnboardingService.generateOperationalOnboardingReport(payload.runId || payload.id || payload));
+  ipcMain.handle('boc:real-project-intake:create', (_event, payload = {}) => realProjectIntakeService.createRealProjectIntake(payload));
+  ipcMain.handle('boc:real-project-intake:update', (_event, payload = {}) => realProjectIntakeService.updateRealProjectIntake(payload));
+  ipcMain.handle('boc:real-project-intake:get', (_event, payload = {}) => realProjectIntakeService.getRealProjectIntake(payload.intakeId || payload.intake_id || payload.id || payload));
+  ipcMain.handle('boc:real-project-intake:list', () => realProjectIntakeService.listRealProjectIntakes());
+  ipcMain.handle('boc:real-project-intake:validate', (_event, payload = {}) => realProjectIntakeService.validateRealProjectIntake(payload.intakeId || payload.intake_id || payload.id || payload));
+  ipcMain.handle('boc:real-project-intake:connect-lightbim', (_event, payload = {}) => realProjectIntakeService.connectLightBIMImport(payload));
+  ipcMain.handle('boc:real-project-intake:price-readiness', (_event, payload = {}) => realProjectIntakeService.checkPriceProfileReadiness(payload.intakeId || payload.intake_id || payload.id || payload));
+  ipcMain.handle('boc:real-project-intake:generate-estimate', (_event, payload = {}) => realProjectIntakeService.generateEstimateFromIntake(payload.intakeId || payload.intake_id || payload.id || payload));
+  ipcMain.handle('boc:real-project-intake:run-pce', (_event, payload = {}) => realProjectIntakeService.runPCEForIntake(payload.intakeId || payload.intake_id || payload.id || payload));
+  ipcMain.handle('boc:real-project-intake:customer-safety', (_event, payload = {}) => realProjectIntakeService.runCustomerSafetyCheckForIntake(payload));
+  ipcMain.handle('boc:real-project-intake:report', (_event, payload = {}) => realProjectIntakeService.createIntakeReport(payload.intakeId || payload.intake_id || payload.id || payload));
+  ipcMain.handle('boc:real-project-intake:create-issue', (_event, payload = {}) => realProjectIntakeService.createIntakeIssue(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
@@ -365,6 +379,7 @@ app.whenReady().then(() => {
   realPriceCalibrationService = createRealPriceCalibrationService({ sqliteService, backupRestoreService });
   priceWorkbookImportService = createPriceWorkbookImportService({ sqliteService });
   operationalOnboardingService = createOperationalOnboardingService({ sqliteService });
+  realProjectIntakeService = createRealProjectIntakeService({ sqliteService });
   registerIpcHandlers();
   createWindow();
 

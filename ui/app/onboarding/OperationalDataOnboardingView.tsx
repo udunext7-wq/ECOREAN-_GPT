@@ -153,6 +153,7 @@ export function OperationalDataOnboardingView() {
           <button className="command" onClick={() => navigate('masterDb')}>업체 정보 입력</button>
           <button className="command" onClick={() => navigate('priceWorkbookImport')}>단가표 가져오기 열기</button>
           <button className="command" onClick={() => navigate('realPriceCalibration')}>노무 단가 / 승인 반영</button>
+          <button className="command" onClick={() => navigate('realProjectIntake')}>실제 프로젝트 접수</button>
           <button className="command" onClick={() => navigate('project')}>첫 프로젝트 생성</button>
           <button className="command" onClick={() => navigate('lightbimImport')}>LightBIM 가져오기 열기</button>
           <button className="command" onClick={() => navigate('fullRemodelingEstimate')}>견적 화면 열기</button>

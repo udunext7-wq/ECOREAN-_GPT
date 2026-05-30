@@ -1,5 +1,28 @@
 # ECOREAN BOC Release Notes
 
+## Version: RC-0.3.2
+
+### RC-0.3.2 Real Project Intake Package Started
+
+- Branch: `rc-0.3.2-real-project-intake`
+- Purpose: prepare the first real customer/project data entry without changing RC-0.3.0 or RC-0.3.1 tags.
+- Added structured intake flow for:
+  - 고객 정보
+  - 현장 정보
+  - 공사 유형
+  - 면적 / 공간 구성
+  - 공사 범위
+  - 예산 / 등급
+  - 일정 희망일
+  - LightBIM 도면 연결
+  - 단가표 적용 여부
+  - 견적/PCE 생성
+  - 고객용 출력 전 내부정보 검사
+  - 실제 프로젝트 입력 리포트
+- Customer data handling: telephone, email, detailed address, and memo remain optional and are redacted in intake logs.
+- Customer safety: customer output is blocked if internal cost, margin, PCE, vendor/labor/purchase/receiving, variance, calibration, backup path, onboarding/import/matching logs, approval queue, profit, or risk-score terms appear in customer payload.
+- Status: package implementation started on RC-0.3.2 branch; not merged to main and not tagged.
+
 ## Version: RC-0.3.1
 
 ### RC-0.3.1 Operational Data Onboarding Started
