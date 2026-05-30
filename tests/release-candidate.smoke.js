@@ -167,6 +167,18 @@ const releaseChecks = [
     script: 'rc-0-3-1-branch-stabilization.smoke.js'
   },
   {
+    label: 'RC-0.3.2 실제 프로젝트 접수',
+    script: 'real-project-intake.smoke.js'
+  },
+  {
+    label: 'RC-0.3.2 첫 실제 프로젝트 접수 테스트',
+    script: 'rc-0-3-2-first-real-project-intake.smoke.js'
+  },
+  {
+    label: 'RC-0.3.2 브랜치 안정화',
+    script: 'rc-0-3-2-branch-stabilization.smoke.js'
+  },
+  {
     label: '프랜차이즈 복제',
     script: 'franchise-replication.smoke.js'
   },

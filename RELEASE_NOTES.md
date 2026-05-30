@@ -36,6 +36,17 @@
 - Injected leak check: detailed address, internal cost, margin, and PCE were blocked with S1 issue creation.
 - Documentation: `docs/RC_0_3_2_FIRST_REAL_PROJECT_INTAKE_TEST_REPORT.md`
 
+### RC-0.3.2 Real Project Intake Branch Stabilization
+
+- Branch: `rc-0.3.2-real-project-intake`
+- Stabilization result: `MERGE_READY`
+- Price readiness result: `PARTIAL`, allowed with warning and does not block estimate generation.
+- LightBIM connection: PASSED, including project name, space count, total area, suggested estimate type, and warning count.
+- Estimate/PCE: PASSED, PCE decision `SCALE` in stabilization smoke.
+- Customer safety: PASSED.
+- Privacy regression: detailed address, customer phone, customer email, memo, internal cost, margin, PCE, vendor/labor/purchase/receiving, variance, calibration, backup path, import rows, manual matching logs, approval queue, profit, and risk-score data are blocked from customer-facing payloads.
+- Release smoke includes representative RC-0.3.2 intake checks.
+
 ## Version: RC-0.3.1
 
 ### RC-0.3.1 Operational Data Onboarding Started

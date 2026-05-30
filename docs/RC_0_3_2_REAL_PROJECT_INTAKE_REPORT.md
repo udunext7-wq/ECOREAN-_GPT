@@ -46,3 +46,14 @@
 - 고객 안전성 결과: 통과
 - 내부정보 leak 주입 결과: S1 이슈 생성 및 출력 차단
 - 최종 판정: 접수 흐름 사용 가능
+
+## RC-0.3.2 안정화 판정
+
+- 안정화 테스트 일자: 2026-05-30
+- 안정화 스모크: `tests/rc-0-3-2-branch-stabilization.smoke.js`
+- 단가 준비 상태: PARTIAL
+- LightBIM 연결: 통과
+- 견적/PCE: 통과
+- 고객 안전성: 통과
+- 상세주소 / 연락처 / 메모 / 내부정보 leak 차단: 통과
+- Merge readiness: `MERGE_READY`
