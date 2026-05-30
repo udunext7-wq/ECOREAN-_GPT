@@ -133,6 +133,27 @@
 - Final decision: `RC-0.3.1 패키지 실사용 가능`
 - Binary policy: packaged binaries are generated locally under `electron/release` and are not committed.
 
+### RC-0.3.1 First Real Project Run
+
+- Test date: 2026-05-30
+- Packaged app: `ECOREAN BOC CEO Dashboard.exe`
+- Packaged launch: PASSED
+- Dev server required: NO
+- Project label: `RC-0.3.1 첫 실제 운영 테스트 프로젝트`
+- Backup result: PASSED
+- Price import/apply: PASSED, approved updates applied after backup
+- LightBIM import: PASSED
+- Estimate/PCE: PASSED, PCE decision `SCALE`
+- Customer estimate/internal cost output: PASSED
+- Contract/schedule/purchase order checks: PASSED
+- Customer safety: PASSED
+- Issues:
+  - S1: none
+  - S2: none
+  - S3: real customer/site data was not provided, so safe test data was used
+  - S4: known Vite bundle size and SQLite experimental warnings remain non-blocking
+- Final decision: `첫 실제 프로젝트 운영 가능`
+
 ## Version: RC-0.3.0
 
 ### RC-0.3.0 Operational Release Candidate — Finalized

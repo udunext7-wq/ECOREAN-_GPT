@@ -32,6 +32,8 @@
 - S1/S2: 없음
 - 고객 안전성: 통과
 - RC-0.3.1 온보딩 / 단가표 수동 매칭 / LightBIM / PCE 흐름: 통과
+- 첫 실제 운영 테스트 판정: `첫 실제 프로젝트 운영 가능`
+- 실제 고객/현장 데이터는 아직 미제공이므로 안전 테스트 데이터 기반으로 검증 완료
 
 ## RC-0.3.1 유예 항목
 
@@ -40,6 +42,7 @@
 - unmatched row에서 신규 Master Data 자동 생성
 - Vite bundle optimization
 - packaged app metadata cleanup
+- 실제 고객 데이터 투입 후 세부 UI friction 재확인
 
 ## RC-0.4.0
 
