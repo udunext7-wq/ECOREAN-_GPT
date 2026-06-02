@@ -47,6 +47,33 @@
 - Privacy regression: detailed address, customer phone, customer email, memo, internal cost, margin, PCE, vendor/labor/purchase/receiving, variance, calibration, backup path, import rows, manual matching logs, approval queue, profit, and risk-score data are blocked from customer-facing payloads.
 - Release smoke includes representative RC-0.3.2 intake checks.
 
+### RC-0.3.2 Real Project Intake - Merged to Main
+
+- Merge date: 2026-06-03
+- Source branch: `rc-0.3.2-real-project-intake`
+- Merge commit: `8875e3239110fe707077cf139432de585d050fc8`
+- Included improvements:
+  - Real Project Intake Center
+  - customer/site/project intake validation
+  - LightBIM connection from intake
+  - price readiness check
+  - estimate/PCE generation from intake
+  - customer output safety check
+  - detailed address, phone, email, and memo privacy filtering
+- Tests passed:
+  - `node tests/rc-0-3-2-branch-stabilization.smoke.js`
+  - `node tests/rc-0-3-2-first-real-project-intake.smoke.js`
+  - `node tests/real-project-intake.smoke.js`
+  - `node tests/rc-0-3-1-packaged-release.smoke.js`
+  - `node tests/price-import-manual-matching.smoke.js`
+  - `node tests/lightbim-customer-safety-regression.smoke.js`
+  - `node tests/lightbim-boc-release-flow.smoke.js`
+  - `npm run build:ui`
+  - `npm run smoke:prod`
+  - `npm run smoke:release`
+- Customer privacy/safety result: PASSED.
+- Final decision: `RC-0.3.2 = main 반영 가능 / 실제 프로젝트 접수 흐름 사용 가능`.
+
 ## Version: RC-0.3.1
 
 ### RC-0.3.1 Operational Data Onboarding Started
