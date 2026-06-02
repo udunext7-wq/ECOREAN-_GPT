@@ -1,0 +1,55 @@
+{
+  "schema": "ECOREAN.LightBIM.v0.1",
+  "project": {
+    "schema_version": "0.1",
+    "project_id": "LBIM-RC032-FIRST-INTAKE",
+    "name": "RC-0.3.2 실제 접수 테스트 LightBIM",
+    "unit": "mm"
+  },
+  "quantities": {
+    "total_floor_area_m2": 84,
+    "total_ceiling_area_m2": 84,
+    "total_wall_area_m2": 224,
+    "total_net_wall_area_m2": 202,
+    "total_perimeter_m": 92,
+    "door_count": 8,
+    "window_count": 5,
+    "space_quantities": [
+      { "space_id": "RC032-LIVING", "space_name": "거실", "area_m2": 26, "perimeter_m": 22, "ceiling_area_m2": 26, "floor_area_m2": 26 },
+      { "space_id": "RC032-KITCHEN", "space_name": "주방", "area_m2": 11, "perimeter_m": 14, "ceiling_area_m2": 11, "floor_area_m2": 11 },
+      { "space_id": "RC032-BATH", "space_name": "욕실", "area_m2": 5, "perimeter_m": 10, "ceiling_area_m2": 5, "floor_area_m2": 5 },
+      { "space_id": "RC032-BED1", "space_name": "침실1", "area_m2": 15, "perimeter_m": 16, "ceiling_area_m2": 15, "floor_area_m2": 15 },
+      { "space_id": "RC032-BED2", "space_name": "침실2", "area_m2": 12, "perimeter_m": 14, "ceiling_area_m2": 12, "floor_area_m2": 12 },
+      { "space_id": "RC032-ENTRY", "space_name": "현관", "area_m2": 5, "perimeter_m": 8, "ceiling_area_m2": 5, "floor_area_m2": 5 },
+      { "space_id": "RC032-BALCONY", "space_name": "발코니", "area_m2": 10, "perimeter_m": 8, "ceiling_area_m2": 10, "floor_area_m2": 10 }
+    ],
+    "process_quantities": {
+      "flooring_area_m2": 79,
+      "wallpaper_area_m2": 168,
+      "painting_area_m2": 34,
+      "ceiling_area_m2": 84,
+      "baseboard_length_m": 74,
+      "molding_length_m": 92,
+      "tile_area_m2": 34
+    }
+  },
+  "bocEstimateInput": {
+    "estimate_type": "FULL_REMODELING",
+    "area_m2": 84,
+    "spaces": [
+      { "id": "RC032-LIVING", "name": "거실", "type": "LIVING", "area_m2": 26, "perimeter_m": 22 },
+      { "id": "RC032-KITCHEN", "name": "주방", "type": "KITCHEN", "area_m2": 11, "perimeter_m": 14 },
+      { "id": "RC032-BATH", "name": "욕실", "type": "BATHROOM", "area_m2": 5, "perimeter_m": 10 },
+      { "id": "RC032-BED1", "name": "침실1", "type": "BEDROOM", "area_m2": 15, "perimeter_m": 16 },
+      { "id": "RC032-BED2", "name": "침실2", "type": "BEDROOM", "area_m2": 12, "perimeter_m": 14 },
+      { "id": "RC032-ENTRY", "name": "현관", "type": "ENTRANCE", "area_m2": 5, "perimeter_m": 8 },
+      { "id": "RC032-BALCONY", "name": "발코니", "type": "BALCONY", "area_m2": 10, "perimeter_m": 8 }
+    ]
+  },
+  "aiPromptHints": {
+    "room_list": ["거실", "주방", "욕실", "침실1", "침실2", "현관", "발코니"],
+    "geometry_consistency_notes": ["Preserve seven spaces and existing opening count."],
+    "opening_constraints": ["Eight doors and five windows."],
+    "negative_constraints": ["Do not change room count.", "Do not invent extra openings."]
+  }
+}

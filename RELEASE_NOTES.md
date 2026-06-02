@@ -1,5 +1,52 @@
 # ECOREAN BOC Release Notes
 
+## Version: RC-0.3.2
+
+### RC-0.3.2 Real Project Intake Package Started
+
+- Branch: `rc-0.3.2-real-project-intake`
+- Purpose: prepare the first real customer/project data entry without changing RC-0.3.0 or RC-0.3.1 tags.
+- Added structured intake flow for:
+  - 고객 정보
+  - 현장 정보
+  - 공사 유형
+  - 면적 / 공간 구성
+  - 공사 범위
+  - 예산 / 등급
+  - 일정 희망일
+  - LightBIM 도면 연결
+  - 단가표 적용 여부
+  - 견적/PCE 생성
+  - 고객용 출력 전 내부정보 검사
+  - 실제 프로젝트 입력 리포트
+- Customer data handling: telephone, email, detailed address, and memo remain optional and are redacted in intake logs.
+- Customer safety: customer output is blocked if internal cost, margin, PCE, vendor/labor/purchase/receiving, variance, calibration, backup path, onboarding/import/matching logs, approval queue, profit, or risk-score terms appear in customer payload.
+- Status: package implementation started on RC-0.3.2 branch; not merged to main and not tagged.
+
+### RC-0.3.2 First Real Project Intake Test
+
+- Test date: 2026-05-30
+- Intake ID: `RPI-RC032-FIRST-TEST`
+- Test data path: `tests/user-test-data/rc-0.3.2/real-project-intake`
+- Result: `접수 흐름 사용 가능`
+- Price readiness: `PARTIAL`
+- LightBIM connection: PASSED
+- Estimate/PCE: PASSED, PCE decision `SCALE`
+- Customer safety: PASSED
+- Injected leak check: detailed address, internal cost, margin, and PCE were blocked with S1 issue creation.
+- Documentation: `docs/RC_0_3_2_FIRST_REAL_PROJECT_INTAKE_TEST_REPORT.md`
+
+### RC-0.3.2 Real Project Intake Branch Stabilization
+
+- Branch: `rc-0.3.2-real-project-intake`
+- Stabilization result: `MERGE_READY`
+- Price readiness result: `PARTIAL`, allowed with warning and does not block estimate generation.
+- LightBIM connection: PASSED, including project name, space count, total area, suggested estimate type, and warning count.
+- Estimate/PCE: PASSED, PCE decision `SCALE` in stabilization smoke.
+- Customer safety: PASSED.
+- Privacy regression: detailed address, customer phone, customer email, memo, internal cost, margin, PCE, vendor/labor/purchase/receiving, variance, calibration, backup path, import rows, manual matching logs, approval queue, profit, and risk-score data are blocked from customer-facing payloads.
+- Release smoke includes representative RC-0.3.2 intake checks.
+
 ## Version: RC-0.3.1
 
 ### RC-0.3.1 Operational Data Onboarding Started

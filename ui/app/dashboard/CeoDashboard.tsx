@@ -87,7 +87,8 @@ export function CeoDashboard() {
       openInitialMasterData: 'initialMasterData',
       openRealPriceCalibration: 'realPriceCalibration',
       openPriceWorkbookImport: 'priceWorkbookImport',
-      openOperationalOnboarding: 'operationalOnboarding'
+      openOperationalOnboarding: 'operationalOnboarding',
+      openRealProjectIntake: 'realProjectIntake'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');

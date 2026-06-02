@@ -85,6 +85,7 @@ const primaryActions: EntryAction[] = [
 ];
 
 const secondaryActions: EntryAction[] = [
+  { title: '실제 프로젝트 접수', headline: '고객 / 현장 / LightBIM / 단가 확인 후 견적 생성', note: 'RC-0.3.2', view: 'realProjectIntake', tone: 'confirm' },
   { title: 'RC-0.3.1 운영 데이터 입력', headline: '실제 업체 / 단가 / 첫 프로젝트 / 첫 출력 흐름 기록', note: '운영 시작', view: 'operationalOnboarding', tone: 'confirm' },
   { title: 'RC-0.3.0 사용자 테스트', headline: '체크리스트 실행 / 결과 기록 / 버그 보고', note: '릴리스 검증', view: 'userTestCenter', tone: 'confirm' },
   { title: '백업 / 복구 센터', headline: 'DB / Export / 전체 백업과 무결성 검사', note: '데이터 보호', view: 'backupRestore', tone: 'warning' },

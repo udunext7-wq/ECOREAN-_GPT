@@ -1,0 +1,34 @@
+{
+  "intake_id": "RPI-RC032-FIRST-TEST",
+  "customer_name": "테스트 고객",
+  "customer_type": "TEST",
+  "site_name": "RC-0.3.2 실제 접수 테스트 현장",
+  "address_summary": "서울 / 익명 테스트 현장",
+  "building_type": "아파트",
+  "floor": "중층",
+  "elevator_available": true,
+  "parking_available": true,
+  "estimate_type": "FULL_REMODELING",
+  "total_area_m2": 84,
+  "budget_amount": 62000000,
+  "budget_grade": "STANDARD",
+  "desired_start_date": "2026-06-15",
+  "desired_end_date": "2026-07-30",
+  "construction_scope": [
+    "demolition",
+    "bathroom",
+    "kitchen",
+    "flooring",
+    "wallpaper",
+    "lighting"
+  ],
+  "space_program": [
+    "거실",
+    "주방",
+    "욕실",
+    "침실",
+    "현관",
+    "발코니"
+  ],
+  "note": "RC-0.3.2 실제 접수 테스트용 익명 데이터입니다. 실제 개인정보를 포함하지 않습니다."
+}
