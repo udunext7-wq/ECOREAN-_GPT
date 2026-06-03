@@ -1,5 +1,26 @@
 # ECOREAN BOC Release Notes
 
+## Version: RC-0.3.3
+
+### RC-0.3.3 Actual Customer Data Pilot Started
+
+- Branch: `rc-0.3.3-actual-customer-data-pilot`
+- Baseline: `v0.3.2-rc-packaged`
+- Purpose: run one actual or anonymized customer/site data pilot without changing the RC-0.3.2 packaged operational baseline.
+- Focus:
+  - full backup before pilot
+  - minimum customer/site data input
+  - Real Project Intake reuse
+  - anonymized LightBIM connection
+  - price readiness check
+  - estimate/PCE generation
+  - customer PDF/internal cost output readiness
+  - customer safety verification
+  - issue/friction recording for RC-0.3.3
+- Privacy rule: pilot reports must not store raw phone, email, detailed address, or customer memo.
+- Customer safety: customer-facing payload must not expose detailed address, customer phone/email, memo, internal cost, margin, PCE, vendor/labor/purchase/receiving data, variance, calibration, backup path, import rows, approval queue, internal, profit, or risk_score.
+- Initial pilot smoke result: `실제 고객 Pilot 가능`.
+
 ## Version: RC-0.3.2
 
 ### RC-0.3.2 Real Project Intake Package Started
