@@ -33,6 +33,23 @@
 - Unresolved S1/S2: none.
 - Deferred: continue observing real customer input friction during additional Pilot runs; CRM pipeline/address API/portal deployment/calendar integration remain future candidates.
 
+### RC-0.3.3 Actual Customer Data Pilot — Merged to Main
+
+- Source branch: `rc-0.3.3-actual-customer-data-pilot`
+- Merge commit: `1d72fc9 Merge RC-0.3.3 actual customer data pilot branch`
+- Included:
+  - Actual Customer Pilot 기록 구조
+  - Pilot report 익명화
+  - intake 연결
+  - LightBIM 연결
+  - 견적/PCE 검증
+  - 고객 안전성 검사
+- Pre-merge validation: PASSED.
+- Post-merge validation on `main`: PASSED.
+- Privacy/anonymization result: PASSED; raw phone, email, detailed address, and customer memo are not written to pilot reports or customer-facing payloads.
+- Customer safety result: PASSED.
+- Final decision: `RC-0.3.3 = 실제 고객 Pilot 흐름 main 반영 가능`
+
 ## Version: RC-0.3.2
 
 ### RC-0.3.2 Real Project Intake Package Started
