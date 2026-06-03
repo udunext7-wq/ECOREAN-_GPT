@@ -4,7 +4,7 @@
 
 - Branch: `rc-0.3.4-actual-customer-pilot-expansion`
 - Baseline: `v0.3.3-rc-packaged`
-- Test date: 2026-06-03
+- Test date: 2026-06-04
 - Purpose: 실제 고객 Pilot을 3개 견적 유형으로 확장하여 반복 가능성과 운영 병목을 확인
 
 ## Pilot Summary
@@ -26,9 +26,9 @@
 
 | Pilot | Pilot ID | Intake ID | Estimate ID |
 | --- | --- | --- | --- |
-| Pilot A | `ACP-RC034-BATHROOM-PILOT` | `RPI-RC034-BATHROOM-PILOT` | `INTAKE-BATHROOM-1780497924364` |
-| Pilot B | `ACP-RC034-KITCHEN-PILOT` | `RPI-RC034-KITCHEN-PILOT` | `INTAKE-KITCHEN-1780497924657` |
-| Pilot C | `ACP-RC034-FULL-PILOT` | `RPI-RC034-FULL-PILOT` | `INTAKE-FULL_REMODELING-1780497924905` |
+| Pilot A | `ACP-RC034-BATHROOM-PILOT` | `RPI-RC034-BATHROOM-PILOT` | `INTAKE-BATHROOM-1780500319131` |
+| Pilot B | `ACP-RC034-KITCHEN-PILOT` | `RPI-RC034-KITCHEN-PILOT` | `INTAKE-KITCHEN-1780500319435` |
+| Pilot C | `ACP-RC034-FULL-PILOT` | `RPI-RC034-FULL-PILOT` | `INTAKE-FULL_REMODELING-1780500319687` |
 
 ## 운영 병목
 
@@ -64,3 +64,13 @@
 ## 최종 판정
 
 `3개 Pilot 유형 반복 검증 가능`
+
+## Branch Stabilization
+
+- Stabilization report: `docs/RC_0_3_4_STABILIZATION_REPORT.md`
+- Stabilization smoke: `tests/rc-0-3-4-branch-stabilization.smoke.js`
+- Stabilization decision: `MERGE_READY`
+- Unresolved S1/S2: 없음
+- 개인정보 익명화: PASSED
+- 고객 안전성: PASSED
+- 견적/PCE: PASSED

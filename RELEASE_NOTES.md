@@ -18,6 +18,25 @@
   - S3/S4 are recorded as operational bottlenecks or polish candidates.
 - Main merge/tag status: not merged, not tagged.
 
+### RC-0.3.4 Actual Customer Pilot Expansion Branch Stabilization
+
+- Branch: `rc-0.3.4-actual-customer-pilot-expansion`
+- Stabilization result: `MERGE_READY`
+- Pilot scenarios verified:
+  - Pilot A: 욕실 단독 리모델링 / `BATHROOM`
+  - Pilot B: 주방 리모델링 / `KITCHEN`
+  - Pilot C: 전체 리모델링 / `FULL_REMODELING`
+- Privacy/anonymization: PASSED. Raw phone, email, detailed address, and customer memo are not stored in Pilot reports or exposed in customer-facing payloads.
+- Customer safety: PASSED. Customer-facing payloads hide internal cost, margin, PCE, vendor/labor/purchase/receiving data, variance, calibration, backup path, import rows, approval queue, internal, profit, and `risk_score`.
+- Estimate/PCE: PASSED for all 3 Pilot types.
+- Customer output/internal output readiness: READY for all 3 Pilot types.
+- Unresolved S1/S2: none.
+- Operational bottlenecks:
+  - 욕실: 비교적 빠름.
+  - 주방: 단가/품목 검토 부담.
+  - 전체 리모델링: LightBIM 수량/PCE 검토 중요.
+- Deferred: additional real-customer pilots, `PARTIAL` price readiness impact analysis, LightBIM quantity review UX, PCE explanation polish, CRM pipeline, address API, portal deployment, calendar integration, cloud sync, and bundle optimization.
+
 ## Version: RC-0.3.3
 
 ### RC-0.3.3 Actual Customer Data Pilot Started

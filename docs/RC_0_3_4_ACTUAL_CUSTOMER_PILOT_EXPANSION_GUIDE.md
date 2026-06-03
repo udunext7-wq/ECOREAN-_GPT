@@ -83,3 +83,15 @@ Pilot 기록과 문서에는 실제 개인정보 원문을 저장하지 않습�
 4. 고객 출력 전 안전성 검사를 반드시 실행합니다.
 5. S1/S2는 즉시 차단하고, S3/S4는 운영 병목으로 기록합니다.
 
+## Stabilization Result
+
+- Stabilization date: 2026-06-04
+- Stabilization smoke: `tests/rc-0-3-4-branch-stabilization.smoke.js`
+- 3개 Pilot 유형: PASSED
+- 개인정보 익명화: PASSED
+- 고객 안전성: PASSED
+- 견적/PCE: PASSED
+- Unresolved S1/S2: 없음
+- Merge readiness: `MERGE_READY`
+
+병합 전에는 RC-0.3.4 브랜치에서 안정화 smoke와 기존 고객 안전성 회귀를 모두 통과해야 합니다. RC-0.3.4 태그는 main 병합 후 별도 단계에서만 생성합니다.
