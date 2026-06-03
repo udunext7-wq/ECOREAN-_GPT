@@ -69,6 +69,23 @@
 - Known warnings: Vite bundle size warning, SQLite experimental warning, electron-builder metadata warning, and Node DEP warning are non-blocking.
 - Final decision: `RC-0.3.3 packaged desktop release 사용 가능`
 
+### RC-0.3.3 Packaged Actual Customer Pilot Run
+
+- Packaged app launch: PASSED.
+- Backup ID: `FULL-2026-06-03_213734`
+- Pilot ID: `ACP-RC033-PACKAGED-PILOT`
+- Intake ID: `RPI-RC033-PACKAGED-PILOT`
+- LightBIM import ID: `LIGHTBIM-IMPORT-1780490254638`
+- Price readiness: `PARTIAL`
+- Estimate ID: `INTAKE-FULL_REMODELING-1780490254727`
+- PCE result: `SCALE`
+- Customer output: `READY`
+- Internal output: `READY`
+- Privacy/anonymization result: PASSED.
+- Customer safety result: PASSED.
+- Restart persistence result: PASSED.
+- Final decision: `패키지 고객 Pilot 흐름 사용 가능`
+
 ## Version: RC-0.3.2
 
 ### RC-0.3.2 Real Project Intake Package Started
