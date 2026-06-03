@@ -50,6 +50,25 @@
 - Customer safety result: PASSED.
 - Final decision: `RC-0.3.3 = 실제 고객 Pilot 흐름 main 반영 가능`
 
+### RC-0.3.3 Desktop Release Package
+
+- Package basis: `d39cbbf Finalize RC-0.3.3 merge documentation`
+- Tag: `v0.3.3-rc`
+- Package type: `windows-unpacked`
+- Packaged executable: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- Included package checks:
+  - Actual Customer Data Pilot service
+  - Pilot report anonymization
+  - Intake connection
+  - LightBIM connection
+  - Estimate/PCE validation
+  - Customer safety regression
+  - Raw phone/email/detailed address/memo report storage prevention
+- Privacy/anonymization result: PASSED.
+- Customer safety result: PASSED.
+- Known warnings: Vite bundle size warning, SQLite experimental warning, electron-builder metadata warning, and Node DEP warning are non-blocking.
+- Final decision: `RC-0.3.3 packaged desktop release 사용 가능`
+
 ## Version: RC-0.3.2
 
 ### RC-0.3.2 Real Project Intake Package Started
