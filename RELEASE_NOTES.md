@@ -74,6 +74,26 @@
 - Customer privacy/safety result: PASSED.
 - Final decision: `RC-0.3.2 = main 반영 가능 / 실제 프로젝트 접수 흐름 사용 가능`.
 
+### RC-0.3.2 Desktop Release Package
+
+- Build date: 2026-06-03
+- Commit used for package: `972571a`
+- Tag: `v0.3.2-rc`
+- Package type: `electron-builder win-unpacked`
+- Package path: `electron/release/win-unpacked`
+- Executable: `ECOREAN BOC CEO Dashboard.exe`
+- Packaged app launch: PASSED.
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: NO.
+- userData path: `%APPDATA%\ecorean-boc-electron`
+- DB path: `%APPDATA%\ecorean-boc-electron\storage\sqlite`
+- Export path: `%APPDATA%\ecorean-boc-electron\export`
+- Backup path: `%APPDATA%\ecorean-boc-electron\backups`
+- RC-0.3.2 packaged feature check: Real Project Intake label, service, IPC/preload bridge, and production UI dist are included.
+- Customer safety result: PASSED.
+- Validation result: PASSED.
+- Binary policy: packaged binaries under `electron/release` are generated locally and are not committed.
+
 ## Version: RC-0.3.1
 
 ### RC-0.3.1 Operational Data Onboarding Started
