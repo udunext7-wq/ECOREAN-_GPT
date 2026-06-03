@@ -21,6 +21,18 @@
 - Customer safety: customer-facing payload must not expose detailed address, customer phone/email, memo, internal cost, margin, PCE, vendor/labor/purchase/receiving data, variance, calibration, backup path, import rows, approval queue, internal, profit, or risk_score.
 - Initial pilot smoke result: `실제 고객 Pilot 가능`.
 
+### RC-0.3.3 Actual Customer Data Pilot Branch Stabilization
+
+- Branch: `rc-0.3.3-actual-customer-data-pilot`
+- Stabilization result: `MERGE_READY`
+- Pilot report anonymization: PASSED.
+- Customer safety: PASSED.
+- Estimate/PCE: PASSED, PCE decision `SCALE`.
+- Price readiness: `PARTIAL`, warning-only and does not block estimate generation.
+- Leak injection: S1 customer-safety block created and customer output blocked.
+- Unresolved S1/S2: none.
+- Deferred: continue observing real customer input friction during additional Pilot runs; CRM pipeline/address API/portal deployment/calendar integration remain future candidates.
+
 ## Version: RC-0.3.2
 
 ### RC-0.3.2 Real Project Intake Package Started

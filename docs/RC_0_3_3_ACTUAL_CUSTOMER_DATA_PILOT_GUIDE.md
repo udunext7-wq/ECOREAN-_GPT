@@ -105,3 +105,11 @@ Severity:
 - S4: 문구/간격/비차단 경고
 
 S1/S2는 RC-0.3.3 Pilot 가능 판정을 막습니다.
+
+## 안정화 판정 기준
+
+- `MERGE_READY`: S1/S2 없음, 개인정보 익명화 통과, 고객 안전성 통과, 견적/PCE 통과, build/smoke 통과
+- `CONDITIONAL_MERGE_READY`: S1 없음, S2는 안전한 우회 가능, S3/S4만 남음
+- `NOT_READY`: S1 존재, 고객정보 원문 누출, 견적/PCE 실패, build 실패
+
+RC-0.3.3 안정화 결과는 `docs/RC_0_3_3_STABILIZATION_REPORT.md`에 기록합니다.
