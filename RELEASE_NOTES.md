@@ -86,6 +86,29 @@
 - Restart persistence result: PASSED.
 - Final decision: `패키지 고객 Pilot 흐름 사용 가능`
 
+### RC-0.3.3 Packaged Operational Baseline
+
+- 기준 커밋: `1f4ea57 Run RC-0.3.3 packaged actual customer pilot test`
+- 새 태그: `v0.3.3-rc-packaged`
+- 최종 판정: `패키지 고객 Pilot 흐름 사용 가능`
+- Privacy/anonymization: PASSED.
+- Customer safety: PASSED.
+- Verified packaged baseline flow:
+  - packaged app launch
+  - backup
+  - actual customer pilot
+  - intake 연결
+  - LightBIM 연결
+  - price readiness
+  - estimate/PCE
+  - customer output READY
+  - internal output READY
+  - restart persistence
+- Known warnings: Vite bundle size warning, SQLite experimental warning, electron-builder metadata warning, and Node DEP0190 warning are non-blocking.
+- Next direction:
+  - RC-0.3.4: 실제 고객 데이터 추가 Pilot / 현장 데이터 축적
+  - RC-0.4.0: CRM pipeline / 주소 API / 고객 포털 배포 / 일정 연동
+
 ## Version: RC-0.3.2
 
 ### RC-0.3.2 Real Project Intake Package Started
