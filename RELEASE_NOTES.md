@@ -94,6 +94,25 @@
 - Validation result: PASSED.
 - Binary policy: packaged binaries under `electron/release` are generated locally and are not committed.
 
+### RC-0.3.2 Packaged Real Project Intake Test
+
+- Test date: 2026-06-03
+- Package commit: `d85f678`
+- Packaged exe: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- Packaged app launch: PASSED.
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: NO.
+- Backup result: PASSED, `FULL-2026-06-03_154750`
+- Intake ID: `RPI-RC032-PACKAGED-REAL-TEST`
+- Project name: `RC-0.3.2 패키지 접수 테스트 현장`
+- LightBIM connection: PASSED, `LIGHTBIM-IMPORT-1780469270192`
+- Price readiness: `PARTIAL`, warning-only and estimate generation allowed.
+- Estimate ID: `INTAKE-FULL_REMODELING-1780469270225`
+- PCE decision: `SCALE`
+- Customer safety: PASSED, sensitive fields are blocked before customer output.
+- Restart persistence: PASSED by service restart simulation against the same packaged-run data set.
+- Final decision: `패키지 접수 흐름 사용 가능`.
+
 ## Version: RC-0.3.1
 
 ### RC-0.3.1 Operational Data Onboarding Started
