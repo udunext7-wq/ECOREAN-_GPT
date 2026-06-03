@@ -1,5 +1,23 @@
 # ECOREAN BOC Release Notes
 
+## Version: RC-0.3.4
+
+### RC-0.3.4 Actual Customer Pilot Expansion Started
+
+- Branch: `rc-0.3.4-actual-customer-pilot-expansion`
+- Baseline: `v0.3.3-rc-packaged`
+- Purpose: expand Actual Customer Pilot validation from one run to at least three project types.
+- Pilot scenarios:
+  - Pilot A: 욕실 단독 리모델링 / `BATHROOM`
+  - Pilot B: 주방 리모델링 / `KITCHEN`
+  - Pilot C: 전체 리모델링 / `FULL_REMODELING`
+- Privacy rule: do not store raw phone, email, detailed address, or customer memo in Pilot documents/reports.
+- Customer safety rule: customer-facing payload must not expose internal cost, margin, PCE, vendor/labor/purchase/receiving data, variance, calibration, backup path, import rows, approval queue, internal, profit, or risk_score.
+- Friction tracking:
+  - S1/S2 block operation and require immediate fix.
+  - S3/S4 are recorded as operational bottlenecks or polish candidates.
+- Main merge/tag status: not merged, not tagged.
+
 ## Version: RC-0.3.3
 
 ### RC-0.3.3 Actual Customer Data Pilot Started
