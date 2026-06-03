@@ -113,6 +113,34 @@
 - Restart persistence: PASSED by service restart simulation against the same packaged-run data set.
 - Final decision: `패키지 접수 흐름 사용 가능`.
 
+### RC-0.3.2 Packaged Operational Baseline
+
+- Baseline commit: `5244e44`
+- Existing tags preserved:
+  - `v0.3.0-rc`
+  - `v0.3.1-rc`
+  - `v0.3.2-rc`
+- New baseline tag: `v0.3.2-rc-packaged`
+- Final decision: `RC-0.3.2 packaged operational baseline 사용 가능`
+- Customer safety: PASSED.
+- Verified packaged operational flows:
+  - packaged app launch
+  - full backup
+  - real project intake
+  - LightBIM connection
+  - price readiness
+  - estimate/PCE
+  - customer safety
+  - restart persistence
+- Known warnings:
+  - Vite bundle size warning
+  - SQLite experimental warning
+  - electron-builder metadata warning
+  - Node DEP0190 warning
+- Next version direction:
+  - RC-0.3.3: actual customer data pilot
+  - RC-0.4.0: CRM pipeline, address API, portal deployment, calendar integration, cloud sync, and larger operational integrations
+
 ## Version: RC-0.3.1
 
 ### RC-0.3.1 Operational Data Onboarding Started
