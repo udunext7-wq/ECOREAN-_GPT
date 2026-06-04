@@ -58,6 +58,25 @@
   - 전체 리모델링: LightBIM 수량/PCE 검토 중요.
 - Final decision: `RC-0.3.4 = 실제 고객 Pilot 반복 검증 흐름 main 반영 가능`
 
+### RC-0.3.4 Desktop Release Package
+
+- Package basis: `2cb40e4 Finalize RC-0.3.4 merge documentation`
+- Tag: `v0.3.4-rc`
+- Package type: `windows-unpacked`
+- Packaged executable: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- Included package checks:
+  - Actual Customer Pilot Expansion
+  - `BATHROOM` / `KITCHEN` / `FULL_REMODELING`
+  - Pilot bottleneck recording
+  - Privacy/anonymization
+  - Customer safety regression
+  - Estimate/PCE repeated verification
+- Privacy/anonymization result: PASSED.
+- Customer safety result: PASSED.
+- Dev server required: NO.
+- Known warnings: Vite bundle size warning, SQLite experimental warning, Electron metadata warning if emitted, Node DEP warning if emitted.
+- Final decision: `RC-0.3.4 desktop release package 사용 가능`
+
 ## Version: RC-0.3.3
 
 ### RC-0.3.3 Actual Customer Data Pilot Started
