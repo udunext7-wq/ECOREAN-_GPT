@@ -77,6 +77,31 @@
 - Known warnings: Vite bundle size warning, SQLite experimental warning, Electron metadata warning if emitted, Node DEP warning if emitted.
 - Final decision: `RC-0.3.4 desktop release package 사용 가능`
 
+### RC-0.3.4 Packaged Operational Baseline
+
+- 기준 커밋: `12a7bbb Build RC-0.3.4 desktop release package`
+- 새 태그: `v0.3.4-rc-packaged`
+- 최종 판정: `3개 Pilot 유형 패키지 운영 기준 사용 가능`
+- Privacy/anonymization: PASSED.
+- Customer safety: PASSED.
+- Verified packaged baseline flow:
+  - packaged app launch
+  - `BATHROOM` pilot
+  - `KITCHEN` pilot
+  - `FULL_REMODELING` pilot
+  - privacy/anonymization
+  - customer safety
+  - estimate/PCE repeated verification
+  - operational bottleneck recording
+- Known warnings:
+  - Vite bundle size warning
+  - SQLite experimental warning
+  - electron-builder metadata warning
+  - Node DEP0190 warning
+- Next direction:
+  - RC-0.3.5: 실제 고객 데이터 추가 Pilot / 단가 `PARTIAL` 영향 분석
+  - RC-0.4.0: CRM pipeline / 주소 API / 고객 포털 배포 / 일정 연동
+
 ## Version: RC-0.3.3
 
 ### RC-0.3.3 Actual Customer Data Pilot Started
