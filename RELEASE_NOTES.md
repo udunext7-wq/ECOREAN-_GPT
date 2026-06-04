@@ -2,6 +2,32 @@
 
 ## Version: RC-0.3.5
 
+### RC-0.3.5 Desktop Release Package
+
+- Package basis: `ba7df50 Finalize RC-0.3.5 merge documentation`
+- Tag: `v0.3.5-rc`
+- Package type: `windows-unpacked`
+- Packaged executable: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- Included package checks:
+  - Price readiness impact analysis
+  - READY / PARTIAL / NEEDS_UPDATE classification
+  - `BATHROOM` / `KITCHEN` / `FULL_REMODELING` risk classification
+  - fallback / confirmed line item count
+  - margin impact
+  - PCE decision linkage
+  - CEO action required
+  - customer-safe payload filtering
+- Packaged readiness results:
+  - READY: `LOW`, 견적 진행 가능
+  - PARTIAL / BATHROOM: `MEDIUM`, 대표 검토 후 진행
+  - PARTIAL / KITCHEN: `HIGH`, 단가 보정 후 진행
+  - PARTIAL / FULL_REMODELING: `HIGH`, 단가 보정 후 진행
+  - NEEDS_UPDATE: `BLOCKING`, 견적 차단
+- Customer safety result: PASSED.
+- Dev server required: NO.
+- Known warnings: Vite bundle size warning, SQLite experimental warning, Electron metadata warning if emitted, Node DEP warning if emitted, and npm update notice if emitted.
+- Final decision: `RC-0.3.5 desktop release package 사용 가능`
+
 ### RC-0.3.5 Price Readiness Impact Analysis — Merged to Main
 
 - Source branch: `rc-0.3.5-price-readiness-impact-analysis`
