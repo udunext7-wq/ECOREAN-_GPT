@@ -37,6 +37,27 @@
   - 전체 리모델링: LightBIM 수량/PCE 검토 중요.
 - Deferred: additional real-customer pilots, `PARTIAL` price readiness impact analysis, LightBIM quantity review UX, PCE explanation polish, CRM pipeline, address API, portal deployment, calendar integration, cloud sync, and bundle optimization.
 
+### RC-0.3.4 Actual Customer Pilot Expansion — Merged to Main
+
+- Source branch: `rc-0.3.4-actual-customer-pilot-expansion`
+- Merge commit: `0cba7e6 Merge RC-0.3.4 actual customer pilot expansion branch`
+- Included:
+  - 3개 Pilot 유형 반복 검증
+  - `BATHROOM` / `KITCHEN` / `FULL_REMODELING`
+  - 개인정보 익명화
+  - 고객 안전성 검사
+  - 견적/PCE 검증
+  - 운영 병목 기록
+- Pre-merge validation: PASSED.
+- Post-merge validation on `main`: PASSED.
+- Privacy/anonymization result: PASSED.
+- Customer safety result: PASSED.
+- Operational bottlenecks:
+  - 욕실: 비교적 빠름.
+  - 주방: 단가/품목 검토 부담.
+  - 전체 리모델링: LightBIM 수량/PCE 검토 중요.
+- Final decision: `RC-0.3.4 = 실제 고객 Pilot 반복 검증 흐름 main 반영 가능`
+
 ## Version: RC-0.3.3
 
 ### RC-0.3.3 Actual Customer Data Pilot Started
