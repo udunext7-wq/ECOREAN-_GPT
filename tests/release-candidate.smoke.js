@@ -266,6 +266,7 @@ console.log(JSON.stringify({
   test: 'release-candidate.smoke',
   checks: results.map(({ label, script }) => ({ label, script }))
 }, null, 2));
+process.exit(0);
 }
 
 run().catch((error) => {

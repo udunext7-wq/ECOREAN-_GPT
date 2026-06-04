@@ -102,6 +102,43 @@
   - RC-0.3.5: 실제 고객 데이터 추가 Pilot / 단가 `PARTIAL` 영향 분석
   - RC-0.4.0: CRM pipeline / 주소 API / 고객 포털 배포 / 일정 연동
 
+## Version: RC-0.3.5
+
+### RC-0.3.5 Price Readiness Impact Analysis Started
+
+- Branch: `rc-0.3.5-price-readiness-impact-analysis`
+- Baseline: `v0.3.4-rc-packaged`
+- Purpose: analyze how `Price readiness = PARTIAL` affects estimates, PCE, margin safety, and CEO approval decisions.
+- Estimate types analyzed:
+  - `BATHROOM`
+  - `KITCHEN`
+  - `FULL_REMODELING`
+- Focus:
+  - HIGH/MEDIUM/LOW `NEEDS_UPDATE` counts
+  - fallback line item count
+  - confirmed line item count
+  - estimated/default line item count
+  - customer price and internal cost impact
+  - margin impact
+  - PCE decision impact
+  - risk level and recommended action
+- Customer safety rule: customer-facing payload must not expose price readiness impact, risk level, fallback price, internal cost, margin, PCE, vendor/labor/purchase/receiving data, variance, calibration, approval queue, internal, profit, risk_score, detailed address, customer phone/email, or memo.
+- Main merge/tag status: not merged, not tagged.
+
+### RC-0.3.5 Price Readiness Impact Analysis Branch Stabilization
+
+- Branch: `rc-0.3.5-price-readiness-impact-analysis`
+- Stabilization result: `MERGE_READY`
+- Risk decisions:
+  - READY: `LOW` / 견적 진행 가능
+  - PARTIAL / `BATHROOM`: `MEDIUM` / 대표 검토 후 진행
+  - PARTIAL / `KITCHEN`: `HIGH` / 단가 보정 후 진행
+  - PARTIAL / `FULL_REMODELING`: `HIGH` / 단가 보정 후 진행
+  - NEEDS_UPDATE: `BLOCKING` / 견적 차단
+- Customer safety: PASSED. Customer-facing payload hides impact/internal data.
+- Unresolved S1/S2: none.
+- Deferred: collect more real-customer pilot data, standardize kitchen price calibration priority, improve full remodeling LightBIM quantity review UX, and improve internal PCE/readiness interpretation reports.
+
 ## Version: RC-0.3.3
 
 ### RC-0.3.3 Actual Customer Data Pilot Started
