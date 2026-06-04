@@ -2,6 +2,24 @@
 
 ## Version: RC-0.3.5
 
+### RC-0.3.5 Packaged Operational Baseline
+
+- Baseline commit: `29b8074 Build RC-0.3.5 desktop release package`
+- Source tag preserved: `v0.3.5-rc`
+- Packaged baseline tag: `v0.3.5-rc-packaged`
+- Final decision: `단가 준비 상태 리스크 판단 패키지 운영 기준 사용 가능`
+- Packaged executable: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- READY: `LOW` / 견적 진행 가능
+- PARTIAL / BATHROOM: `MEDIUM` / 대표 검토 후 진행
+- PARTIAL / KITCHEN: `HIGH` / 단가 보정 후 진행
+- PARTIAL / FULL_REMODELING: `HIGH` / 단가 보정 후 진행
+- NEEDS_UPDATE: `BLOCKING` / 견적 차단
+- Customer safety: PASSED.
+- Known warnings: Vite bundle size warning, SQLite experimental warning, electron-builder metadata warning if packaging is run, and Node DEP0190 warning if emitted by packaging.
+- Next direction:
+  - RC-0.3.6: 단가 보정 UX 고도화
+  - RC-0.4.0: CRM pipeline / 주소 API / 고객 포털 배포 / 일정 연동
+
 ### RC-0.3.5 Desktop Release Package
 
 - Package basis: `ba7df50 Finalize RC-0.3.5 merge documentation`
