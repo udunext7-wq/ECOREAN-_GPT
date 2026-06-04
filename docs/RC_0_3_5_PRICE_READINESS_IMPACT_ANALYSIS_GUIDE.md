@@ -85,3 +85,17 @@ RC-0.3.5는 새 기능 추가가 아니라 `Price readiness = PARTIAL` 상태가
 - PCE 해석
 
 전체 리모델링은 fallback 항목 수가 늘어날수록 PCE와 마진 방어 판단이 어려워집니다.
+
+## Stabilization Result
+
+- Stabilization date: 2026-06-04
+- Stabilization smoke: `tests/rc-0-3-5-branch-stabilization.smoke.js`
+- Merge readiness: `MERGE_READY`
+- S1/S2: 없음
+- Customer safety: PASSED
+
+안정화 기준에서는 `PARTIAL`을 단순 경고가 아니라 CEO 판단용 risk level로 분리합니다.
+
+- 욕실 PARTIAL: `MEDIUM` / 대표 검토 후 진행
+- 주방 PARTIAL: `HIGH` / 단가 보정 후 진행
+- 전체 리모델링 PARTIAL: `HIGH` / 단가 보정 후 진행

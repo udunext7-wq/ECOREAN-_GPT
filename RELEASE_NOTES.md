@@ -125,6 +125,20 @@
 - Customer safety rule: customer-facing payload must not expose price readiness impact, risk level, fallback price, internal cost, margin, PCE, vendor/labor/purchase/receiving data, variance, calibration, approval queue, internal, profit, risk_score, detailed address, customer phone/email, or memo.
 - Main merge/tag status: not merged, not tagged.
 
+### RC-0.3.5 Price Readiness Impact Analysis Branch Stabilization
+
+- Branch: `rc-0.3.5-price-readiness-impact-analysis`
+- Stabilization result: `MERGE_READY`
+- Risk decisions:
+  - READY: `LOW` / 견적 진행 가능
+  - PARTIAL / `BATHROOM`: `MEDIUM` / 대표 검토 후 진행
+  - PARTIAL / `KITCHEN`: `HIGH` / 단가 보정 후 진행
+  - PARTIAL / `FULL_REMODELING`: `HIGH` / 단가 보정 후 진행
+  - NEEDS_UPDATE: `BLOCKING` / 견적 차단
+- Customer safety: PASSED. Customer-facing payload hides impact/internal data.
+- Unresolved S1/S2: none.
+- Deferred: collect more real-customer pilot data, standardize kitchen price calibration priority, improve full remodeling LightBIM quantity review UX, and improve internal PCE/readiness interpretation reports.
+
 ## Version: RC-0.3.3
 
 ### RC-0.3.3 Actual Customer Data Pilot Started

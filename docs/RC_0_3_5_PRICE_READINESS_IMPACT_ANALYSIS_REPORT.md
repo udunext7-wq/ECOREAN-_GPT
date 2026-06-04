@@ -71,3 +71,19 @@
 `RC-0.3.5 price readiness impact analysis 시작 가능`
 
 고객 출력에는 risk level, margin, PCE, fallback 항목을 노출하지 않습니다.
+
+## Branch Stabilization
+
+- Stabilization report: `docs/RC_0_3_5_STABILIZATION_REPORT.md`
+- Stabilization smoke: `tests/rc-0-3-5-branch-stabilization.smoke.js`
+- Stabilization decision: `MERGE_READY`
+- Customer safety: PASSED
+- Unresolved S1/S2: 없음
+
+안정화 후 판정:
+
+- READY: `LOW` / 견적 진행 가능
+- PARTIAL / BATHROOM: `MEDIUM` / 대표 검토 후 진행
+- PARTIAL / KITCHEN: `HIGH` / 단가 보정 후 진행
+- PARTIAL / FULL_REMODELING: `HIGH` / 단가 보정 후 진행
+- NEEDS_UPDATE: `BLOCKING` / 견적 차단
