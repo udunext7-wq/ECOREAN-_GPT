@@ -1,5 +1,33 @@
 # ECOREAN BOC Release Notes
 
+## Version: RC-0.3.5
+
+### RC-0.3.5 Price Readiness Impact Analysis — Merged to Main
+
+- Source branch: `rc-0.3.5-price-readiness-impact-analysis`
+- Merge commit: `2377194 Merge RC-0.3.5 price readiness impact analysis branch`
+- Included:
+  - READY / PARTIAL / NEEDS_UPDATE 단가 준비 상태별 견적 영향 분석
+  - `BATHROOM` / `KITCHEN` / `FULL_REMODELING` 리스크 분류
+  - fallback line item count / confirmed line item count 계산
+  - margin impact 분석
+  - PCE decision 연결
+  - CEO action required 판단
+  - customer payload 내부정보 비노출 검증
+- READY result: all estimate types are `LOW` risk and `견적 진행 가능`.
+- PARTIAL result:
+  - `BATHROOM`: `MEDIUM`, `대표 검토 후 진행`
+  - `KITCHEN`: `HIGH`, `단가 보정 후 진행`
+  - `FULL_REMODELING`: `HIGH`, `단가 보정 후 진행`
+- NEEDS_UPDATE result: all estimate types are `BLOCKING`, `견적 차단`.
+- Customer safety result: PASSED. Customer-facing payloads hide internal cost, margin, PCE, vendor/labor/purchase data, variance, calibration, approval queue, fallback/confirmed line counts, and price readiness impact details.
+- Pre-merge validation: PASSED.
+- Post-merge validation on `main`: PASSED.
+- Release smoke note: `tests/release-candidate.smoke.js` now exits explicitly after successful checks to prevent lingering smoke-test handles from causing a timeout.
+- Known warnings: Vite bundle size warning and SQLite experimental warning are non-blocking.
+- Deferred: 주방/전체 리모델링 PARTIAL 상태의 검토 부담, 단가 보정 UX 고도화, LightBIM 수량 검토 UX, PCE 해석 안내, CRM pipeline, address API, customer portal deployment, calendar integration, cloud sync, and bundle optimization.
+- Final decision: `RC-0.3.5 = 단가 준비 상태 리스크 판단 흐름 main 반영 가능`
+
 ## Version: RC-0.3.4
 
 ### RC-0.3.4 Actual Customer Pilot Expansion Started
