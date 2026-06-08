@@ -117,6 +117,12 @@ declare global {
         getPriceWorkbookImportHistory: () => Promise<Array<Record<string, unknown>>>;
         getPriceWorkbookImportDetail: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createPriceWorkbookImportReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getPriceCalibrationPrioritySummary: () => Promise<Record<string, unknown>>;
+        getPriceCalibrationPriorityItems: (payload: Record<string, unknown>) => Promise<Array<Record<string, unknown>>>;
+        createCalibrationTaskFromImpact: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        markCalibrationTaskReviewed: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        linkCalibrationTaskToPriceQueue: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createPriceCalibrationPriorityReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createOperationalOnboardingRun: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getOperationalOnboardingRuns: () => Promise<Array<Record<string, unknown>>>;
         getOperationalOnboardingRun: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

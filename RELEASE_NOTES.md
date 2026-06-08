@@ -1,5 +1,45 @@
 # ECOREAN BOC Release Notes
 
+## Version: RC-0.3.6
+
+### RC-0.3.6 Price Calibration UX Started
+
+- Branch: `rc-0.3.6-price-calibration-ux`
+- Baseline: `v0.3.5-rc-packaged`
+- Added: `단가 보정 우선순위 센터`
+- Purpose: connect READY / PARTIAL / NEEDS_UPDATE price readiness impact results to an operator-friendly calibration priority workflow.
+- Priority rules:
+  - NEEDS_UPDATE or BLOCKING: `즉시 보정 필요`
+  - PARTIAL / KITCHEN: `견적 전 보정 권장`
+  - PARTIAL / FULL_REMODELING: `견적 전 보정 권장`
+  - PARTIAL / BATHROOM: `대표 검토 필요`
+  - READY / LOW: `확인 완료`
+- Safety:
+  - Calibration priority tasks do not directly update Master Data prices.
+  - Price updates still require queue review, approval, backup, and apply through the existing Real Price Calibration workflow.
+  - Customer-facing payloads do not expose internal price calibration priority, risk, PCE, margin, queue, or internal cost data.
+- Main merge/tag status: not merged, not tagged.
+
+### RC-0.3.6 Price Calibration UX Branch Stabilization
+
+- Branch: `rc-0.3.6-price-calibration-ux`
+- Stabilization decision: `MERGE_READY`
+- Verified:
+  - `단가 보정 우선순위 센터`
+  - BATHROOM / KITCHEN / FULL_REMODELING priority calculation
+  - NEEDS_UPDATE -> `즉시 보정 필요`
+  - PARTIAL / KITCHEN -> `견적 전 보정 권장`
+  - PARTIAL / FULL_REMODELING -> `견적 전 보정 권장`
+  - PARTIAL / BATHROOM -> `대표 검토 필요`
+  - calibration task creation/review
+  - price update queue linkage without auto approval/apply
+  - Master Data price protection before approval/apply
+  - customer payload internal data filtering
+- `npm run smoke:release` path stability: PASSED from the `electron` folder.
+- Customer safety: PASSED.
+- Unresolved S1/S2: none.
+- Main merge/tag status: not merged, not tagged.
+
 ## Version: RC-0.3.5
 
 ### RC-0.3.5 Packaged Operational Baseline
