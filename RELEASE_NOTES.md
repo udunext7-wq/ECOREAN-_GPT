@@ -40,6 +40,27 @@
 - Unresolved S1/S2: none.
 - Main merge/tag status: not merged, not tagged.
 
+### RC-0.3.6 Price Calibration UX — Merged to Main
+
+- Source branch: `rc-0.3.6-price-calibration-ux`
+- Merge commit: `74894f0 Merge RC-0.3.6 price calibration UX branch`
+- Included:
+  - `단가 보정 우선순위 센터`
+  - Price readiness impact -> calibration task workflow
+  - BATHROOM / KITCHEN / FULL_REMODELING priority classification
+  - NEEDS_UPDATE -> `즉시 보정 필요`
+  - PARTIAL / KITCHEN -> `견적 전 보정 권장`
+  - PARTIAL / FULL_REMODELING -> `견적 전 보정 권장`
+  - PARTIAL / BATHROOM -> `대표 검토 필요`
+  - price queue linkage without auto approval/apply
+  - Master Data price protection before approval/backup/apply
+  - customer payload filtering for internal price, risk, queue, PCE, and margin data
+  - `smoke:release` path stabilization from the Electron package folder
+- Pre-merge validation: PASSED.
+- Post-merge validation on `main`: PASSED.
+- Customer safety: PASSED.
+- Final decision: `RC-0.3.6 = 단가 보정 우선순위 UX main 반영 가능`
+
 ## Version: RC-0.3.5
 
 ### RC-0.3.5 Packaged Operational Baseline
