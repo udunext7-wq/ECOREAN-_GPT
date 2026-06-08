@@ -126,6 +126,7 @@ export function RealPriceCalibrationCenterView() {
           <button onClick={() => void submitQueue('LABOR_RATE')}>노무 단가 입력</button>
           <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'priceWorkbookImport' }))}>단가표 일괄 가져오기</button>
           <button onClick={() => void createReport()}>리포트 생성</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'priceCalibrationPriority' }))}>단가 보정 우선순위</button>
         </div>
         {messageKo ? <p className="save-message">{messageKo}</p> : null}
       </section>

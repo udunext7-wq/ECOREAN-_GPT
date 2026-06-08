@@ -87,6 +87,7 @@ export function CeoDashboard() {
       openInitialMasterData: 'initialMasterData',
       openRealPriceCalibration: 'realPriceCalibration',
       openPriceWorkbookImport: 'priceWorkbookImport',
+      openPriceCalibrationPriority: 'priceCalibrationPriority',
       openOperationalOnboarding: 'operationalOnboarding',
       openRealProjectIntake: 'realProjectIntake'
     };
@@ -305,6 +306,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('initialMasterData', 'warning')}>초기 기준 데이터</button>
         <button onClick={() => openView('realPriceCalibration', 'warning')}>실제 단가 보정</button>
         <button onClick={() => openView('priceWorkbookImport', 'warning')}>단가표 가져오기</button>
+        <button onClick={() => openView('priceCalibrationPriority', 'warning')}>단가 보정 우선순위</button>
         <button onClick={() => openView('floorplanCenter', 'click')}>평면도 / 아이소메트릭</button>
         <button onClick={() => openView('aiVisualization', 'click')}>AI 투시도 생성</button>
         <button onClick={() => openView('project', 'click')}>Project Drill Down</button>
@@ -314,6 +316,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('vendorPrice', 'click')}>Vendor Price</button>
         <button onClick={() => openView('vendorIntelligence', 'warning')}>Vendor Intelligence</button>
         <button onClick={() => openView('realPriceCalibration', 'warning')}>단가 보정</button>
+        <button onClick={() => openView('priceCalibrationPriority', 'warning')}>Price Priority</button>
         <button onClick={() => openView('priceWorkbookImport', 'warning')}>Price Workbook</button>
         <button onClick={() => openView('portfolio', 'click')}>Portfolio</button>
         <button onClick={() => openView('crew', 'click')}>Crew</button>

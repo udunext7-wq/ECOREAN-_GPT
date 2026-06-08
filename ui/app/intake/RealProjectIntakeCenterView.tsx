@@ -231,6 +231,7 @@ export function RealProjectIntakeCenterView() {
         <div className="button-row">
           <button onClick={() => navigate('backupRestore')}>백업 / 복구 센터</button>
           <button onClick={() => navigate('priceWorkbookImport')}>단가표 가져오기</button>
+          <button onClick={() => navigate('priceCalibrationPriority')}>단가 보정 우선순위</button>
           <button onClick={() => navigate('lightbimImport')}>LightBIM 도면 가져오기</button>
         </div>
       </div>
@@ -330,6 +331,7 @@ export function RealProjectIntakeCenterView() {
         <div className="drawer-block">
           <h3>단가 적용 확인</h3>
           <button disabled={busy} onClick={checkPrice}>단가 준비 상태 확인</button>
+          <button onClick={() => navigate('priceCalibrationPriority')}>보정 우선순위 확인</button>
           <pre>{JSON.stringify(priceReadiness || {}, null, 2)}</pre>
         </div>
 

@@ -6,6 +6,7 @@ const { createBackupRestoreService } = require('./services/backupRestoreService'
 const { createInitialMasterDataService } = require('./services/initialMasterDataService');
 const { createRealPriceCalibrationService } = require('./services/realPriceCalibrationService');
 const { createPriceWorkbookImportService } = require('./services/priceWorkbookImportService');
+const { createPriceCalibrationPriorityService } = require('./services/priceCalibrationPriorityService');
 const { createOperationalOnboardingService } = require('./services/operationalOnboardingService');
 const { createRealProjectIntakeService } = require('./services/realProjectIntakeService');
 
@@ -18,6 +19,7 @@ let backupRestoreService;
 let initialMasterDataService;
 let realPriceCalibrationService;
 let priceWorkbookImportService;
+let priceCalibrationPriorityService;
 let operationalOnboardingService;
 let realProjectIntakeService;
 
@@ -138,6 +140,12 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:price-workbook:history', () => priceWorkbookImportService.getPriceImportHistory());
   ipcMain.handle('boc:price-workbook:detail', (_event, payload = {}) => priceWorkbookImportService.getPriceImportDetail(payload.importId || payload));
   ipcMain.handle('boc:price-workbook:report', (_event, payload = {}) => priceWorkbookImportService.createImportReport(payload.importId || payload));
+  ipcMain.handle('boc:price-calibration-priority:summary', () => priceCalibrationPriorityService.getPriceCalibrationPrioritySummary());
+  ipcMain.handle('boc:price-calibration-priority:items', (_event, payload = {}) => priceCalibrationPriorityService.getPriorityItemsByEstimateType(payload.estimateType || payload.estimate_type || payload));
+  ipcMain.handle('boc:price-calibration-priority:create-task', (_event, payload = {}) => priceCalibrationPriorityService.createCalibrationTaskFromImpact(payload));
+  ipcMain.handle('boc:price-calibration-priority:review-task', (_event, payload = {}) => priceCalibrationPriorityService.markCalibrationTaskReviewed(payload.taskId || payload.task_id, payload));
+  ipcMain.handle('boc:price-calibration-priority:link-queue', (_event, payload = {}) => priceCalibrationPriorityService.linkCalibrationTaskToPriceQueue(payload.taskId || payload.task_id, payload.queueId || payload.queue_id));
+  ipcMain.handle('boc:price-calibration-priority:report', (_event, payload = {}) => priceCalibrationPriorityService.createPriceCalibrationPriorityReport(payload));
   ipcMain.handle('boc:operational-onboarding:create-run', (_event, payload = {}) => operationalOnboardingService.createOperationalOnboardingRun(payload));
   ipcMain.handle('boc:operational-onboarding:runs', () => operationalOnboardingService.getOperationalOnboardingRuns());
   ipcMain.handle('boc:operational-onboarding:get-run', (_event, payload = {}) => operationalOnboardingService.getOperationalOnboardingRun(payload.runId || payload.id || payload));
@@ -378,6 +386,7 @@ app.whenReady().then(() => {
   initialMasterDataService = createInitialMasterDataService({ sqliteService, backupRestoreService });
   realPriceCalibrationService = createRealPriceCalibrationService({ sqliteService, backupRestoreService });
   priceWorkbookImportService = createPriceWorkbookImportService({ sqliteService });
+  priceCalibrationPriorityService = createPriceCalibrationPriorityService({ sqliteService });
   operationalOnboardingService = createOperationalOnboardingService({ sqliteService });
   realProjectIntakeService = createRealProjectIntakeService({ sqliteService });
   registerIpcHandlers();

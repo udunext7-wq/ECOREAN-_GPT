@@ -10,7 +10,7 @@
     "db:init": "node --experimental-sqlite scripts/init-sqlite.js",
     "db:register-first-project": "node --experimental-sqlite scripts/register-first-operating-project.js",
     "smoke:prod": "cross-env ECOREAN_SMOKE_TEST=1 electron .",
-    "smoke:release": "node ../tests/release-candidate.smoke.js",
+    "smoke:release": "node -e \"const path=require('path'); process.chdir('..'); require(path.join(process.cwd(),'tests','release-candidate.smoke.js'))\"",
     "dist": "npm run build:ui && electron-builder --win --x64 --dir",
     "dist:installer": "npm run build:ui && electron-builder --win --x64"
   },

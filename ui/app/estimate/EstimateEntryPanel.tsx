@@ -91,6 +91,7 @@ const secondaryActions: EntryAction[] = [
   { title: '백업 / 복구 센터', headline: 'DB / Export / 전체 백업과 무결성 검사', note: '데이터 보호', view: 'backupRestore', tone: 'warning' },
   { title: '초기 기준 데이터 세팅', headline: '공정 / 자재 / 노무 / 표준 품목 기본값 생성', note: '운영 준비', view: 'initialMasterData', tone: 'warning' },
   { title: '실제 단가 보정', headline: '수정 필요 단가 / 업체 견적 / 매입가 / 노무 단가 승인 반영', note: '단가 보정', view: 'realPriceCalibration', tone: 'warning' },
+  { title: '단가 보정 우선순위', headline: 'READY / PARTIAL / NEEDS_UPDATE 리스크를 보정 작업으로 연결', note: 'RC-0.3.6', view: 'priceCalibrationPriority', tone: 'warning' },
   { title: '단가표 일괄 가져오기', headline: 'CSV 단가표 미리보기 / 자동 매칭 / 승인 대기 생성', note: '단가 입력', view: 'priceWorkbookImport', tone: 'warning' },
   { title: 'CEO Control Tower', headline: '오늘의 위험과 승인 대기', note: '운영 통제', view: 'ceoControlTower', tone: 'warning' },
   { title: '현장 모바일', headline: '출역 / 공사일보 / 사진 / 검수 / 위험 보고', note: '모바일 현장', view: 'fieldMobile', tone: 'confirm' },
