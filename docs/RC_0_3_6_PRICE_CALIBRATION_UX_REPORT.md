@@ -49,3 +49,14 @@ Master Data 가격 변경은 기존 실제 단가 보정 센터의 승인 및 �
 ## 최종 판정
 
 RC-0.3.6 Price Calibration UX는 실제 단가 보정 우선순위를 운영자가 확인하고 Queue로 연결하기 위한 시작 흐름으로 사용 가능합니다.
+
+## 안정화 판정
+
+- Stabilization decision: `MERGE_READY`
+- BATHROOM PARTIAL: `대표 검토 필요`
+- KITCHEN PARTIAL: `견적 전 보정 권장`
+- FULL_REMODELING PARTIAL: `견적 전 보정 권장`
+- NEEDS_UPDATE: `즉시 보정 필요`
+- Master Data 직접 변경 방지: PASSED
+- Customer safety: PASSED
+- Release smoke cwd/path verification: PASSED

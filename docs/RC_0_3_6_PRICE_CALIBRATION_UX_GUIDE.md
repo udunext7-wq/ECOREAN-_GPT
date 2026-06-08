@@ -75,3 +75,13 @@ RC-0.3.6은 RC-0.3.5에서 확인한 READY / PARTIAL / NEEDS_UPDATE 단가 준�
 ## 후속 단계
 
 RC-0.3.6 이후에는 반복 운영 중 쌓인 보정 작업을 기준으로 단가 보정 UX를 더 다듬습니다.
+
+## 안정화 결과
+
+- Branch stabilization: `MERGE_READY`
+- 우선순위 계산: 통과
+- 보정 작업 생성/검토: 통과
+- price queue 연결: 통과
+- 승인 없는 Master Data 가격 변경 방지: 통과
+- 고객 안전성: 통과
+- `npm run smoke:release`: electron 폴더 기준 실행 통과
