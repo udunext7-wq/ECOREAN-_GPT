@@ -61,6 +61,31 @@
 - Customer safety: PASSED.
 - Final decision: `RC-0.3.6 = 단가 보정 우선순위 UX main 반영 가능`
 
+### RC-0.3.6 Desktop Release Package
+
+- Package basis: `fa560c8 Finalize RC-0.3.6 merge documentation`
+- Tag: `v0.3.6-rc`
+- Package type: `windows-unpacked`
+- Packaged executable: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- Included package checks:
+  - `단가 보정 우선순위 센터`
+  - Price readiness impact -> calibration task workflow
+  - BATHROOM / KITCHEN / FULL_REMODELING priority classification
+  - price queue linkage without auto approval/apply
+  - Master Data direct price change prevention
+  - customer-safe payload filtering
+  - `smoke:release` path stabilization
+- Priority results:
+  - BATHROOM PARTIAL: `MEDIUM / 대표 검토 필요`
+  - KITCHEN PARTIAL: `HIGH / 견적 전 보정 권장`
+  - FULL_REMODELING PARTIAL: `HIGH / 견적 전 보정 권장`
+  - NEEDS_UPDATE: `BLOCKING / 즉시 보정 필요`
+- Customer safety result: PASSED.
+- Master price protection: PASSED.
+- Dev server required: NO.
+- Known warnings: Vite bundle size warning, SQLite experimental warning, Electron metadata warning if emitted, Node DEP warning if emitted, and npm update notice if emitted.
+- Final decision: `RC-0.3.6 desktop release package 사용 가능`
+
 ## Version: RC-0.3.5
 
 ### RC-0.3.5 Packaged Operational Baseline

@@ -1,0 +1,40 @@
+{
+  "version": "RC-0.3.6",
+  "tag": "v0.3.6-rc",
+  "branch": "main",
+  "commit": "fa560c8",
+  "build_date": "2026-06-08T21:13:24+09:00",
+  "package_type": "windows-unpacked",
+  "package_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked",
+  "executable_name": "ECOREAN BOC CEO Dashboard.exe",
+  "userData_path": "%APPDATA%\\ecorean-boc-electron",
+  "db_path": "%APPDATA%\\ecorean-boc-electron\\storage\\sqlite",
+  "export_path": "%APPDATA%\\ecorean-boc-electron\\export",
+  "backup_path": "%APPDATA%\\ecorean-boc-electron\\backups",
+  "test_status": "PASSED",
+  "customer_safety_status": "PASSED",
+  "price_calibration_priority_status": "PASSED",
+  "master_price_protection_status": "PASSED",
+  "known_warnings": [
+    "Vite bundle size warning",
+    "SQLite experimental warning",
+    "electron-builder metadata warning if packaging emits it",
+    "Node DEP warning if emitted",
+    "npm update notice if emitted"
+  ],
+  "known_limitations": [
+    "No automatic external market price crawling",
+    "No direct XLSX-only dependency expansion in this package",
+    "No automatic master data creation from unmatched rows",
+    "Master Data prices update only through approved backup/apply workflow",
+    "Customer portal public deployment remains outside this package"
+  ],
+  "included_changes": [
+    "Price Calibration Priority Center",
+    "Price readiness impact to calibration task",
+    "Price queue linkage",
+    "Master Data direct price change prevention",
+    "Customer-safe payload filtering",
+    "smoke:release path stabilization"
+  ]
+}
