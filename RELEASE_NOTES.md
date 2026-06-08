@@ -86,6 +86,31 @@
 - Known warnings: Vite bundle size warning, SQLite experimental warning, Electron metadata warning if emitted, Node DEP warning if emitted, and npm update notice if emitted.
 - Final decision: `RC-0.3.6 desktop release package 사용 가능`
 
+### RC-0.3.6 Packaged Operational Baseline
+
+- Baseline commit: `1976839 Build RC-0.3.6 desktop release package`
+- Source tag preserved: `v0.3.6-rc`
+- Packaged baseline tag: `v0.3.6-rc-packaged`
+- Final decision: `단가 보정 우선순위 UX 패키지 운영 기준 사용 가능`
+- Packaged executable: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- Price queue linkage: PASSED.
+- Master Data direct price change prevention: PASSED.
+- Customer safety: PASSED.
+- Verified flow:
+  - Price Calibration Priority Center
+  - BATHROOM PARTIAL: `대표 검토 필요`
+  - KITCHEN PARTIAL: `견적 전 보정 권장`
+  - FULL_REMODELING PARTIAL: `견적 전 보정 권장`
+  - NEEDS_UPDATE: `즉시 보정 필요`
+  - calibration task creation/review
+  - price queue linkage with `PENDING_REVIEW`
+  - no automatic approval/apply
+  - no direct Master Data price change
+- Known warnings: Vite bundle size warning, SQLite experimental warning, electron-builder metadata warning, Node DEP0190 warning, and npm update notice if emitted.
+- Next direction:
+  - RC-0.3.7: 실제 단가 보정 UX 추가 고도화
+  - RC-0.4.0: CRM pipeline / 주소 API / 고객 포털 배포 / 일정 연동
+
 ## Version: RC-0.3.5
 
 ### RC-0.3.5 Packaged Operational Baseline
