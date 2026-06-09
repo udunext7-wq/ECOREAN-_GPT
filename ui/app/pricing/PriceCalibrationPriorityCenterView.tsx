@@ -198,6 +198,7 @@ export function PriceCalibrationPriorityCenterView() {
           <button onClick={() => void createReport()}>리포트 생성</button>
           <button onClick={() => navigate('priceWorkbookImport')}>단가표 가져오기</button>
           <button onClick={() => navigate('realPriceCalibration')}>실제 단가 보정</button>
+          <button onClick={() => navigate('realPriceWorkbench')}>실제 단가 보정 워크벤치</button>
         </div>
         {messageKo ? <p className="save-message">{messageKo}</p> : null}
       </section>

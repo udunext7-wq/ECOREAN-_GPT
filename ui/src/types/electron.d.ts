@@ -123,6 +123,15 @@ declare global {
         markCalibrationTaskReviewed: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         linkCalibrationTaskToPriceQueue: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createPriceCalibrationPriorityReport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getCalibrationWorkbenchSummary: () => Promise<Record<string, unknown>>;
+        listCalibrationQueueItems: (payload?: Record<string, unknown>) => Promise<Array<Record<string, unknown>>>;
+        getCalibrationQueueItemDetail: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        approveCalibrationQueueItem: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        rejectCalibrationQueueItem: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        deferCalibrationQueueItem: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        applyApprovedCalibrationWithBackup: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getCalibrationHistory: (payload: Record<string, unknown>) => Promise<Array<Record<string, unknown>>>;
+        createCalibrationWorkbenchReport: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createOperationalOnboardingRun: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getOperationalOnboardingRuns: () => Promise<Array<Record<string, unknown>>>;
         getOperationalOnboardingRun: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
