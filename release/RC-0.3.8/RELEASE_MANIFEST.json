@@ -1,0 +1,47 @@
+{
+  "version": "RC-0.3.8",
+  "tag": "v0.3.8-rc",
+  "branch": "main",
+  "commit": "9c5d1da",
+  "build_date": "2026-06-09T22:01:13+09:00",
+  "package_type": "windows-unpacked",
+  "package_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked",
+  "executable_name": "ECOREAN BOC CEO Dashboard.exe",
+  "userData_path": "%APPDATA%\\ecorean-boc-electron",
+  "db_path": "%APPDATA%\\ecorean-boc-electron\\storage\\sqlite",
+  "export_path": "%APPDATA%\\ecorean-boc-electron\\export",
+  "backup_path": "%APPDATA%\\ecorean-boc-electron\\backups",
+  "test_status": "PASSED",
+  "customer_safety_status": "PASSED",
+  "unmatched_price_recommendation_status": "PASSED",
+  "confidence_classification_status": "PASSED",
+  "queue_linkage_status": "PASSED",
+  "master_price_protection_status": "PASSED",
+  "known_warnings": [
+    "Vite bundle size warning",
+    "SQLite experimental warning",
+    "electron-builder description/author metadata warning",
+    "Node DEP0190 warning from electron-builder child process invocation",
+    "npm update notice when shown"
+  ],
+  "known_limitations": [
+    "No automatic external market price verification",
+    "No automatic recommendation approval or price apply",
+    "NO_MATCH does not automatically create new Master Data",
+    "Recommendation approval and queue linkage do not update Master Data",
+    "Final price application requires the existing Workbench approval, backup, and history workflow",
+    "Customer-facing screens intentionally hide recommendation, candidate, queue, internal price, and personal information",
+    "Packaged binaries are local ignored build artifacts and are not committed"
+  ],
+  "included_changes": [
+    "Unmatched Price Recommendation Center",
+    "Unmatched import row list and detail",
+    "Master Data candidate recommendation",
+    "HIGH, MEDIUM, LOW, and NO_MATCH classification",
+    "Recommendation approval, rejection, and deferral",
+    "Price queue linkage",
+    "PENDING_REVIEW protection",
+    "Master Data direct change prevention",
+    "Customer-safe payload filtering"
+  ]
+}
