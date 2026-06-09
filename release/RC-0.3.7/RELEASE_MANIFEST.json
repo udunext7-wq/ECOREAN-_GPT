@@ -1,0 +1,42 @@
+{
+  "version": "RC-0.3.7",
+  "tag": "v0.3.7-rc",
+  "branch": "main",
+  "commit": "49a3b48",
+  "build_date": "2026-06-09T16:58:01+09:00",
+  "package_type": "windows-unpacked",
+  "package_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked",
+  "executable_name": "ECOREAN BOC CEO Dashboard.exe",
+  "userData_path": "%APPDATA%\\ecorean-boc-electron",
+  "db_path": "%APPDATA%\\ecorean-boc-electron\\storage\\sqlite",
+  "export_path": "%APPDATA%\\ecorean-boc-electron\\export",
+  "backup_path": "%APPDATA%\\ecorean-boc-electron\\backups",
+  "test_status": "PASSED",
+  "customer_safety_status": "PASSED",
+  "real_price_calibration_workbench_status": "PASSED",
+  "master_price_protection_status": "PASSED",
+  "backup_before_apply_status": "PASSED",
+  "history_record_status": "PASSED",
+  "known_warnings": [
+    "Vite bundle size warning",
+    "SQLite experimental warning",
+    "electron-builder description/author metadata warning",
+    "Node DEP0190 warning from electron-builder child process invocation"
+  ],
+  "known_limitations": [
+    "No automatic external market price verification",
+    "No automatic approval or price apply",
+    "Master Data price changes require approval and a successful pre-update backup",
+    "Customer-facing screens intentionally hide workbench, queue, internal price, variance, and backup information",
+    "Packaged binaries are local build artifacts and are not committed"
+  ],
+  "included_changes": [
+    "Real Price Calibration Workbench",
+    "Queue approval, rejection, and deferral",
+    "Backup-before-apply protection",
+    "Master Data direct change prevention",
+    "Old/new price history",
+    "Linked priority task update",
+    "Customer-safe payload filtering"
+  ]
+}

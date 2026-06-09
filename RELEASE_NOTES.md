@@ -1026,3 +1026,18 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Customer safety: PASSED
 - Pre-merge and post-merge build/release smoke: PASSED
 - Final decision: `RC-0.3.7 = main 반영 완료 / release candidate tag 생성 가능`
+
+## RC-0.3.7 Desktop Release Package
+
+- Source tag: `v0.3.7-rc`
+- Package source commit: `49a3b48`
+- Windows unpacked package: `electron/release/win-unpacked/ECOREAN BOC CEO Dashboard.exe`
+- Packaged app launch without dev server: PASSED
+- Real Price Calibration Workbench: PASSED
+- Approval/rejection/deferral workflow: PASSED
+- Master Data protection before approval and backup: PASSED
+- Backup-before-apply: PASSED
+- Old/new price history and linked priority task update: PASSED
+- Customer safety: PASSED
+- Packaged binaries remain local ignored build artifacts.
+- Final decision: `RC-0.3.7 desktop release package 사용 가능`
