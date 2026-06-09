@@ -72,3 +72,17 @@
 `MERGE_READY`
 
 추천은 가능하지만 승인, queue, 백업, history 없이 Master Data 가격은 변경되지 않습니다.
+
+## 안정화 재검증
+
+- 안정화 일자: 2026-06-09
+- 기준 구현 커밋: `eea7e80`
+- 기존 fixture 변경 없이 `93 / 66 / 54 / 0` 재현: PASSED
+- 추천 승인 / 반려 / 보류: PASSED
+- Queue 연결 후 `PENDING_REVIEW` 유지: PASSED
+- 추천 승인과 Queue 연결 후 Master Data 불변: PASSED
+- 추천 리포트 생성: PASSED
+- 6개 내부 진입점과 empty state: PASSED
+- Customer safety: PASSED
+- 안정화 S1/S2: 없음
+- Merge readiness: `MERGE_READY`

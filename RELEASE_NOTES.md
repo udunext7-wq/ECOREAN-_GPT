@@ -1071,3 +1071,21 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Final price application remains protected by the Real Price Calibration Workbench approval, backup, and history workflow.
 - Customer-facing payloads continue to hide recommendation, import price, candidate, queue, internal price, margin, PCE, vendor, labor, purchase, and personal information.
 - Initial decision: `MERGE_READY`.
+
+## RC-0.3.8 Unmatched Price Auto Recommendation Stabilized
+
+- Branch: `rc-0.3.8-unmatched-price-auto-recommendation`
+- Implementation commit: `eea7e80`
+- Confidence fixture stability: `HIGH 93 / MEDIUM 66 / LOW 54 / NO_MATCH 0` PASSED
+- Approve / reject / defer: PASSED
+- Approved recommendation to Price Queue: PASSED
+- Linked Queue remains `PENDING_REVIEW`: PASSED
+- Recommendation approval does not change Master Data: PASSED
+- Queue linking does not change Master Data: PASSED
+- Existing Workbench approval, backup, apply, and history boundary remains required.
+- CEO Dashboard, Drawer, Price Workbook Import, Real Price Workbench, Price Calibration Priority, and Master Data entry points: PASSED
+- Customer safety: PASSED
+- Initial MEDIUM fixture boundary issue was isolated to fixture wording; the corrected fixture remained stable without further changes.
+- Unresolved S1/S2: none.
+- Stabilization decision: `MERGE_READY`
+- Main merge/tag status: not merged, not tagged.

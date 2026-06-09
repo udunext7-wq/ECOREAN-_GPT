@@ -91,3 +91,12 @@ RC-0.3.8은 신규 Master Data를 자동 생성하지 않습니다.
 5. 승인된 추천만 Price Queue에 연결합니다.
 6. 실제 단가 보정 워크벤치에서 다시 승인합니다.
 7. 백업 성공 후에만 Master Data 가격을 반영합니다.
+
+## 안정화 확인 기준
+
+- 기준 fixture 점수는 `HIGH 93`, `MEDIUM 66`, `LOW 54`, `NO_MATCH 0`입니다.
+- 추천 승인, 반려, 보류가 각각 독립 상태로 기록되어야 합니다.
+- 승인 추천을 Queue에 연결해도 Queue 상태는 `PENDING_REVIEW`여야 합니다.
+- 추천 승인 또는 Queue 연결만으로 Master Data 가격이 변경되면 안 됩니다.
+- 고객용 화면에는 추천 센터 진입점과 추천 내부 데이터가 없어야 합니다.
+- 이 기준은 `tests/rc-0-3-8-branch-stabilization.smoke.js`에서 반복 검증합니다.
