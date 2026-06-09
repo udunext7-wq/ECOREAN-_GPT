@@ -173,6 +173,7 @@ export function RealPriceCalibrationWorkbenchView() {
           <button onClick={() => navigate('priceCalibrationPriority')}>단가 보정 우선순위</button>
           <button onClick={() => navigate('realPriceCalibration')}>실제 단가 보정</button>
           <button onClick={() => navigate('priceWorkbookImport')}>단가표 가져오기</button>
+          <button onClick={() => navigate('unmatchedPriceRecommendation')}>단가 미매칭 추천</button>
           <button onClick={() => void createReport()}>리포트 생성</button>
         </div>
         {messageKo ? <p className="save-message">{messageKo}</p> : null}

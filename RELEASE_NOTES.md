@@ -1058,3 +1058,16 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - RC-0.3.8: 단가표 미매칭 자동 추천 고도화
   - RC-0.4.0: CRM pipeline, 주소 API, 고객 포털, 일정 연동
 - Final decision: `실제 단가 보정 워크벤치 패키지 운영 기준 사용 가능`
+
+# Version: RC-0.3.8
+
+## RC-0.3.8 Unmatched Price Auto Recommendation started
+
+- Added the internal `단가 미매칭 추천 센터`.
+- Calculates Master Data candidate Top 3 using item name, category/process, unit, specification/brand, price range, vendor repetition, and prior review history.
+- Classifies recommendations as `HIGH`, `MEDIUM`, `LOW`, or `NO_MATCH`.
+- Supports recommendation approval, rejection, deferral, and linking an approved recommendation to a `PENDING_REVIEW` price queue.
+- Recommendation approval and queue linking do not directly update Master Data.
+- Final price application remains protected by the Real Price Calibration Workbench approval, backup, and history workflow.
+- Customer-facing payloads continue to hide recommendation, import price, candidate, queue, internal price, margin, PCE, vendor, labor, purchase, and personal information.
+- Initial decision: `MERGE_READY`.

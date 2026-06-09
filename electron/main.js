@@ -8,6 +8,7 @@ const { createRealPriceCalibrationService } = require('./services/realPriceCalib
 const { createPriceWorkbookImportService } = require('./services/priceWorkbookImportService');
 const { createPriceCalibrationPriorityService } = require('./services/priceCalibrationPriorityService');
 const { createRealPriceCalibrationWorkbenchService } = require('./services/realPriceCalibrationWorkbenchService');
+const { createUnmatchedPriceRecommendationService } = require('./services/unmatchedPriceRecommendationService');
 const { createOperationalOnboardingService } = require('./services/operationalOnboardingService');
 const { createRealProjectIntakeService } = require('./services/realProjectIntakeService');
 
@@ -22,6 +23,7 @@ let realPriceCalibrationService;
 let priceWorkbookImportService;
 let priceCalibrationPriorityService;
 let realPriceCalibrationWorkbenchService;
+let unmatchedPriceRecommendationService;
 let operationalOnboardingService;
 let realProjectIntakeService;
 
@@ -157,6 +159,15 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:real-price-workbench:apply', (_event, payload = {}) => realPriceCalibrationWorkbenchService.applyApprovedCalibrationWithBackup(payload.queueId || payload.id, payload));
   ipcMain.handle('boc:real-price-workbench:history', (_event, payload = {}) => realPriceCalibrationWorkbenchService.getCalibrationHistory(payload.itemId || payload.queueId || payload.id || payload));
   ipcMain.handle('boc:real-price-workbench:report', (_event, payload = {}) => realPriceCalibrationWorkbenchService.createCalibrationWorkbenchReport(payload));
+  ipcMain.handle('boc:unmatched-price-recommendation:summary', () => unmatchedPriceRecommendationService.getUnmatchedPriceRecommendationSummary());
+  ipcMain.handle('boc:unmatched-price-recommendation:list', (_event, payload = {}) => unmatchedPriceRecommendationService.listUnmatchedImportRows(payload));
+  ipcMain.handle('boc:unmatched-price-recommendation:candidates', (_event, payload = {}) => unmatchedPriceRecommendationService.getRecommendationCandidates(payload));
+  ipcMain.handle('boc:unmatched-price-recommendation:create', (_event, payload = {}) => unmatchedPriceRecommendationService.createRecommendationForRow(payload));
+  ipcMain.handle('boc:unmatched-price-recommendation:approve', (_event, payload = {}) => unmatchedPriceRecommendationService.approveRecommendation(payload));
+  ipcMain.handle('boc:unmatched-price-recommendation:reject', (_event, payload = {}) => unmatchedPriceRecommendationService.rejectRecommendation(payload));
+  ipcMain.handle('boc:unmatched-price-recommendation:defer', (_event, payload = {}) => unmatchedPriceRecommendationService.deferRecommendation(payload));
+  ipcMain.handle('boc:unmatched-price-recommendation:link-queue', (_event, payload = {}) => unmatchedPriceRecommendationService.linkRecommendationToPriceQueue(payload));
+  ipcMain.handle('boc:unmatched-price-recommendation:report', (_event, payload = {}) => unmatchedPriceRecommendationService.createUnmatchedPriceRecommendationReport(payload));
   ipcMain.handle('boc:operational-onboarding:create-run', (_event, payload = {}) => operationalOnboardingService.createOperationalOnboardingRun(payload));
   ipcMain.handle('boc:operational-onboarding:runs', () => operationalOnboardingService.getOperationalOnboardingRuns());
   ipcMain.handle('boc:operational-onboarding:get-run', (_event, payload = {}) => operationalOnboardingService.getOperationalOnboardingRun(payload.runId || payload.id || payload));
@@ -401,6 +412,12 @@ app.whenReady().then(() => {
   realPriceCalibrationWorkbenchService = createRealPriceCalibrationWorkbenchService({
     sqliteService,
     realPriceCalibrationService,
+    priceCalibrationPriorityService
+  });
+  unmatchedPriceRecommendationService = createUnmatchedPriceRecommendationService({
+    sqliteService,
+    priceWorkbookImportService,
+    realPriceCalibrationWorkbenchService,
     priceCalibrationPriorityService
   });
   operationalOnboardingService = createOperationalOnboardingService({ sqliteService });

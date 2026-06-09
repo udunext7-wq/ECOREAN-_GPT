@@ -200,6 +200,7 @@ export function PriceWorkbookImportCenterView() {
           <p>CSV 단가표를 미리보기, 컬럼 매핑, 자동 매칭, 차이율 분석 후 승인 대기 큐로 보냅니다.</p>
         </div>
         <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realPriceWorkbench' }))}>실제 단가 보정 워크벤치</button>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'unmatchedPriceRecommendation' }))}>단가 미매칭 추천 센터</button>
         <div className="button-row">
           <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realProjectIntake' }))}>실제 프로젝트 접수</button>
           <strong className="green-kpi">승인 후 반영</strong>
@@ -238,6 +239,7 @@ export function PriceWorkbookImportCenterView() {
           <button disabled={!importId || busy} onClick={() => void createReport()}>가져오기 리포트</button>
           <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realPriceCalibration' }))}>실제 단가 보정으로 이동</button>
           <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'priceCalibrationPriority' }))}>단가 보정 우선순위</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'unmatchedPriceRecommendation' }))}>미매칭 자동 추천</button>
           <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'operationalOnboarding' }))}>운영 데이터 입력으로 이동</button>
         </div>
         {messageKo ? <p className="save-message">{messageKo}</p> : null}
