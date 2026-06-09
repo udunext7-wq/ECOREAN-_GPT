@@ -1012,3 +1012,17 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Unresolved S1/S2: none.
 - Stabilization decision: `MERGE_READY`
 - Main merge/tag status: not merged, not tagged.
+
+## RC-0.3.7 Real Price Calibration UX — Merged to Main
+
+- Source branch: `rc-0.3.7-real-price-calibration-ux`
+- Merge commit: `35c1a09609d1aec7b5f388d9b6a0f1d78de5793f`
+- Included commits: `5f21a6f`, `9f46c7e`
+- Approve/reject/defer workflow: PASSED
+- Master Data protection before approval and backup: PASSED
+- Backup-backed apply and old/new price history: PASSED
+- Linked priority task status update: PASSED
+- CEO Dashboard and related workbench entry points: PASSED
+- Customer safety: PASSED
+- Pre-merge and post-merge build/release smoke: PASSED
+- Final decision: `RC-0.3.7 = main 반영 완료 / release candidate tag 생성 가능`
