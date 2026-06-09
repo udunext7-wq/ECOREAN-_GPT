@@ -86,6 +86,7 @@ export function CeoDashboard() {
       openBackupRestore: 'backupRestore',
       openInitialMasterData: 'initialMasterData',
       openRealPriceCalibration: 'realPriceCalibration',
+      openRealPriceWorkbench: 'realPriceWorkbench',
       openPriceWorkbookImport: 'priceWorkbookImport',
       openPriceCalibrationPriority: 'priceCalibrationPriority',
       openOperationalOnboarding: 'operationalOnboarding',
@@ -305,6 +306,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('backupRestore', 'warning')}>백업 / 복구</button>
         <button onClick={() => openView('initialMasterData', 'warning')}>초기 기준 데이터</button>
         <button onClick={() => openView('realPriceCalibration', 'warning')}>실제 단가 보정</button>
+        <button onClick={() => openView('realPriceWorkbench', 'warning')}>실제 단가 보정 워크벤치</button>
         <button onClick={() => openView('priceWorkbookImport', 'warning')}>단가표 가져오기</button>
         <button onClick={() => openView('priceCalibrationPriority', 'warning')}>단가 보정 우선순위</button>
         <button onClick={() => openView('floorplanCenter', 'click')}>평면도 / 아이소메트릭</button>

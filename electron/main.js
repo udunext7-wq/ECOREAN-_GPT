@@ -7,6 +7,7 @@ const { createInitialMasterDataService } = require('./services/initialMasterData
 const { createRealPriceCalibrationService } = require('./services/realPriceCalibrationService');
 const { createPriceWorkbookImportService } = require('./services/priceWorkbookImportService');
 const { createPriceCalibrationPriorityService } = require('./services/priceCalibrationPriorityService');
+const { createRealPriceCalibrationWorkbenchService } = require('./services/realPriceCalibrationWorkbenchService');
 const { createOperationalOnboardingService } = require('./services/operationalOnboardingService');
 const { createRealProjectIntakeService } = require('./services/realProjectIntakeService');
 
@@ -20,6 +21,7 @@ let initialMasterDataService;
 let realPriceCalibrationService;
 let priceWorkbookImportService;
 let priceCalibrationPriorityService;
+let realPriceCalibrationWorkbenchService;
 let operationalOnboardingService;
 let realProjectIntakeService;
 
@@ -146,6 +148,15 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:price-calibration-priority:review-task', (_event, payload = {}) => priceCalibrationPriorityService.markCalibrationTaskReviewed(payload.taskId || payload.task_id, payload));
   ipcMain.handle('boc:price-calibration-priority:link-queue', (_event, payload = {}) => priceCalibrationPriorityService.linkCalibrationTaskToPriceQueue(payload.taskId || payload.task_id, payload.queueId || payload.queue_id));
   ipcMain.handle('boc:price-calibration-priority:report', (_event, payload = {}) => priceCalibrationPriorityService.createPriceCalibrationPriorityReport(payload));
+  ipcMain.handle('boc:real-price-workbench:summary', () => realPriceCalibrationWorkbenchService.getCalibrationWorkbenchSummary());
+  ipcMain.handle('boc:real-price-workbench:list', (_event, payload = {}) => realPriceCalibrationWorkbenchService.listCalibrationQueueItems(payload));
+  ipcMain.handle('boc:real-price-workbench:detail', (_event, payload = {}) => realPriceCalibrationWorkbenchService.getCalibrationQueueItemDetail(payload.queueId || payload.id || payload));
+  ipcMain.handle('boc:real-price-workbench:approve', (_event, payload = {}) => realPriceCalibrationWorkbenchService.approveCalibrationQueueItem(payload.queueId || payload.id, payload));
+  ipcMain.handle('boc:real-price-workbench:reject', (_event, payload = {}) => realPriceCalibrationWorkbenchService.rejectCalibrationQueueItem(payload.queueId || payload.id, payload));
+  ipcMain.handle('boc:real-price-workbench:defer', (_event, payload = {}) => realPriceCalibrationWorkbenchService.deferCalibrationQueueItem(payload.queueId || payload.id, payload));
+  ipcMain.handle('boc:real-price-workbench:apply', (_event, payload = {}) => realPriceCalibrationWorkbenchService.applyApprovedCalibrationWithBackup(payload.queueId || payload.id, payload));
+  ipcMain.handle('boc:real-price-workbench:history', (_event, payload = {}) => realPriceCalibrationWorkbenchService.getCalibrationHistory(payload.itemId || payload.queueId || payload.id || payload));
+  ipcMain.handle('boc:real-price-workbench:report', (_event, payload = {}) => realPriceCalibrationWorkbenchService.createCalibrationWorkbenchReport(payload));
   ipcMain.handle('boc:operational-onboarding:create-run', (_event, payload = {}) => operationalOnboardingService.createOperationalOnboardingRun(payload));
   ipcMain.handle('boc:operational-onboarding:runs', () => operationalOnboardingService.getOperationalOnboardingRuns());
   ipcMain.handle('boc:operational-onboarding:get-run', (_event, payload = {}) => operationalOnboardingService.getOperationalOnboardingRun(payload.runId || payload.id || payload));
@@ -387,6 +398,11 @@ app.whenReady().then(() => {
   realPriceCalibrationService = createRealPriceCalibrationService({ sqliteService, backupRestoreService });
   priceWorkbookImportService = createPriceWorkbookImportService({ sqliteService });
   priceCalibrationPriorityService = createPriceCalibrationPriorityService({ sqliteService });
+  realPriceCalibrationWorkbenchService = createRealPriceCalibrationWorkbenchService({
+    sqliteService,
+    realPriceCalibrationService,
+    priceCalibrationPriorityService
+  });
   operationalOnboardingService = createOperationalOnboardingService({ sqliteService });
   realProjectIntakeService = createRealProjectIntakeService({ sqliteService });
   registerIpcHandlers();

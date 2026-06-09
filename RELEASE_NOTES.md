@@ -987,3 +987,12 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Communication Center, Floorplan Center, AI Visualization Center, and Board Generation Center
 - Release readiness checks, diagnostics, backup/restore, and internal test-mode environment tools
 
+# Version: RC-0.3.7
+
+## RC-0.3.7 Real Price Calibration UX started
+
+- Added the internal `실제 단가 보정 워크벤치` flow for reviewing real price update queue items.
+- Supports queue filtering by status, target type, and risk level.
+- Supports approve, reject, defer, and backup-before-apply actions through the existing safe calibration workflow.
+- Keeps Master Data unchanged until approval and backup-backed apply.
+- Customer-facing payloads must continue to hide vendor quotes, internal unit costs, variance, queue status, backup ids, and calibration details.

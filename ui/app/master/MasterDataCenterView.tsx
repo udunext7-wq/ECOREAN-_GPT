@@ -96,6 +96,7 @@ export function MasterDataCenterView() {
           <h2>기준 데이터 관리</h2>
           <p>공정, 자재, 업체, 단가, 인력, 장비, 표준 품목, 견적 기본값을 하나의 기준 DB로 관리합니다.</p>
         </div>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realPriceWorkbench' }))}>실제 단가 보정 워크벤치</button>
         <strong className={Number(data.summary.validationWarningCount || 0) > 0 ? 'red-kpi' : 'green-kpi'}>
           검증 {String(data.summary.validationWarningCount || 0)}건
         </strong>
