@@ -259,6 +259,7 @@ export function UnmatchedPriceRecommendationCenterView() {
           <button onClick={() => navigate('priceWorkbookImport')}>관련 import row</button>
           <button onClick={() => navigate('realPriceWorkbench')}>관련 Workbench</button>
           <button onClick={() => navigate('priceCalibrationPriority')}>단가 보정 우선순위</button>
+          <button onClick={() => navigate('recommendationScoringRules')}>추천 점수 규칙</button>
           <button onClick={() => void createReport()}>리포트 생성</button>
         </div>
         {messageKo ? <p className="save-message">{messageKo}</p> : null}
@@ -352,9 +353,13 @@ export function UnmatchedPriceRecommendationCenterView() {
                     <strong>{formatScore(candidate.similarity_score)} / {String(candidate.confidence_level)}</strong>
                     <p>{String(candidate.recommendation_reason || '점수 근거 없음')}</p>
                     <em>
-                      이름 {Math.round(Number(scoreDetail.nameSimilarity || 0) * 100)}% /
-                      분류 {Math.round(Number(scoreDetail.categorySimilarity || 0) * 100)}% /
-                      단위 {scoreDetail.unitMatch ? '일치' : '차이'}
+                      이름 {Math.round(Number(scoreDetail.name_score ?? Number(scoreDetail.nameSimilarity || 0) * 100))} /
+                      분류 {Math.round(Number(scoreDetail.category_score ?? Number(scoreDetail.categorySimilarity || 0) * 100))} /
+                      단위 {Math.round(Number(scoreDetail.unit_score ?? (scoreDetail.unitMatch ? 100 : 0)))} /
+                      규격 {Math.round(Number(scoreDetail.spec_score || 0))} /
+                      공급처 {Math.round(Number(scoreDetail.vendor_score || 0))} /
+                      이력 {Math.round(Number(scoreDetail.history_score || 0))} /
+                      가격 {Math.round(Number(scoreDetail.price_score || 0))}
                     </em>
                   </article>
                 );

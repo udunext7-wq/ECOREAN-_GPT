@@ -204,6 +204,7 @@ function createUnmatchedPriceRecommendationService({
   priceWorkbookImportService = null,
   realPriceCalibrationWorkbenchService = null,
   priceCalibrationPriorityService = null,
+  recommendationScoringService = null,
   reportsDir = null
 } = {}) {
   if (!sqliteService?.dbPaths?.master) throw new Error('sqliteService with master database path is required');
@@ -387,7 +388,7 @@ function createUnmatchedPriceRecommendationService({
     const history = historyImpact(database, row, candidate);
     const vendorRepeat = normalized.vendor_name && candidate.vendor_name
       && normalizeText(normalized.vendor_name) === normalizeText(candidate.vendor_name);
-    const score = Math.max(0, Math.min(100, Math.round(
+    const compatibilityScore = Math.max(0, Math.min(100, Math.round(
       nameSimilarity * 55
       + categorySimilarity * 13
       + (unitMatch ? 10 : -5)
@@ -396,6 +397,24 @@ function createUnmatchedPriceRecommendationService({
       + history.score
       + (vendorRepeat ? 5 : 0)
     )));
+    const enhanced = recommendationScoringService
+      ? recommendationScoringService.scoreCandidate({
+          importRow: {
+            item_name: normalized.item_name,
+            category: normalized.category,
+            process: normalized.process,
+            unit: normalized.unit || row.unit,
+            spec: normalized.spec,
+            brand: normalized.brand,
+            vendor_name: normalized.vendor_name,
+            price: importedPrice
+          },
+          masterItem: candidate,
+          history,
+          compatibilityScore
+        })
+      : null;
+    const score = enhanced?.final_score ?? compatibilityScore;
     const reasons = [
       `품목명 ${Math.round(nameSimilarity * 100)}%`,
       `분류 ${Math.round(categorySimilarity * 100)}%`,
@@ -418,9 +437,10 @@ function createUnmatchedPriceRecommendationService({
       current_price: currentPrice,
       price_status: candidate.price_status || '',
       similarity_score: score,
-      confidence_level: confidenceForScore(score),
-      recommendation_reason: reasons.join(' / '),
+      confidence_level: enhanced?.confidence_level || confidenceForScore(score),
+      recommendation_reason: enhanced?.recommendation_reason || reasons.join(' / '),
       score_detail: {
+        ...(enhanced || {}),
         nameSimilarity,
         categorySimilarity,
         unitMatch,

@@ -9,6 +9,7 @@ const { createPriceWorkbookImportService } = require('./services/priceWorkbookIm
 const { createPriceCalibrationPriorityService } = require('./services/priceCalibrationPriorityService');
 const { createRealPriceCalibrationWorkbenchService } = require('./services/realPriceCalibrationWorkbenchService');
 const { createUnmatchedPriceRecommendationService } = require('./services/unmatchedPriceRecommendationService');
+const { createRecommendationScoringService } = require('./services/recommendationScoringService');
 const { createOperationalOnboardingService } = require('./services/operationalOnboardingService');
 const { createRealProjectIntakeService } = require('./services/realProjectIntakeService');
 
@@ -24,6 +25,7 @@ let priceWorkbookImportService;
 let priceCalibrationPriorityService;
 let realPriceCalibrationWorkbenchService;
 let unmatchedPriceRecommendationService;
+let recommendationScoringService;
 let operationalOnboardingService;
 let realProjectIntakeService;
 
@@ -168,6 +170,11 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:unmatched-price-recommendation:defer', (_event, payload = {}) => unmatchedPriceRecommendationService.deferRecommendation(payload));
   ipcMain.handle('boc:unmatched-price-recommendation:link-queue', (_event, payload = {}) => unmatchedPriceRecommendationService.linkRecommendationToPriceQueue(payload));
   ipcMain.handle('boc:unmatched-price-recommendation:report', (_event, payload = {}) => unmatchedPriceRecommendationService.createUnmatchedPriceRecommendationReport(payload));
+  ipcMain.handle('boc:recommendation-scoring:summary', () => recommendationScoringService.getScoringSummary());
+  ipcMain.handle('boc:recommendation-scoring:rules', (_event, payload = {}) => recommendationScoringService.listScoringRules(payload));
+  ipcMain.handle('boc:recommendation-scoring:save-rule', (_event, payload = {}) => recommendationScoringService.saveScoringRule(payload));
+  ipcMain.handle('boc:recommendation-scoring:set-status', (_event, payload = {}) => recommendationScoringService.setScoringRuleStatus(payload.ruleId || payload.rule_id, payload.status));
+  ipcMain.handle('boc:recommendation-scoring:report', () => recommendationScoringService.createScoringReport());
   ipcMain.handle('boc:operational-onboarding:create-run', (_event, payload = {}) => operationalOnboardingService.createOperationalOnboardingRun(payload));
   ipcMain.handle('boc:operational-onboarding:runs', () => operationalOnboardingService.getOperationalOnboardingRuns());
   ipcMain.handle('boc:operational-onboarding:get-run', (_event, payload = {}) => operationalOnboardingService.getOperationalOnboardingRun(payload.runId || payload.id || payload));
@@ -414,11 +421,13 @@ app.whenReady().then(() => {
     realPriceCalibrationService,
     priceCalibrationPriorityService
   });
+  recommendationScoringService = createRecommendationScoringService({ sqliteService });
   unmatchedPriceRecommendationService = createUnmatchedPriceRecommendationService({
     sqliteService,
     priceWorkbookImportService,
     realPriceCalibrationWorkbenchService,
-    priceCalibrationPriorityService
+    priceCalibrationPriorityService,
+    recommendationScoringService
   });
   operationalOnboardingService = createOperationalOnboardingService({ sqliteService });
   realProjectIntakeService = createRealProjectIntakeService({ sqliteService });
