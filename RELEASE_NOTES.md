@@ -1041,3 +1041,20 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Customer safety: PASSED
 - Packaged binaries remain local ignored build artifacts.
 - Final decision: `RC-0.3.7 desktop release package 사용 가능`
+
+## RC-0.3.7 Packaged Operational Baseline
+
+- Baseline commit: `f3ff67e`
+- New tag: `v0.3.7-rc-packaged`
+- Real Price Calibration Workbench: PASSED
+- Approval / Rejection / Deferral: PASSED
+- Backup-before-apply: PASSED
+- Master Data direct change prevention: PASSED
+- Old/new price history record: PASSED
+- Linked priority task update: PASSED
+- Customer safety: PASSED
+- Known non-blocking warnings: Vite bundle size, SQLite experimental API, electron-builder metadata, Node DEP0190, and npm update notices when shown.
+- Next direction:
+  - RC-0.3.8: 단가표 미매칭 자동 추천 고도화
+  - RC-0.4.0: CRM pipeline, 주소 API, 고객 포털, 일정 연동
+- Final decision: `실제 단가 보정 워크벤치 패키지 운영 기준 사용 가능`
