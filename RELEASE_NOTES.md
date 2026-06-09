@@ -1089,3 +1089,25 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Unresolved S1/S2: none.
 - Stabilization decision: `MERGE_READY`
 - Main merge/tag status: not merged, not tagged.
+
+## RC-0.3.8 Unmatched Price Auto Recommendation — Merged to Main
+
+- Source branch: `rc-0.3.8-unmatched-price-auto-recommendation`
+- Merge commit: `4c5fa803827efe0959a38ce86f54668a8eb88993`
+- Included commits: `eea7e80`, `288a34b`
+- Included:
+  - 단가 미매칭 추천 센터
+  - 미매칭 import row 조회
+  - Master Data 후보 Top 3 추천
+  - `HIGH / MEDIUM / LOW / NO_MATCH` confidence 분류
+  - 추천 승인 / 반려 / 보류
+  - approved recommendation의 Price Queue 연결
+  - Queue `PENDING_REVIEW` 상태 유지
+  - 추천 승인만으로 Master Data 변경 방지
+  - Queue 연결만으로 Master Data 변경 방지
+  - 고객 payload의 recommendation/internal data 비노출
+  - CEO Dashboard를 포함한 6개 내부 진입점
+- Confidence verification: `HIGH 93 / MEDIUM 66 / LOW 54 / NO_MATCH 0` PASSED
+- Customer safety: PASSED
+- Pre-merge and post-merge build/release smoke: PASSED
+- Final decision: `RC-0.3.8 = 미매칭 단가 자동 추천 main 반영 가능`
