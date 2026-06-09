@@ -132,6 +132,15 @@ declare global {
         applyApprovedCalibrationWithBackup: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getCalibrationHistory: (payload: Record<string, unknown>) => Promise<Array<Record<string, unknown>>>;
         createCalibrationWorkbenchReport: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getUnmatchedPriceRecommendationSummary: () => Promise<Record<string, unknown>>;
+        listUnmatchedPriceImportRows: (payload?: Record<string, unknown>) => Promise<Array<Record<string, unknown>>>;
+        getUnmatchedPriceRecommendationCandidates: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createUnmatchedPriceRecommendation: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        approveUnmatchedPriceRecommendation: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        rejectUnmatchedPriceRecommendation: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        deferUnmatchedPriceRecommendation: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        linkUnmatchedPriceRecommendationToQueue: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createUnmatchedPriceRecommendationReport: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createOperationalOnboardingRun: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getOperationalOnboardingRuns: () => Promise<Array<Record<string, unknown>>>;
         getOperationalOnboardingRun: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;

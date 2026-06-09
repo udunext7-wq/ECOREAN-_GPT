@@ -113,6 +113,7 @@ export function MasterDataCenterView() {
             <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realPriceCalibration' }))}>실제 단가 보정</button>
             <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'priceCalibrationPriority' }))}>단가 보정 우선순위</button>
             <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'priceWorkbookImport' }))}>단가표 일괄 가져오기</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'unmatchedPriceRecommendation' }))}>단가 미매칭 추천</button>
             <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'operationalOnboarding' }))}>운영 데이터 입력</button>
             <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'realProjectIntake' }))}>실제 프로젝트 접수</button>
           </div>
