@@ -1133,3 +1133,21 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Packaged binaries remain local ignored build artifacts.
 - Known non-blocking warnings: Vite bundle size, SQLite experimental API, electron-builder description/author metadata, and Node DEP0190.
 - Final decision: `RC-0.3.8 desktop release package 사용 가능`
+
+## RC-0.3.8 Packaged Operational Baseline
+
+- Baseline commit: `625150d`
+- Source commit: `9c5d1da`
+- Source tag: `v0.3.8-rc`
+- New packaged baseline tag: `v0.3.8-rc-packaged`
+- Packaged app launch without dev server: PASSED
+- Confidence classification: `HIGH 93 / MEDIUM 66 / LOW 54 / NO_MATCH 0` PASSED
+- Recommendation approval / rejection / deferral: PASSED
+- Price Queue linkage: PASSED
+- Linked Queue remains `PENDING_REVIEW`: PASSED
+- Recommendation approval and Queue linkage do not update Master Data: PASSED
+- Existing Workbench approval, backup, apply, and history boundary remains required.
+- Customer safety: PASSED
+- Full package, regression, UI build, production smoke, and release smoke: PASSED
+- Known non-blocking warnings: Vite bundle size, SQLite experimental API, electron-builder metadata, Node DEP0190, and npm update notices when shown.
+- Final decision: `RC-0.3.8 packaged operational baseline 사용 가능`
