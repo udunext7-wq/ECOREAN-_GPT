@@ -26,5 +26,14 @@
 
 ## 최종 판정
 
-RC-0.3.7 실제 단가 보정 UX는 브랜치 검증 단계로 시작되었다.
+RC-0.3.7 실제 단가 보정 UX 안정화 검증을 완료했다.
 
+- 승인 / 반려 / 보류: PASSED
+- 승인 전 및 backup 전 Master Data 변경 방지: PASSED
+- Backup 후 반영: PASSED
+- History 기록: PASSED
+- Linked priority task 연동: PASSED
+- CEO Dashboard 및 Drawer 진입점: PASSED
+- Customer safety: PASSED
+- 미해결 S1/S2: 없음
+- Merge readiness: `MERGE_READY`

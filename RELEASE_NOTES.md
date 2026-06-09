@@ -996,3 +996,19 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Supports approve, reject, defer, and backup-before-apply actions through the existing safe calibration workflow.
 - Keeps Master Data unchanged until approval and backup-backed apply.
 - Customer-facing payloads must continue to hide vendor quotes, internal unit costs, variance, queue status, backup ids, and calibration details.
+
+## RC-0.3.7 Real Price Calibration UX Stabilized
+
+- Branch: `rc-0.3.7-real-price-calibration-ux`
+- Queue summary/list/detail: PASSED
+- Approve/reject/defer with review reasons: PASSED
+- Pending direct apply prevention: PASSED
+- Master Data protection before approval and backup: PASSED
+- Backup-backed apply and old/new price history: PASSED
+- Linked priority task status update: PASSED
+- CEO Dashboard, Drawer, pricing/import/master entry points: PASSED
+- Customer safety: PASSED
+- Fixed SQLite CASE string quoting and the missing CEO Dashboard workbench entry point.
+- Unresolved S1/S2: none.
+- Stabilization decision: `MERGE_READY`
+- Main merge/tag status: not merged, not tagged.

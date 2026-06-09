@@ -37,9 +37,18 @@ RC-0.3.7은 실제 단가 보정 queue를 대표가 더 빠르게 검토하도�
 
 ## 연결 화면
 
+- CEO Dashboard
 - 단가 보정 우선순위 센터
 - 실제 단가 보정 센터
 - 단가표 일괄 가져오기
 - 기준 데이터 관리
 - Drawer navigation
 
+## 안정화 확인
+
+- `PENDING_REVIEW` 항목은 바로 반영할 수 없다.
+- 승인만으로 Master Data 가격은 변경되지 않는다.
+- 백업이 성공한 승인 항목만 반영된다.
+- 반영 시 old/new 가격과 backup id가 history에 기록된다.
+- 승인, 반려, 보류 사유를 queue에 기록할 수 있다.
+- RC-0.3.7 안정화 판정은 `MERGE_READY`이다.
