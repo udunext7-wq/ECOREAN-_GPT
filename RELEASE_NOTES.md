@@ -1234,3 +1234,29 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Packaged binaries remain local ignored build artifacts.
 - Known non-blocking warnings: Vite bundle size, SQLite experimental API, electron-builder description/author metadata, and Node DEP0190.
 - Final decision: `RC-0.3.9 desktop release package 사용 가능`
+
+## RC-0.3.9 Packaged Operational Baseline
+
+- Baseline commit: `c00eed2`
+- Source commit: `be0367c`
+- Source tag: `v0.3.9-rc`
+- New packaged baseline tag: `v0.3.9-rc-packaged`
+- Final decision: `추천 점수 고도화 패키지 운영 기준 사용 가능`
+- Recommendation Scoring Rules View: PASSED
+- Confidence: `HIGH 93 / MEDIUM 66 / LOW 54 / NO_MATCH 0`
+- Item name, unit, and specification normalization: PASSED
+- Score breakdown: PASSED
+- Vendor weight: PASSED
+- Approval/rejection history weight: PASSED
+- Price variance safety score: PASSED
+- Vendor-only HIGH guard: PASSED
+- Recommendation rule changes do not update Master Data: PASSED
+- Recommendation approval does not update Master Data: PASSED
+- Price Queue linkage does not update Master Data: PASSED
+- Linked Queue remains `PENDING_REVIEW`: PASSED
+- Customer safety: PASSED
+- Full service syntax, regression, UI build, production smoke, and release smoke: PASSED
+- Known non-blocking warnings: Vite bundle size, SQLite experimental API, electron-builder metadata, Node DEP0190, and npm update notices when shown.
+- Next direction:
+  - RC-0.4.0: CRM pipeline, address API, customer portal deployment, and schedule integration
+  - Or RC-0.3.10: operational-data-based recommendation weight auto-tuning
