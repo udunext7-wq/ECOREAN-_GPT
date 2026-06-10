@@ -1319,3 +1319,25 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Privacy masking and portal token hashing: PASSED
 - Customer safety: PASSED
 - Final decision: `RC-0.4.0 = CRM Pipeline Foundation main 반영 가능`
+
+## RC-0.4.0 Desktop Release Package
+
+- Source tag: `v0.4.0-rc`
+- Package source commit: `7bb4970`
+- Windows unpacked package: `electron/release/win-unpacked/ECOREAN BOC CEO Dashboard.exe`
+- Packaged app launch without dev server: PASSED
+- Window title and first screen render: PASSED
+- CRM Pipeline Service app.asar inclusion: PASSED
+- CRM Pipeline Center production bundle inclusion: PASSED
+- Lead create, list, detail, and update: PASSED
+- 12-stage CRM movement and stage history: PASSED
+- Consultation log, next action, and site survey request: PASSED
+- Estimate and project linking: PASSED
+- Address, customer portal, and calendar preparation status: PASSED
+- Phone/email masking and portal token SHA-256 hashing: PASSED
+- External API execution: DISABLED
+- Customer-safe payload filtering: PASSED
+- userData, DB, export, backup, required export folders, and required backup folders: PASSED
+- Packaged binaries remain local ignored build artifacts.
+- Known non-blocking warnings: Vite bundle size, SQLite experimental API, electron-builder description/author metadata, and Node DEP0190.
+- Final decision: `RC-0.4.0 desktop release package 사용 가능`
