@@ -48,6 +48,7 @@ import { UnmatchedPriceRecommendationCenterView } from '../../app/pricing/Unmatc
 import { RecommendationScoringRulesView } from '../../app/pricing/RecommendationScoringRulesView';
 import { OperationalDataOnboardingView } from '../../app/onboarding/OperationalDataOnboardingView';
 import { RealProjectIntakeCenterView } from '../../app/intake/RealProjectIntakeCenterView';
+import { CrmPipelineCenterView } from '../../app/crm/CrmPipelineCenterView';
 import { ProfitTemplateLibraryView } from '../../app/profit/ProfitTemplateLibraryView';
 import { ProfitAutomationDashboardView } from '../../app/profit/ProfitAutomationDashboardView';
 import { ProjectDetailView } from '../../app/projects/ProjectDetailView';
@@ -97,6 +98,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     recommendationScoringRules: '추천 점수 규칙 센터',
     operationalOnboarding: 'RC-0.3.1 운영 데이터 입력',
     realProjectIntake: '실제 프로젝트 접수',
+    crmPipeline: '고객 CRM 파이프라인 센터',
     masterDb: '기준 데이터 관리',
     franchise: '프랜차이즈 관리',
     fieldMobile: '현장 모바일',
@@ -131,7 +133,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     profitAutomation: '수익 자동화'
   };
 
-  const isWideView = ['masterDb', 'initialMasterData', 'realPriceCalibration', 'realPriceWorkbench', 'priceWorkbookImport', 'priceCalibrationPriority', 'unmatchedPriceRecommendation', 'recommendationScoringRules', 'operationalOnboarding', 'realProjectIntake', 'franchise', 'fieldMobile', 'clientPortal', 'analytics', 'aiAutomation', 'userTestCenter', 'backupRestore', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'lightbimImport', 'lightbimQuantityReview', 'lightbimExecutionFeedback', 'lightbimTraceability', 'lightbimSpaceMap', 'lightbimCustomerMap', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
+  const isWideView = ['masterDb', 'initialMasterData', 'realPriceCalibration', 'realPriceWorkbench', 'priceWorkbookImport', 'priceCalibrationPriority', 'unmatchedPriceRecommendation', 'recommendationScoringRules', 'operationalOnboarding', 'realProjectIntake', 'crmPipeline', 'franchise', 'fieldMobile', 'clientPortal', 'analytics', 'aiAutomation', 'userTestCenter', 'backupRestore', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'lightbimImport', 'lightbimQuantityReview', 'lightbimExecutionFeedback', 'lightbimTraceability', 'lightbimSpaceMap', 'lightbimCustomerMap', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
 
   return (
     <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
@@ -143,7 +145,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
         <button onClick={() => onNavigate('dashboard')}>닫기</button>
       </div>
 
-      {view !== 'estimate' && view !== 'bathroomEstimate' && view !== 'kitchenEstimate' && view !== 'fullRemodelingEstimate' && view !== 'lightbimImport' && view !== 'lightbimQuantityReview' && view !== 'lightbimExecutionFeedback' && view !== 'lightbimTraceability' && view !== 'lightbimSpaceMap' && view !== 'lightbimCustomerMap' && view !== 'userTestCenter' && view !== 'backupRestore' && view !== 'initialMasterData' && view !== 'realPriceCalibration' && view !== 'realPriceWorkbench' && view !== 'priceWorkbookImport' && view !== 'priceCalibrationPriority' && view !== 'unmatchedPriceRecommendation' && view !== 'recommendationScoringRules' && view !== 'operationalOnboarding' && view !== 'realProjectIntake' && view !== 'ontology' && view !== 'floorplanCenter' && view !== 'aiVisualization' && view !== 'boardGeneration' ? (
+      {view !== 'estimate' && view !== 'bathroomEstimate' && view !== 'kitchenEstimate' && view !== 'fullRemodelingEstimate' && view !== 'lightbimImport' && view !== 'lightbimQuantityReview' && view !== 'lightbimExecutionFeedback' && view !== 'lightbimTraceability' && view !== 'lightbimSpaceMap' && view !== 'lightbimCustomerMap' && view !== 'userTestCenter' && view !== 'backupRestore' && view !== 'initialMasterData' && view !== 'realPriceCalibration' && view !== 'realPriceWorkbench' && view !== 'priceWorkbookImport' && view !== 'priceCalibrationPriority' && view !== 'unmatchedPriceRecommendation' && view !== 'recommendationScoringRules' && view !== 'operationalOnboarding' && view !== 'realProjectIntake' && view !== 'crmPipeline' && view !== 'ontology' && view !== 'floorplanCenter' && view !== 'aiVisualization' && view !== 'boardGeneration' ? (
         <div className="drawer-block">
           <strong>{project.projectNameKo}</strong>
           <p>{getProjectDecisionText(project)}</p>
@@ -171,6 +173,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'recommendationScoringRules' ? <RecommendationScoringRulesView /> : null}
       {view === 'operationalOnboarding' ? <OperationalDataOnboardingView /> : null}
       {view === 'realProjectIntake' ? <RealProjectIntakeCenterView /> : null}
+      {view === 'crmPipeline' ? <CrmPipelineCenterView /> : null}
       {view === 'masterDb' ? <MasterDataCenterView /> : null}
       {view === 'franchise' ? <FranchiseCenterView /> : null}
       {view === 'fieldMobile' ? <FieldMobileCenterView projectId={project.projectId} /> : null}

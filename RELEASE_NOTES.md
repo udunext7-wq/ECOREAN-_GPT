@@ -1260,3 +1260,19 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Next direction:
   - RC-0.4.0: CRM pipeline, address API, customer portal deployment, and schedule integration
   - Or RC-0.3.10: operational-data-based recommendation weight auto-tuning
+
+# Version: RC-0.4.0
+
+## RC-0.4.0 CRM Pipeline Foundation started
+
+- Added the internal `고객 CRM 파이프라인 센터`.
+- Added 12 CRM stages from `LEAD` through `CONTRACTED`, with `ON_HOLD` and `LOST`.
+- Added CRM lead creation, update, filtering, detail, stage history, consultation logs, and site survey requests.
+- Added project and estimate linkage without copying internal price, margin, PCE, Queue, or scoring data into CRM customer payloads.
+- Added dashboard KPI counts for new leads, consulting, site surveys, estimates, contracts, holds, and losses.
+- Added address, customer portal, schedule, and calendar connection preparation statuses without external API calls.
+- Phone and email values are stored masked; portal public tokens are stored only as SHA-256 hashes.
+- Customer payloads use an explicit allowlist and exclude detailed address, internal memo, raw contact data, internal price, margin, PCE, Queue, scoring, vendor, labor, purchase, receiving, profit, and risk data.
+- Added anonymized CRM report generation and RC-0.4.0 CRM documentation.
+- Initial CRM smoke and UI production build: PASSED.
+- Initial decision: `MERGE_READY`.

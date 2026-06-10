@@ -12,6 +12,7 @@ const { createUnmatchedPriceRecommendationService } = require('./services/unmatc
 const { createRecommendationScoringService } = require('./services/recommendationScoringService');
 const { createOperationalOnboardingService } = require('./services/operationalOnboardingService');
 const { createRealProjectIntakeService } = require('./services/realProjectIntakeService');
+const { createCrmPipelineService } = require('./services/crmPipelineService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -28,6 +29,7 @@ let unmatchedPriceRecommendationService;
 let recommendationScoringService;
 let operationalOnboardingService;
 let realProjectIntakeService;
+let crmPipelineService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -195,6 +197,18 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:real-project-intake:customer-safety', (_event, payload = {}) => realProjectIntakeService.runCustomerSafetyCheckForIntake(payload));
   ipcMain.handle('boc:real-project-intake:report', (_event, payload = {}) => realProjectIntakeService.createIntakeReport(payload.intakeId || payload.intake_id || payload.id || payload));
   ipcMain.handle('boc:real-project-intake:create-issue', (_event, payload = {}) => realProjectIntakeService.createIntakeIssue(payload));
+  ipcMain.handle('boc:crm:create-lead', (_event, payload = {}) => crmPipelineService.createCrmLead(payload));
+  ipcMain.handle('boc:crm:update-lead', (_event, payload = {}) => crmPipelineService.updateCrmLead(payload));
+  ipcMain.handle('boc:crm:list-leads', (_event, payload = {}) => crmPipelineService.listCrmLeads(payload));
+  ipcMain.handle('boc:crm:lead-detail', (_event, payload = {}) => crmPipelineService.getCrmLeadDetail(payload));
+  ipcMain.handle('boc:crm:move-stage', (_event, payload = {}) => crmPipelineService.moveCrmStage(payload));
+  ipcMain.handle('boc:crm:consultation', (_event, payload = {}) => crmPipelineService.createConsultationLog(payload));
+  ipcMain.handle('boc:crm:site-survey', (_event, payload = {}) => crmPipelineService.createSiteSurveyRequest(payload));
+  ipcMain.handle('boc:crm:link-project', (_event, payload = {}) => crmPipelineService.linkLeadToProject(payload));
+  ipcMain.handle('boc:crm:link-estimate', (_event, payload = {}) => crmPipelineService.linkLeadToEstimate(payload));
+  ipcMain.handle('boc:crm:report', (_event, payload = {}) => crmPipelineService.createCrmPipelineReport(payload));
+  ipcMain.handle('boc:crm:summary', () => crmPipelineService.getCrmDashboardSummary());
+  ipcMain.handle('boc:crm:customer-safe', (_event, payload = {}) => crmPipelineService.getCrmCustomerSafePayload(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
@@ -431,6 +445,7 @@ app.whenReady().then(() => {
   });
   operationalOnboardingService = createOperationalOnboardingService({ sqliteService });
   realProjectIntakeService = createRealProjectIntakeService({ sqliteService });
+  crmPipelineService = createCrmPipelineService({ sqliteService });
   registerIpcHandlers();
   createWindow();
 
