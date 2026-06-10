@@ -1211,3 +1211,26 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Pre-merge and post-merge service, regression, UI build, production smoke, and release smoke: PASSED
 - Customer safety: PASSED
 - Final decision: `RC-0.3.9 = 추천 점수 고도화 main 반영 가능`
+
+## RC-0.3.9 Desktop Release Package
+
+- Source tag: `v0.3.9-rc`
+- Package source commit: `be0367c`
+- Windows unpacked package: `electron/release/win-unpacked/ECOREAN BOC CEO Dashboard.exe`
+- Packaged app launch without dev server: PASSED
+- Window title and first screen render: PASSED
+- Recommendation Scoring Service app.asar inclusion: PASSED
+- Recommendation Scoring Rules View production bundle inclusion: PASSED
+- Item name, unit, and specification normalization: PASSED
+- Vendor and approval/rejection history weighting: PASSED
+- Price variance safety score and score breakdown: PASSED
+- Confidence classification `HIGH 93 / MEDIUM 66 / LOW 54 / NO_MATCH 0`: PASSED
+- Vendor-only weak candidate HIGH prevention: PASSED
+- Recommendation rule changes, recommendation approval, and Queue linkage do not update Master Data: PASSED
+- Linked Queue remains `PENDING_REVIEW`; Workbench approval, backup, apply, and history remain required.
+- Five internal entry points and no customer entry point: PASSED
+- Customer safety: PASSED
+- userData, DB, export, backup, required export folders, and required backup folders: PASSED
+- Packaged binaries remain local ignored build artifacts.
+- Known non-blocking warnings: Vite bundle size, SQLite experimental API, electron-builder description/author metadata, and Node DEP0190.
+- Final decision: `RC-0.3.9 desktop release package 사용 가능`

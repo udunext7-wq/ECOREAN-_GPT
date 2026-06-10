@@ -1,0 +1,52 @@
+{
+  "version": "RC-0.3.9",
+  "tag": "v0.3.9-rc",
+  "branch": "main",
+  "commit": "be0367c",
+  "build_date": "2026-06-10T17:01:40+09:00",
+  "package_type": "windows-unpacked",
+  "package_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked",
+  "executable_name": "ECOREAN BOC CEO Dashboard.exe",
+  "userData_path": "%APPDATA%\\ecorean-boc-electron",
+  "db_path": "%APPDATA%\\ecorean-boc-electron\\storage\\sqlite",
+  "export_path": "%APPDATA%\\ecorean-boc-electron\\export",
+  "backup_path": "%APPDATA%\\ecorean-boc-electron\\backups",
+  "test_status": "PASSED",
+  "customer_safety_status": "PASSED",
+  "recommendation_scoring_status": "PASSED",
+  "score_breakdown_status": "PASSED",
+  "vendor_weight_status": "PASSED",
+  "single_vendor_high_guard_status": "PASSED",
+  "master_price_protection_status": "PASSED",
+  "known_warnings": [
+    "Vite bundle size warning",
+    "SQLite experimental warning",
+    "electron-builder description/author metadata warning",
+    "Node DEP0190 warning from electron-builder child process invocation",
+    "npm update notice when shown"
+  ],
+  "known_limitations": [
+    "No automatic external market price verification",
+    "No automatic recommendation approval or price apply",
+    "Recommendation rules require internal review and maintenance",
+    "Vendor weighting alone cannot promote a weak identity match to HIGH",
+    "Recommendation rule changes, recommendation approval, and queue linkage do not update Master Data",
+    "Final price application requires Workbench approval, backup, apply, and history",
+    "Customer-facing screens intentionally hide scoring, recommendation, queue, internal price, and personal information",
+    "Packaged binaries are local ignored build artifacts and are not committed"
+  ],
+  "included_changes": [
+    "Recommendation Scoring Service",
+    "Recommendation Scoring Rules View",
+    "item name normalization",
+    "unit normalization",
+    "spec normalization",
+    "vendor weight",
+    "approval/rejection history weight",
+    "price variance score",
+    "score breakdown",
+    "confidence classification",
+    "Master Data direct change prevention",
+    "customer-safe payload filtering"
+  ]
+}
