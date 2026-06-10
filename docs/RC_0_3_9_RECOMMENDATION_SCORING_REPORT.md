@@ -60,3 +60,15 @@
 `MERGE_READY`
 
 RC-0.3.9 추천 점수는 판단 보조로 사용할 수 있다. Master Data 반영은 기존 Queue, 승인, 백업, history 흐름으로만 수행한다.
+
+## 안정화 결과
+
+- 안정화 날짜: 2026-06-10
+- 안정화 스모크: PASSED
+- 5개 내부 진입점: PASSED
+- UI bridge 회귀: PASSED
+- 동일 문자열 유사도 회귀: PASSED
+- 테스트 DB 스키마 회귀: PASSED
+- 전체 가격/접수/LightBIM/고객 안전 회귀: PASSED
+- 미해결 S1/S2: 없음
+- 병합 준비 판정: `MERGE_READY`

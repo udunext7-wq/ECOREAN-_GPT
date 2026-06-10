@@ -1167,3 +1167,22 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Linked Price Queue items remain `PENDING_REVIEW`; Workbench approval, backup, apply, and history remain required.
 - Customer-facing payloads continue to hide scoring, recommendation, queue, internal price, vendor, labor, margin, PCE, and personal information.
 - Initial decision: `MERGE_READY`.
+
+## RC-0.3.9 Recommendation Scoring Enhancement Stabilized
+
+- Branch: `rc-0.3.9-recommendation-scoring-enhancement`
+- Implementation commit: `18f38d4`
+- Confidence fixtures: `HIGH 93 / MEDIUM 66 / LOW 54 / NO_MATCH 0` PASSED
+- Score breakdown and item/unit/spec normalization: PASSED
+- Vendor weighting and vendor-only HIGH prevention: PASSED
+- Approval/rejection history weighting: PASSED
+- Recommendation rule changes do not update Master Data: PASSED
+- Recommendation approval and Queue linkage do not update Master Data: PASSED
+- Linked Queue remains `PENDING_REVIEW`: PASSED
+- Workbench approval, backup, apply, and history boundary: PASSED
+- Five internal entry points and safe empty state: PASSED
+- Customer safety: PASSED
+- Fixed regressions remain resolved: UI bridge typing, identical-string 100 similarity, and full-schema test fixture.
+- Unresolved S1/S2: none.
+- Stabilization decision: `MERGE_READY`
+- Main merge/tag status: not merged, not tagged.
