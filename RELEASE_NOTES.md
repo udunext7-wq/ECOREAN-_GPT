@@ -1186,3 +1186,28 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Unresolved S1/S2: none.
 - Stabilization decision: `MERGE_READY`
 - Main merge/tag status: not merged, not tagged.
+
+## RC-0.3.9 Recommendation Scoring Enhancement — Merged to Main
+
+- Source branch: `rc-0.3.9-recommendation-scoring-enhancement`
+- Merge commit: `471c6c306904832529a1d9d6301f374fd6bdb063`
+- Included commits: `18f38d4`, `ab3322f`
+- Included:
+  - recommendation scoring service
+  - 추천 점수 규칙 센터
+  - 품목명, 단위, 규격 정규화
+  - 공급처 가중치
+  - 승인/반려 이력 가중치
+  - 가격 차이율 안전 점수
+  - name/category/unit/spec/vendor/history/price score breakdown
+  - `HIGH 93 / MEDIUM 66 / LOW 54 / NO_MATCH 0` 기준 유지
+  - 공급처 단독 HIGH 승격 방지
+  - 추천 규칙 변경만으로 Master Data 변경 방지
+  - 추천 승인만으로 Master Data 변경 방지
+  - Queue 연결만으로 Master Data 변경 방지
+  - Queue `PENDING_REVIEW` 유지
+  - 고객 payload scoring/internal data 비노출
+  - CEO Dashboard를 포함한 5개 내부 진입점
+- Pre-merge and post-merge service, regression, UI build, production smoke, and release smoke: PASSED
+- Customer safety: PASSED
+- Final decision: `RC-0.3.9 = 추천 점수 고도화 main 반영 가능`
