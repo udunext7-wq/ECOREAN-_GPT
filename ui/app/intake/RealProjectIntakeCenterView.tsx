@@ -229,6 +229,7 @@ export function RealProjectIntakeCenterView() {
           <p>고객/현장 정보는 최소한으로 받고, 견적 생성 전 LightBIM·단가·고객 안전성을 순서대로 확인합니다.</p>
         </div>
         <div className="button-row">
+          <button onClick={() => navigate('crmPipeline')}>고객 CRM 파이프라인</button>
           <button onClick={() => navigate('backupRestore')}>백업 / 복구 센터</button>
           <button onClick={() => navigate('priceWorkbookImport')}>단가표 가져오기</button>
           <button onClick={() => navigate('priceCalibrationPriority')}>단가 보정 우선순위</button>
