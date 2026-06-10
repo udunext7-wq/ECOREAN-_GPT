@@ -94,3 +94,15 @@ API key, public token 원문, 외부 API 응답 원문은 저장하지 않습니
 - 고객 포털 token은 원문 대신 SHA-256 hash만 저장합니다.
 - CRM 리포트에는 익명화된 고객 표시명과 연결 여부만 기록합니다.
 - 테스트 데이터는 `TEST` 유형과 명백한 테스트 값만 사용합니다.
+
+## 안정화 결과
+
+- 12개 CRM 단계와 stage history: PASSED
+- 상담, 현장조사, 견적, 프로젝트 연결: PASSED
+- 주소, 포털, 캘린더 연결 준비 상태: PASSED
+- 전화번호/이메일 마스킹과 portal token hash: PASSED
+- 고객 payload allowlist와 내부정보 비노출: PASSED
+- 외부 API 호출 및 credential 저장: DISABLED
+- 병합 준비 판정: `MERGE_READY`
+
+실제 주소 API, 공개 고객 포털 배포, 캘린더 동기화는 후속 버전 범위입니다. 이번 foundation은 로컬 상태와 안전한 참조 필드만 제공하며 외부 시스템으로 고객정보를 전송하지 않습니다.

@@ -1276,3 +1276,20 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Added anonymized CRM report generation and RC-0.4.0 CRM documentation.
 - Initial CRM smoke and UI production build: PASSED.
 - Initial decision: `MERGE_READY`.
+
+## RC-0.4.0 CRM Pipeline Foundation Stabilized
+
+- Branch: `rc-0.4.0-crm-pipeline-foundation`
+- Foundation commit: `c2b2f43`
+- All 12 CRM stages and stage history: PASSED
+- Lead, consultation, site survey, estimate, and project linkage: PASSED
+- Address, customer portal, and calendar connection preparation: PASSED
+- External API calls and credential storage: DISABLED
+- Phone/email masking and portal token SHA-256 hashing: PASSED
+- Customer payload allowlist and internal-data filtering: PASSED
+- Four internal entry points: PASSED
+- Existing intake, LightBIM, pricing, and customer safety regressions: PASSED
+- Unresolved S1/S2: none
+- Stabilization decision: `MERGE_READY`
+- Main merge/tag status: not merged, not tagged
+- Deferred: actual address API, public portal deployment, calendar synchronization, advanced CRM automation, and operational conversion analytics
