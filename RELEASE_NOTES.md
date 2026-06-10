@@ -1293,3 +1293,29 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Stabilization decision: `MERGE_READY`
 - Main merge/tag status: not merged, not tagged
 - Deferred: actual address API, public portal deployment, calendar synchronization, advanced CRM automation, and operational conversion analytics
+
+## RC-0.4.0 CRM Pipeline Foundation — Merged to Main
+
+- Source branch: `rc-0.4.0-crm-pipeline-foundation`
+- Merge commit: `17cb1ed`
+- Included:
+  - 고객 CRM 파이프라인 센터
+  - `crmPipelineService`
+  - CRM 12단계 stage와 stage history
+  - lead 생성, 조회, 수정
+  - 상담 기록과 다음 액션
+  - 현장조사 요청
+  - 견적 및 프로젝트 연결
+  - 주소, 고객 포털, 캘린더 연결 준비 status
+  - 외부 API 비호출 구조
+  - 전화번호와 이메일 마스킹
+  - portal public token SHA-256 hash 저장
+  - 상세주소와 내부 메모 customer payload 비노출
+  - 원가, 마진, PCE, Queue, Scoring customer payload 비노출
+  - First Entry Panel, CEO Dashboard, Drawer, 실제 프로젝트 접수 내부 진입점
+- Pre-merge service syntax, regression, UI build, production smoke, and release smoke: PASSED
+- Post-merge main service syntax, regression, UI build, production smoke, and release smoke: PASSED
+- External API calls: DISABLED
+- Privacy masking and portal token hashing: PASSED
+- Customer safety: PASSED
+- Final decision: `RC-0.4.0 = CRM Pipeline Foundation main 반영 가능`
