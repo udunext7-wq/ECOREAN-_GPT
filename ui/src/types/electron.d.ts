@@ -141,6 +141,11 @@ declare global {
         deferUnmatchedPriceRecommendation: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         linkUnmatchedPriceRecommendationToQueue: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         createUnmatchedPriceRecommendationReport: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getRecommendationScoringSummary: () => Promise<Record<string, unknown>>;
+        listRecommendationScoringRules: (payload?: Record<string, unknown>) => Promise<Array<Record<string, unknown>>>;
+        saveRecommendationScoringRule: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        setRecommendationScoringRuleStatus: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        createRecommendationScoringReport: () => Promise<Record<string, unknown>>;
         createOperationalOnboardingRun: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getOperationalOnboardingRuns: () => Promise<Array<Record<string, unknown>>>;
         getOperationalOnboardingRun: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
