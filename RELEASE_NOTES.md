@@ -1341,3 +1341,33 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Packaged binaries remain local ignored build artifacts.
 - Known non-blocking warnings: Vite bundle size, SQLite experimental API, electron-builder description/author metadata, and Node DEP0190.
 - Final decision: `RC-0.4.0 desktop release package 사용 가능`
+
+## RC-0.4.0 Packaged Operational Baseline
+
+- Baseline commit: `5d93aa3`
+- Source commit: `7bb4970`
+- Source tag: `v0.4.0-rc`
+- New packaged baseline tag: `v0.4.0-rc-packaged`
+- Final decision: `CRM Pipeline Foundation 패키지 운영 기준 사용 가능`
+- CRM Pipeline Center: PASSED
+- CRM 12-stage flow: PASSED
+- Lead create / list / detail / update: PASSED
+- Stage history: PASSED
+- Consultation log and site survey request: PASSED
+- Estimate and project linking: PASSED
+- Address / customer portal / calendar preparation status: PASSED
+- External API execution: DISABLED
+- Phone/email privacy masking: PASSED
+- Portal token SHA-256 hashing: PASSED
+- Customer-safe payload filtering: PASSED
+- Customer safety: PASSED
+- Required export folders: PASSED
+- Required backup folders: PASSED
+- Full service syntax, packaged regression, UI build, production smoke, and release smoke: PASSED
+- Known non-blocking warnings: Vite bundle size, SQLite experimental API, electron-builder metadata, Node DEP0190, and npm update notices when shown.
+- Next direction:
+  - RC-0.4.1: CRM 알림 / 다음 액션 자동화
+  - RC-0.4.2: 주소 API 연동 준비 고도화
+  - RC-0.4.3: 고객 포털 초안
+  - RC-0.4.4: 캘린더 동기화 준비
+  - RC-0.5.0: 운영 권한 / 사용자 역할 관리
