@@ -13,6 +13,7 @@ const { createRecommendationScoringService } = require('./services/recommendatio
 const { createOperationalOnboardingService } = require('./services/operationalOnboardingService');
 const { createRealProjectIntakeService } = require('./services/realProjectIntakeService');
 const { createCrmPipelineService } = require('./services/crmPipelineService');
+const { createCrmNextActionService } = require('./services/crmNextActionService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -30,6 +31,7 @@ let recommendationScoringService;
 let operationalOnboardingService;
 let realProjectIntakeService;
 let crmPipelineService;
+let crmNextActionService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -209,6 +211,21 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:crm:report', (_event, payload = {}) => crmPipelineService.createCrmPipelineReport(payload));
   ipcMain.handle('boc:crm:summary', () => crmPipelineService.getCrmDashboardSummary());
   ipcMain.handle('boc:crm:customer-safe', (_event, payload = {}) => crmPipelineService.getCrmCustomerSafePayload(payload));
+  ipcMain.handle('boc:crm-next-action:create', (_event, payload = {}) => crmNextActionService.createCrmNextAction(payload));
+  ipcMain.handle('boc:crm-next-action:list', (_event, payload = {}) => crmNextActionService.listCrmNextActions(payload));
+  ipcMain.handle('boc:crm-next-action:detail', (_event, payload = {}) => crmNextActionService.getCrmNextActionDetail(payload));
+  ipcMain.handle('boc:crm-next-action:update', (_event, payload = {}) => crmNextActionService.updateCrmNextAction(payload));
+  ipcMain.handle('boc:crm-next-action:complete', (_event, payload = {}) => crmNextActionService.completeCrmNextAction(payload));
+  ipcMain.handle('boc:crm-next-action:snooze', (_event, payload = {}) => crmNextActionService.snoozeCrmNextAction(payload));
+  ipcMain.handle('boc:crm-next-action:cancel', (_event, payload = {}) => crmNextActionService.cancelCrmNextAction(payload));
+  ipcMain.handle('boc:crm-next-action:generate-lead', (_event, payload = {}) => crmNextActionService.generateNextActionsForLead(payload));
+  ipcMain.handle('boc:crm-next-action:generate-stage', (_event, payload = {}) => crmNextActionService.generateNextActionsForStageChange(payload));
+  ipcMain.handle('boc:crm-notification:create', (_event, payload = {}) => crmNextActionService.createInternalCrmNotification(payload));
+  ipcMain.handle('boc:crm-notification:list', (_event, payload = {}) => crmNextActionService.listCrmNotifications(payload));
+  ipcMain.handle('boc:crm-notification:read', (_event, payload = {}) => crmNextActionService.markCrmNotificationRead(payload));
+  ipcMain.handle('boc:crm-notification:dismiss', (_event, payload = {}) => crmNextActionService.dismissCrmNotification(payload));
+  ipcMain.handle('boc:crm-next-action:summary', () => crmNextActionService.getCrmNextActionDashboardSummary());
+  ipcMain.handle('boc:crm-next-action:report', (_event, payload = {}) => crmNextActionService.createCrmNextActionReport(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
@@ -446,6 +463,8 @@ app.whenReady().then(() => {
   operationalOnboardingService = createOperationalOnboardingService({ sqliteService });
   realProjectIntakeService = createRealProjectIntakeService({ sqliteService });
   crmPipelineService = createCrmPipelineService({ sqliteService });
+  crmNextActionService = createCrmNextActionService({ sqliteService, crmPipelineService });
+  crmPipelineService.setNextActionService(crmNextActionService);
   registerIpcHandlers();
   createWindow();
 

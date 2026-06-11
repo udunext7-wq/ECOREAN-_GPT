@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { crmPipelineService } from '../../services/crm-service/crmPipelineService';
+import type { ViewKey } from '../../src/types/dashboard';
 
 const STAGES = [
   ['LEAD', '신규 문의'],
@@ -67,7 +68,9 @@ const initialForm: LeadForm = {
 const stageLabel = (stage: unknown) => STAGES.find(([key]) => key === stage)?.[1] || String(stage || '미정');
 const value = (row: Record<string, unknown> | null, key: string) => String(row?.[key] || '');
 
-export function CrmPipelineCenterView() {
+type Props = { onNavigate?: (view: ViewKey) => void };
+
+export function CrmPipelineCenterView({ onNavigate }: Props) {
   const [form, setForm] = useState<LeadForm>(initialForm);
   const [leads, setLeads] = useState<Array<Record<string, unknown>>>([]);
   const [summary, setSummary] = useState<Record<string, unknown>>({});
@@ -213,6 +216,7 @@ export function CrmPipelineCenterView() {
           <p>신규 문의부터 계약 전환까지 상담, 현장조사, 견적과 프로젝트 연결 상태를 관리합니다.</p>
         </div>
         <div className="button-row">
+          <button onClick={() => onNavigate ? onNavigate('crmNextActions') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'crmNextActions' }))}>CRM 다음 액션 / 알림</button>
           <button className="command" disabled={busy} onClick={createLead}>신규 고객 등록</button>
           <button disabled={busy} onClick={createReport}>CRM 리포트 생성</button>
         </div>

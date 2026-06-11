@@ -93,7 +93,8 @@ export function CeoDashboard() {
       openRecommendationScoringRules: 'recommendationScoringRules',
       openOperationalOnboarding: 'operationalOnboarding',
       openRealProjectIntake: 'realProjectIntake',
-      openCrmPipeline: 'crmPipeline'
+      openCrmPipeline: 'crmPipeline',
+      openCrmNextActions: 'crmNextActions'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
@@ -315,6 +316,7 @@ export function CeoDashboard() {
         <button onClick={() => openView('unmatchedPriceRecommendation', 'warning')}>단가 미매칭 추천</button>
         <button onClick={() => openView('recommendationScoringRules', 'warning')}>추천 점수 규칙</button>
         <button onClick={() => openView('crmPipeline', 'confirm')}>고객 CRM 파이프라인</button>
+        <button onClick={() => openView('crmNextActions', 'confirm')}>CRM 다음 액션 / 알림</button>
         <button onClick={() => openView('floorplanCenter', 'click')}>평면도 / 아이소메트릭</button>
         <button onClick={() => openView('aiVisualization', 'click')}>AI 투시도 생성</button>
         <button onClick={() => openView('project', 'click')}>Project Drill Down</button>

@@ -230,6 +230,7 @@ export function RealProjectIntakeCenterView() {
         </div>
         <div className="button-row">
           <button onClick={() => navigate('crmPipeline')}>고객 CRM 파이프라인</button>
+          <button onClick={() => navigate('crmNextActions')}>CRM 다음 액션 / 알림</button>
           <button onClick={() => navigate('backupRestore')}>백업 / 복구 센터</button>
           <button onClick={() => navigate('priceWorkbookImport')}>단가표 가져오기</button>
           <button onClick={() => navigate('priceCalibrationPriority')}>단가 보정 우선순위</button>

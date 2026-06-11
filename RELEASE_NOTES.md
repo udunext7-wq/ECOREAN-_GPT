@@ -1371,3 +1371,17 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - RC-0.4.3: 고객 포털 초안
   - RC-0.4.4: 캘린더 동기화 준비
   - RC-0.5.0: 운영 권한 / 사용자 역할 관리
+
+## RC-0.4.1 CRM Next Action & Notification Automation started
+
+- Branch: `rc-0.4.1-crm-next-action-automation`
+- Added the internal `CRM 다음 액션 / 내부 알림` center.
+- Added automatic next actions for lead creation and CRM stage transitions.
+- Added action create, list, detail, update, complete, snooze, cancel, duplicate prevention, and overdue detection.
+- Added internal notification create, read, dismiss, severity/category tracking, and dashboard KPI summary.
+- `ON_HOLD` snoozes active actions; `LOST` cancels active actions.
+- Added entry points from First Entry Panel, CEO Dashboard, Drawer, CRM Pipeline, and Real Project Intake.
+- SMS, email, Kakao, push, calendar, and address API execution remain `DISABLED`.
+- Customer payloads continue to exclude internal notifications, action memo, delay risk, raw contact details, internal cost, margin, PCE, Queue, and Scoring data.
+- RC-0.4.1 standalone smoke and production UI build: PASSED.
+- Initial decision: `MERGE_READY`.
