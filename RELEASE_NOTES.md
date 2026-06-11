@@ -1371,3 +1371,38 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - RC-0.4.3: 고객 포털 초안
   - RC-0.4.4: 캘린더 동기화 준비
   - RC-0.5.0: 운영 권한 / 사용자 역할 관리
+
+## RC-0.4.1 CRM Next Action & Notification Automation started
+
+- Branch: `rc-0.4.1-crm-next-action-automation`
+- Added the internal `CRM 다음 액션 / 내부 알림` center.
+- Added automatic next actions for lead creation and CRM stage transitions.
+- Added action create, list, detail, update, complete, snooze, cancel, duplicate prevention, and overdue detection.
+- Added internal notification create, read, dismiss, severity/category tracking, and dashboard KPI summary.
+- `ON_HOLD` snoozes active actions; `LOST` cancels active actions.
+- Added entry points from First Entry Panel, CEO Dashboard, Drawer, CRM Pipeline, and Real Project Intake.
+- SMS, email, Kakao, push, calendar, and address API execution remain `DISABLED`.
+- Customer payloads continue to exclude internal notifications, action memo, delay risk, raw contact details, internal cost, margin, PCE, Queue, and Scoring data.
+- RC-0.4.1 standalone smoke and production UI build: PASSED.
+- Initial decision: `MERGE_READY`.
+
+## RC-0.4.1 CRM Next Action Automation Stabilized
+
+- Branch: `rc-0.4.1-crm-next-action-automation`
+- Implementation commit: `0a9573d`
+- Action create, list, detail, complete, 24-hour snooze, 7-day defer, and cancel: PASSED
+- Lead and CRM stage automatic action generation: PASSED
+- Active duplicate action prevention: PASSED
+- OVERDUE detection and single internal notification: PASSED
+- Internal notification read/dismiss: PASSED
+- `ON_HOLD` and `LOST` automation restrictions: PASSED
+- Phone/email masking in internal notification text: PASSED
+- Five internal entry points and safe empty states: PASSED
+- Customer-facing internal action/notification entry point: none
+- External SMS, email, Kakao, push, calendar, and address API execution: DISABLED
+- Customer safety and privacy allowlist: PASSED
+- Service syntax, Node regressions, UI build, production smoke, and release smoke: PASSED
+- Existing JSX static-test compatibility: PASSED
+- In-app visual automation remained unavailable due to the Windows sandbox; build and Electron smoke checks were used as the render-path verification.
+- Unresolved S1/S2: none
+- Stabilization decision: `MERGE_READY`
