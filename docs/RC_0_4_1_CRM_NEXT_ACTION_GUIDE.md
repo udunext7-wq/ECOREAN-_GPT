@@ -86,3 +86,14 @@ CRM 다음 액션 / 내부 알림 센터는 고객 단계가 바뀔 때 필요�
 ## 외부 API 비호출
 
 이번 RC에는 외부 endpoint, API key, Authorization header, SMS, 이메일, 카카오, push, 주소 API 또는 캘린더 API 호출이 없습니다. 후속 외부 연동은 별도 버전에서 개인정보 전송 범위와 동의를 먼저 정의한 뒤 진행합니다.
+
+## 안정화 확인
+
+- 완료, 24시간 보류, 7일 연기, 취소: PASSED
+- 동일 lead/action type 활성 중복 방지: PASSED
+- OVERDUE 전환과 내부 알림 단일 생성: PASSED
+- 내부 알림의 전화번호/이메일 저장 전 마스킹: PASSED
+- `ON_HOLD` 보류와 `LOST` 취소: PASSED
+- 5개 내부 진입점과 빈 데이터 empty state: PASSED
+- 고객-facing 화면의 내부 CRM 진입점 비노출: PASSED
+- Merge readiness: `MERGE_READY`

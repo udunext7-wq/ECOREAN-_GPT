@@ -79,3 +79,13 @@
 ## 최종 판정
 
 S1/S2가 없고 전체 지정 회귀, production smoke, release smoke가 통과하여 `MERGE_READY`입니다.
+
+## 안정화 재검증
+
+- Stabilization smoke: `tests/rc-0-4-1-branch-stabilization.smoke.js`
+- 7일 연기 날짜 보존: PASSED
+- OVERDUE 알림 중복 방지: PASSED
+- 내부 알림 전화번호/이메일 마스킹: PASSED
+- 고객 화면 내부 CRM 진입점 비노출: PASSED
+- 기존 JSX 정적 검사 호환: PASSED
+- 최종 merge readiness: `MERGE_READY`

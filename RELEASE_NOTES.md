@@ -1385,3 +1385,24 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Customer payloads continue to exclude internal notifications, action memo, delay risk, raw contact details, internal cost, margin, PCE, Queue, and Scoring data.
 - RC-0.4.1 standalone smoke and production UI build: PASSED.
 - Initial decision: `MERGE_READY`.
+
+## RC-0.4.1 CRM Next Action Automation Stabilized
+
+- Branch: `rc-0.4.1-crm-next-action-automation`
+- Implementation commit: `0a9573d`
+- Action create, list, detail, complete, 24-hour snooze, 7-day defer, and cancel: PASSED
+- Lead and CRM stage automatic action generation: PASSED
+- Active duplicate action prevention: PASSED
+- OVERDUE detection and single internal notification: PASSED
+- Internal notification read/dismiss: PASSED
+- `ON_HOLD` and `LOST` automation restrictions: PASSED
+- Phone/email masking in internal notification text: PASSED
+- Five internal entry points and safe empty states: PASSED
+- Customer-facing internal action/notification entry point: none
+- External SMS, email, Kakao, push, calendar, and address API execution: DISABLED
+- Customer safety and privacy allowlist: PASSED
+- Service syntax, Node regressions, UI build, production smoke, and release smoke: PASSED
+- Existing JSX static-test compatibility: PASSED
+- In-app visual automation remained unavailable due to the Windows sandbox; build and Electron smoke checks were used as the render-path verification.
+- Unresolved S1/S2: none
+- Stabilization decision: `MERGE_READY`
