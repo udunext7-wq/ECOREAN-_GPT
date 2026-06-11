@@ -1406,3 +1406,20 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - In-app visual automation remained unavailable due to the Windows sandbox; build and Electron smoke checks were used as the render-path verification.
 - Unresolved S1/S2: none
 - Stabilization decision: `MERGE_READY`
+
+## RC-0.4.1 CRM Next Action Automation — Merged to Main
+
+- Source branch: `rc-0.4.1-crm-next-action-automation`
+- Merge commit: `7ec9935`
+- Included:
+  - Lead 생성 및 CRM 단계 변경 기반 자동 다음 액션
+  - 액션 생성 / 목록 / 상세 / 완료 / 미루기 / 연기 / 취소
+  - 활성 액션 중복 방지와 기한 초과 판정
+  - 내부 알림 생성 / 읽음 / 해제
+  - `ON_HOLD` 활성 액션 미루기와 `LOST` 활성 액션 취소
+  - First Entry Panel, CEO Dashboard, Drawer, CRM Pipeline, Real Project Intake 진입점
+  - 전화번호 / 이메일 마스킹과 customer-safe payload 필터링
+- External SMS, email, Kakao, push, calendar, and address API execution: DISABLED
+- Pre-merge and post-merge service syntax, regression, UI build, production smoke, and release smoke: PASSED
+- Customer safety: PASSED
+- Final decision: `RC-0.4.1 = CRM Next Action Automation main 반영 가능`
