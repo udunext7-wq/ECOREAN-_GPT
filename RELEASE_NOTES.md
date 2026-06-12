@@ -1423,3 +1423,27 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Pre-merge and post-merge service syntax, regression, UI build, production smoke, and release smoke: PASSED
 - Customer safety: PASSED
 - Final decision: `RC-0.4.1 = CRM Next Action Automation main 반영 가능`
+
+## RC-0.4.1 Desktop Release Package
+
+- Source commit: `21e468d`
+- Merge commit: `7ec9935`
+- Source tag: `v0.4.1-rc`
+- Windows unpacked package: `electron/release/win-unpacked/ECOREAN BOC CEO Dashboard.exe`
+- Actual packaged app launch: PASSED
+- Window title and first screen render: PASSED
+- Dev server required: NO
+- CRM Next Action Center and five internal entry points: PASSED
+- Action create / list / detail / complete / 24-hour snooze / 7-day defer / cancel: PASSED
+- Lead `FIRST_CONTACT` and stage-based action generation: PASSED
+- Active duplicate action prevention: PASSED
+- `OVERDUE` detection and internal notification: PASSED
+- Internal notification read / dismiss: PASSED
+- `ON_HOLD` / `LOST` safeguards: PASSED
+- External SMS, email, Kakao, push, calendar, and address API: DISABLED
+- Phone / email privacy masking: PASSED
+- Customer-safe payload filtering: PASSED
+- Customer safety: PASSED
+- Packaged binaries remain local ignored build artifacts.
+- Known non-blocking warnings: Vite bundle size, SQLite experimental API, electron-builder description/author metadata, Node DEP0190, and npm update notices when shown.
+- Final decision: `RC-0.4.1 Desktop Release Package 사용 가능`
