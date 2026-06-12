@@ -14,6 +14,8 @@ const { createOperationalOnboardingService } = require('./services/operationalOn
 const { createRealProjectIntakeService } = require('./services/realProjectIntakeService');
 const { createCrmPipelineService } = require('./services/crmPipelineService');
 const { createCrmNextActionService } = require('./services/crmNextActionService');
+const { createAddressNormalizationService } = require('./services/addressNormalizationService');
+const { createAddressProviderAdapter } = require('./services/addressProviderAdapter');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -32,6 +34,7 @@ let operationalOnboardingService;
 let realProjectIntakeService;
 let crmPipelineService;
 let crmNextActionService;
+let addressNormalizationService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -226,6 +229,20 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:crm-notification:dismiss', (_event, payload = {}) => crmNextActionService.dismissCrmNotification(payload));
   ipcMain.handle('boc:crm-next-action:summary', () => crmNextActionService.getCrmNextActionDashboardSummary());
   ipcMain.handle('boc:crm-next-action:report', (_event, payload = {}) => crmNextActionService.createCrmNextActionReport(payload));
+  ipcMain.handle('boc:address-normalization:create', (_event, payload = {}) => addressNormalizationService.createAddressRecord(payload));
+  ipcMain.handle('boc:address-normalization:update', (_event, payload = {}) => addressNormalizationService.updateAddressRecord(payload.addressId || payload.address_id, payload));
+  ipcMain.handle('boc:address-normalization:list', (_event, payload = {}) => addressNormalizationService.listAddressRecords(payload));
+  ipcMain.handle('boc:address-normalization:detail', (_event, payload = {}) => addressNormalizationService.getAddressRecordDetail(payload.addressId || payload.address_id || payload));
+  ipcMain.handle('boc:address-normalization:request', (_event, payload = {}) => addressNormalizationService.requestAddressNormalization(payload.addressId || payload.address_id, payload));
+  ipcMain.handle('boc:address-normalization:approve', (_event, payload = {}) => addressNormalizationService.approveNormalizedAddress(payload.addressId || payload.address_id, payload));
+  ipcMain.handle('boc:address-normalization:reject', (_event, payload = {}) => addressNormalizationService.rejectNormalizedAddress(payload.addressId || payload.address_id, payload));
+  ipcMain.handle('boc:address-normalization:defer', (_event, payload = {}) => addressNormalizationService.deferAddressNormalization(payload.addressId || payload.address_id, payload));
+  ipcMain.handle('boc:address-normalization:link-lead', (_event, payload = {}) => addressNormalizationService.linkAddressToLead(payload.addressId || payload.address_id, payload.leadId || payload.lead_id));
+  ipcMain.handle('boc:address-normalization:link-survey', (_event, payload = {}) => addressNormalizationService.linkAddressToSurvey(payload.addressId || payload.address_id, payload.surveyId || payload.survey_id));
+  ipcMain.handle('boc:address-normalization:link-project', (_event, payload = {}) => addressNormalizationService.linkAddressToProject(payload.addressId || payload.address_id, payload.projectId || payload.project_id));
+  ipcMain.handle('boc:address-normalization:summary', () => addressNormalizationService.getAddressNormalizationSummary());
+  ipcMain.handle('boc:address-normalization:customer-safe', (_event, payload = {}) => addressNormalizationService.getCustomerSafeAddressPayload(payload.addressId || payload.address_id || payload));
+  ipcMain.handle('boc:address-normalization:report', (_event, payload = {}) => addressNormalizationService.createAddressNormalizationReport(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
@@ -465,6 +482,10 @@ app.whenReady().then(() => {
   crmPipelineService = createCrmPipelineService({ sqliteService });
   crmNextActionService = createCrmNextActionService({ sqliteService, crmPipelineService });
   crmPipelineService.setNextActionService(crmNextActionService);
+  addressNormalizationService = createAddressNormalizationService({
+    sqliteService,
+    providerAdapter: createAddressProviderAdapter()
+  });
   registerIpcHandlers();
   createWindow();
 
