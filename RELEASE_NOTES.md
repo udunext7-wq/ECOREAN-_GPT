@@ -1447,3 +1447,27 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Packaged binaries remain local ignored build artifacts.
 - Known non-blocking warnings: Vite bundle size, SQLite experimental API, electron-builder description/author metadata, Node DEP0190, and npm update notices when shown.
 - Final decision: `RC-0.4.1 Desktop Release Package 사용 가능`
+
+## RC-0.4.1 Packaged Operational Baseline
+
+- Source commit: `21e468d`
+- Package commit: `afef0f4`
+- Source tag: `v0.4.1-rc`
+- Packaged baseline tag: `v0.4.1-rc-packaged`
+- Actual packaged launch: PASSED
+- Dev server required: NO
+- Action lifecycle: PASSED
+- Stage automation: PASSED
+- Duplicate prevention: PASSED
+- `OVERDUE` detection: PASSED
+- Internal notification read / dismiss: PASSED
+- `ON_HOLD` / `LOST` guard: PASSED
+- Privacy masking: PASSED
+- Customer safety: PASSED
+- External SMS, email, Kakao, push, calendar, and address API: DISABLED
+- Final decision: `RC-0.4.1 packaged operational baseline 사용 가능`
+- Next direction:
+  - RC-0.4.2: 주소 정규화 및 주소 API 연결 준비
+  - RC-0.4.3: 고객 포털 내부 초안
+  - RC-0.4.4: 캘린더 / 현장조사 일정 동기화 준비
+  - RC-0.5.0: 사용자 권한 및 역할 관리
