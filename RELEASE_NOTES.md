@@ -1507,3 +1507,21 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Service syntax, Node regressions, UI build, production smoke, and release smoke: PASSED
 - Unresolved S1/S2: none
 - Stabilization decision: `MERGE_READY`
+
+## RC-0.4.2 Address Normalization & Provider Readiness — Merged to Main
+
+- Source branch: `rc-0.4.2-address-normalization-readiness`
+- Implementation commit: `3d372e7`
+- Stabilization commit: `d379950`
+- Merge commit: `cb41933`
+- Base tag: `v0.4.1-rc-packaged`
+- Included address normalization service, disabled provider adapter, and internal Address Normalization Center.
+- ROAD/JIBUN/MIXED/UNKNOWN and HIGH/MEDIUM/LOW/INVALID classification: PASSED
+- Original/normalized address separation and approval/rejection/deferral history: PASSED
+- Duplicate candidate warnings without automatic merge or deletion: PASSED
+- Lead/site survey/project linking: PASSED
+- Null, malformed, whitespace, hyphen, mixed-language, and long-detail edge cases: PASSED
+- External address API, geocoding, coordinate lookup, provider URL, and API credentials: absent
+- Customer-safe payload and six internal entry points: PASSED
+- Pre-merge and post-merge service syntax, regressions, UI build, production smoke, and release smoke: PASSED
+- Final decision: `RC-0.4.2 Address Normalization & Provider Readiness main 반영 완료`
