@@ -85,6 +85,7 @@ const primaryActions: EntryAction[] = [
 ];
 
 const secondaryActions: EntryAction[] = [
+  { title: '주소 정규화 센터', headline: 'CRM / 현장조사 / 프로젝트 주소 품질 검토', note: 'RC-0.4.2', view: 'addressNormalization', tone: 'confirm' },
   { title: 'CRM 다음 액션 / 내부 알림', headline: '오늘 할 일 / 기한 초과 / 후속 연락 / 내부 알림 관리', note: 'RC-0.4.1', view: 'crmNextActions', tone: 'confirm' },
   { title: '고객 CRM 파이프라인', headline: '문의 / 상담 / 현장조사 / 견적 / 계약 전환 관리', note: 'RC-0.4.0', view: 'crmPipeline', tone: 'confirm' },
   { title: '실제 프로젝트 접수', headline: '고객 / 현장 / LightBIM / 단가 확인 후 견적 생성', note: 'RC-0.3.2', view: 'realProjectIntake', tone: 'confirm' },

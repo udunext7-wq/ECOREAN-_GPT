@@ -217,6 +217,7 @@ export function CrmPipelineCenterView({ onNavigate }: Props) {
         </div>
         <div className="button-row">
           <button onClick={() => onNavigate ? onNavigate('crmNextActions') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'crmNextActions' }))}>CRM 다음 액션 / 알림</button>
+          <button onClick={() => onNavigate ? onNavigate('addressNormalization') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'addressNormalization' }))}>주소 정규화 센터</button>
           <button className="command" disabled={busy} onClick={createLead}>신규 고객 등록</button>
           <button disabled={busy} onClick={createReport}>CRM 리포트 생성</button>
         </div>
@@ -331,6 +332,7 @@ export function CrmPipelineCenterView({ onNavigate }: Props) {
 
         <div className="drawer-block">
           <h3>현장조사 요청</h3>
+          <button onClick={() => onNavigate ? onNavigate('addressNormalization') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'addressNormalization' }))}>현장 주소 정규화</button>
           <label className="field"><span>요청일</span><input type="date" value={surveyDate} onChange={(event) => setSurveyDate(event.target.value)} /></label>
           <button disabled={!selectedLeadId || busy} onClick={createSurvey}>현장조사 요청 생성</button>
           {((selected?.siteSurveyRequests || []) as Array<Record<string, unknown>>).slice(0, 3).map((survey) => (

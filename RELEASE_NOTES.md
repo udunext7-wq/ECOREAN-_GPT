@@ -1471,3 +1471,39 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - RC-0.4.3: 고객 포털 내부 초안
   - RC-0.4.4: 캘린더 / 현장조사 일정 동기화 준비
   - RC-0.5.0: 사용자 권한 및 역할 관리
+
+## RC-0.4.2 Address Normalization & Provider Readiness started
+
+- Branch: `rc-0.4.2-address-normalization-readiness`
+- Added the internal `주소 정규화 센터` for CRM Lead, site survey, and project addresses.
+- Added ROAD, JIBUN, MIXED, and UNKNOWN structure detection.
+- Added HIGH, MEDIUM, LOW, and INVALID confidence classification.
+- Preserved original address fields separately from normalized results.
+- Added approval, rejection, deferral, linking, and address normalization history.
+- Added SHA-256 canonical/fingerprint duplicate warnings without automatic merge or deletion.
+- Added Lead, site survey, and project links plus six internal entry points.
+- Added an address provider adapter interface with all network operations `DISABLED`.
+- No address API key, HTTP request, geocoding request, or coordinate lookup is performed.
+- Customer-safe payloads exclude internal detail, hashes, duplicate candidates, provider data, coordinates, validation details, and internal business data.
+- Service syntax, standalone smoke, requested regressions, UI build, production smoke, and release smoke: PASSED.
+- Initial decision: `MERGE_READY`.
+
+## RC-0.4.2 Address Normalization & Provider Readiness Stabilized
+
+- Branch: `rc-0.4.2-address-normalization-readiness`
+- Implementation commit: `3d372e7`
+- ROAD/JIBUN/MIXED/UNKNOWN detection: PASSED
+- HIGH/MEDIUM/LOW/INVALID confidence: PASSED
+- Original and normalized address separation: PASSED
+- Approval/rejection/deferral and full history: PASSED
+- Canonical, fingerprint, structural, same Lead/survey/project duplicate warnings: PASSED
+- Automatic address/Lead/project merge or deletion: absent
+- Lead/site survey/project linking: PASSED
+- Null, invalid, long-detail, whitespace, and hyphen edge cases: PASSED
+- Address provider and geocoding calls: DISABLED
+- External network call and API credential: absent
+- Six internal entry points: PASSED
+- Customer-safe payload filtering: PASSED
+- Service syntax, Node regressions, UI build, production smoke, and release smoke: PASSED
+- Unresolved S1/S2: none
+- Stabilization decision: `MERGE_READY`
