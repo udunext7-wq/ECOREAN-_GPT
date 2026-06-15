@@ -23,11 +23,16 @@ function clean(value) {
   return String(value || '').replace(/\r?\n/g, ' ').trim();
 }
 
+function asObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
 function normalizeAddressText(value) {
   return clean(value)
     .replace(/[|;,]+/g, ' ')
     .replace(/[()[\]{}]/g, ' ')
     .replace(/\s+/g, ' ')
+    .replace(/\s+-\s+/g, ' ')
     .replace(/\s*-\s*/g, '-')
     .trim();
 }
@@ -78,6 +83,7 @@ function parseAddressComponents(value) {
 }
 
 function buildCanonicalAddress(payload = {}) {
+  payload = asObject(payload);
   const source = normalizeAddressText(payload.address || payload.addressSummary || payload.address_summary || '');
   const parts = { ...parseAddressComponents(source), ...(payload.components || {}) };
   return [
@@ -93,12 +99,14 @@ function hash(value) {
 }
 
 function buildAddressFingerprint(payload = {}) {
+  payload = asObject(payload);
   const canonical = buildCanonicalAddress(payload);
   const detail = normalizeAddressText(payload.addressDetailInternal || payload.address_detail_internal || '').toLowerCase();
   return hash(`${canonical}|${detail}`);
 }
 
 function validateAddressStructure(payload = {}) {
+  payload = asObject(payload);
   const source = normalizeAddressText(payload.address || payload.addressSummary || payload.address_summary || '');
   const parts = { ...parseAddressComponents(source), ...(payload.components || {}) };
   const errors = [];
@@ -117,6 +125,7 @@ function validateAddressStructure(payload = {}) {
 }
 
 function calculateAddressConfidence(payload = {}) {
+  payload = asObject(payload);
   const validation = validateAddressStructure(payload);
   if (!validation.valid) return { score: 0, level: 'INVALID', reasons: validation.errors };
   const parts = validation.components;
@@ -212,6 +221,7 @@ function createAddressNormalizationService({ sqliteService, reportsDir, provider
       WHERE address_id <> ? AND (
         canonical_key_hash = ? OR address_fingerprint_hash = ?
         OR (linked_lead_id <> '' AND linked_lead_id = ?)
+        OR (linked_survey_id <> '' AND linked_survey_id = ?)
         OR (linked_project_id <> '' AND linked_project_id = ?)
         OR (
           district <> '' AND district = ? AND
@@ -222,7 +232,7 @@ function createAddressNormalizationService({ sqliteService, reportsDir, provider
       ORDER BY updated_at DESC
     `).all(
       row.address_id, row.canonical_key_hash, row.address_fingerprint_hash,
-      row.linked_lead_id, row.linked_project_id, row.district,
+      row.linked_lead_id, row.linked_survey_id, row.linked_project_id, row.district,
       row.road_name, row.building_main_no, row.town, row.lot_main_no
     );
     const history = database.prepare('SELECT * FROM address_normalization_history WHERE address_id = ? ORDER BY changed_at DESC').all(row.address_id);
@@ -239,6 +249,7 @@ function createAddressNormalizationService({ sqliteService, reportsDir, provider
   }
 
   function createAddressRecord(payload = {}) {
+    payload = asObject(payload);
     return withDb((database) => {
       const addressId = clean(payload.addressId || payload.address_id) || makeId('ADDR');
       const summary = normalizeAddressText(payload.addressSummary || payload.address_summary || payload.address);
@@ -283,6 +294,7 @@ function createAddressNormalizationService({ sqliteService, reportsDir, provider
   }
 
   function updateAddressRecord(addressId, payload = {}) {
+    payload = asObject(payload);
     return withDb((database) => {
       const before = database.prepare('SELECT * FROM crm_address_records WHERE address_id = ? OR id = ?').get(clean(addressId), clean(addressId));
       if (!before) throw new Error('Address record not found');
@@ -318,6 +330,7 @@ function createAddressNormalizationService({ sqliteService, reportsDir, provider
   }
 
   function listAddressRecords(filters = {}) {
+    filters = asObject(filters);
     return withDb((database) => {
       const where = [];
       const params = [];
@@ -331,6 +344,7 @@ function createAddressNormalizationService({ sqliteService, reportsDir, provider
   }
 
   function requestAddressNormalization(addressId, context = {}) {
+    context = asObject(context);
     const current = getAddressRecordDetail(addressId);
     if (!current) throw new Error('Address record not found');
     return updateAddressRecord(addressId, {
@@ -344,6 +358,7 @@ function createAddressNormalizationService({ sqliteService, reportsDir, provider
   }
 
   function decide(addressId, status, action, payload = {}) {
+    payload = asObject(payload);
     return withDb((database) => {
       const before = database.prepare('SELECT * FROM crm_address_records WHERE address_id = ? OR id = ?').get(clean(addressId), clean(addressId));
       if (!before) throw new Error('Address record not found');
@@ -371,15 +386,18 @@ function createAddressNormalizationService({ sqliteService, reportsDir, provider
   }
 
   function findPotentialDuplicateAddresses(payload = {}) {
+    payload = asObject(payload);
     const canonicalHash = hash(buildCanonicalAddress(payload));
     const fingerprint = buildAddressFingerprint(payload);
     const parts = parseAddressComponents(payload.address || payload.addressSummary || payload.address_summary || '');
     const leadId = clean(payload.leadId || payload.linked_lead_id);
+    const surveyId = clean(payload.surveyId || payload.linked_survey_id);
     const projectId = clean(payload.projectId || payload.linked_project_id);
     return withDb((database) => database.prepare(`
       SELECT address_id, source_type, source_id, normalized_address_summary, confidence_level
       FROM crm_address_records WHERE canonical_key_hash = ? OR address_fingerprint_hash = ?
         OR (? <> '' AND linked_lead_id = ?)
+        OR (? <> '' AND linked_survey_id = ?)
         OR (? <> '' AND linked_project_id = ?)
         OR (
           ? <> '' AND district = ? AND
@@ -389,7 +407,7 @@ function createAddressNormalizationService({ sqliteService, reportsDir, provider
       ORDER BY updated_at DESC
     `).all(
       canonicalHash, fingerprint,
-      leadId, leadId, projectId, projectId,
+      leadId, leadId, surveyId, surveyId, projectId, projectId,
       parts.district, parts.district,
       parts.road_name, parts.road_name, parts.building_main_no,
       parts.town, parts.town, parts.lot_main_no
@@ -429,6 +447,7 @@ function createAddressNormalizationService({ sqliteService, reportsDir, provider
   }
 
   function createAddressNormalizationReport(payload = {}) {
+    payload = asObject(payload);
     const summary = getAddressNormalizationSummary();
     fs.mkdirSync(reportDir, { recursive: true });
     const reportPath = path.join(reportDir, 'RC_0_4_2_ADDRESS_NORMALIZATION_REPORT_GENERATED.md');

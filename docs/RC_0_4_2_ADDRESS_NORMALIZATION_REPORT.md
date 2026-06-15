@@ -75,6 +75,9 @@
 ## 발견 이슈
 
 - S1/S2: 없음
+- 수정: 공백으로 둘러싼 구분용 하이픈 정규화
+- 수정: `null`/비객체 payload 안전 처리
+- 수정: 동일 현장조사 ID 중복 후보 경고
 - S3/S4: 외부 provider 연결은 의도적으로 비활성. 실제 주소 존재 검증은 후속 버전 범위
 - 보류: 외부 주소 provider 선정, 운영 API 계약, 좌표 정책, provider 오류 매핑
 
@@ -83,6 +86,8 @@
 - 전체 Electron 서비스 syntax: PASSED
 - `tests/rc-0-4-2-address-normalization.smoke.js`: PASSED
 - 지정 Node 회귀 11개: PASSED
+- `tests/rc-0-4-2-branch-stabilization.smoke.js`: PASSED
+- 빈 값, 숫자, 건물명, 혼합 문자열, 긴 상세주소, null/undefined 등 경계값: PASSED
 - TypeScript / Vite production UI build: PASSED
 - `npm run smoke:prod`: PASSED
 - `npm run smoke:release`: PASSED
@@ -90,6 +95,6 @@
 
 ## 최종 판정
 
-미해결 S1/S2가 없고 원본 주소 보호, 외부 API 비호출, Customer safety가 모두 통과했습니다.
+미해결 S1/S2가 없고 원본 주소 보호, 승인/반려/보류 이력, 중복 후보 경고, 외부 API 비호출, Customer safety가 모두 통과했습니다.
 
 `MERGE_READY`

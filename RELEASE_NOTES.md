@@ -1487,3 +1487,23 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Customer-safe payloads exclude internal detail, hashes, duplicate candidates, provider data, coordinates, validation details, and internal business data.
 - Service syntax, standalone smoke, requested regressions, UI build, production smoke, and release smoke: PASSED.
 - Initial decision: `MERGE_READY`.
+
+## RC-0.4.2 Address Normalization & Provider Readiness Stabilized
+
+- Branch: `rc-0.4.2-address-normalization-readiness`
+- Implementation commit: `3d372e7`
+- ROAD/JIBUN/MIXED/UNKNOWN detection: PASSED
+- HIGH/MEDIUM/LOW/INVALID confidence: PASSED
+- Original and normalized address separation: PASSED
+- Approval/rejection/deferral and full history: PASSED
+- Canonical, fingerprint, structural, same Lead/survey/project duplicate warnings: PASSED
+- Automatic address/Lead/project merge or deletion: absent
+- Lead/site survey/project linking: PASSED
+- Null, invalid, long-detail, whitespace, and hyphen edge cases: PASSED
+- Address provider and geocoding calls: DISABLED
+- External network call and API credential: absent
+- Six internal entry points: PASSED
+- Customer-safe payload filtering: PASSED
+- Service syntax, Node regressions, UI build, production smoke, and release smoke: PASSED
+- Unresolved S1/S2: none
+- Stabilization decision: `MERGE_READY`
