@@ -1525,3 +1525,26 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Customer-safe payload and six internal entry points: PASSED
 - Pre-merge and post-merge service syntax, regressions, UI build, production smoke, and release smoke: PASSED
 - Final decision: `RC-0.4.2 Address Normalization & Provider Readiness main 반영 완료`
+
+## RC-0.4.2 Desktop Release Package
+
+- Source commit: `8dfd5ef`
+- Merge commit: `cb41933`
+- Source tag: `v0.4.2-rc`
+- Windows package: `electron/release/win-unpacked/ECOREAN BOC CEO Dashboard.exe`
+- Actual packaged launch, responding process, and window title: PASSED
+- Dev server required: NO
+- ROAD/JIBUN/MIXED/UNKNOWN: PASSED
+- HIGH/MEDIUM/LOW/INVALID: PASSED
+- Original address protection and separate normalized storage: PASSED
+- Approval/rejection/deferral and history: PASSED
+- Duplicate warning and automatic merge/delete guards: PASSED
+- Lead/site survey/project linkage: PASSED
+- Provider adapter and external address API: DISABLED
+- Customer-safe payload filtering: PASSED
+- Six internal entry points: PASSED by source, production bundle, archive, and smoke verification
+- Null, malformed, empty, whitespace, numeric, building-only, road-only, lot, mixed, long-detail, mixed-language, and hyphen edge cases: PASSED
+- app.asar includes address services, Electron bridge, production UI route, and Korean center label: PASSED
+- Packaged binaries, app.asar, userData, DB, backups, and export files remain uncommitted
+- Known warnings: Vite bundle size, SQLite experimental API, electron-builder description/author metadata, Node DEP0190
+- Final decision: `RC-0.4.2 Desktop Release Package 사용 가능`
