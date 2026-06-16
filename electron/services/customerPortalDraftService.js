@@ -251,6 +251,7 @@ function summarizeExcludedInternalFields(source) {
 }
 
 function buildCustomerSafePortalPayload(sourcePayload = {}) {
+  sourcePayload = asObject(sourcePayload);
   const source = asObject(sourcePayload.sourcePayload || sourcePayload);
   const milestones = publicMilestones(source);
   const documents = publicDocuments(source);
@@ -260,14 +261,14 @@ function buildCustomerSafePortalPayload(sourcePayload = {}) {
 
   return {
     portal: {
-      title: clean(source.portalTitle || source.portal_title || '고객 포털 내부 초안'),
+      title: clean(source.portalTitle || source.portal_title),
       status: 'INTERNAL_PREVIEW_ONLY',
       publicPortalStatus: PUBLIC_PORTAL_STATUS,
       externalDeliveryStatus: EXTERNAL_DELIVERY_STATUS,
       authenticationStatus: AUTHENTICATION_STATUS
     },
     project: {
-      customerDisplayName: clean(source.customerDisplayName || source.customer_display_name || source.customerName || source.customer_name || '고객'),
+      customerDisplayName: clean(source.customerDisplayName || source.customer_display_name || source.customerName || source.customer_name),
       projectDisplayName: clean(source.projectDisplayName || source.project_display_name || source.projectName || source.project_name || '프로젝트'),
       projectType: clean(source.projectType || source.project_type || 'UNKNOWN'),
       siteLocationSummary: clean(source.customerSafeAddressSummary || source.customer_safe_address_summary || source.approvedSiteLocationSummary || source.approved_site_location_summary || source.siteLocationSummary || source.site_location_summary),
@@ -334,6 +335,16 @@ function validateCustomerSafePortalPayload(payload = {}) {
     externalDeliveryStatus: EXTERNAL_DELIVERY_STATUS,
     authenticationStatus: AUTHENTICATION_STATUS
   };
+}
+
+function getDraftBlockReasons(row, payload = {}) {
+  const reasons = [];
+  const validation = validateCustomerSafePortalPayload(payload);
+  reasons.push(...validation.blockedReasons);
+  if (!clean(row?.project_id)) reasons.push('프로젝트 연결 없음');
+  if (!clean(row?.portal_title)) reasons.push('portal title 누락');
+  if (!clean(row?.customer_display_name)) reasons.push('고객 표시명 누락');
+  return [...new Set(reasons)];
 }
 
 function rowToDraft(row, database) {
@@ -454,11 +465,10 @@ function createCustomerPortalDraftService({ sqliteService, reportsDir } = {}) {
 
   function saveDraft(database, draftId, payload, before) {
     payload = asObject(payload);
+    if (before?.portal_status === 'ARCHIVED') throw new Error('Archived portal draft cannot be updated');
     const sourcePayload = asObject(payload.sourcePayload || payload);
     const safePayload = buildCustomerSafePortalPayload(sourcePayload);
     const validation = validateCustomerSafePortalPayload(safePayload);
-    const portalStatus = validation.publishBlocked ? 'PUBLISH_BLOCKED' : normalizeEnum(payload.portalStatus || payload.portal_status, PORTAL_STATUSES, before?.portal_status || 'DRAFT');
-    const reviewStatus = normalizeEnum(payload.reviewStatus || payload.review_status, REVIEW_STATUSES, before?.review_status || 'NOT_REVIEWED');
     const timestamp = nowIso();
     const safeJson = stableJson(safePayload);
     const values = {
@@ -469,6 +479,23 @@ function createCustomerPortalDraftService({ sqliteService, reportsDir } = {}) {
       siteLocationSummary: safePayload.project.siteLocationSummary,
       payloadHash: sha256(safeJson)
     };
+    const nextLinks = {
+      leadId: clean(payload.leadId || payload.lead_id) || before?.lead_id || '',
+      projectId: clean(payload.projectId || payload.project_id) || before?.project_id || '',
+      estimateId: clean(payload.estimateId || payload.estimate_id) || before?.estimate_id || '',
+      contractId: clean(payload.contractId || payload.contract_id) || before?.contract_id || ''
+    };
+    const blockReasons = getDraftBlockReasons({
+      project_id: nextLinks.projectId,
+      portal_title: values.portalTitle,
+      customer_display_name: values.customerDisplayName
+    }, safePayload);
+    let portalStatus = blockReasons.length ? 'PUBLISH_BLOCKED' : normalizeEnum(payload.portalStatus || payload.portal_status, PORTAL_STATUSES, before?.portal_status || 'DRAFT');
+    let reviewStatus = normalizeEnum(payload.reviewStatus || payload.review_status, REVIEW_STATUSES, before?.review_status || 'NOT_REVIEWED');
+    if (before?.portal_status === 'INTERNAL_APPROVED' && before.customer_safe_payload_hash !== values.payloadHash) {
+      portalStatus = blockReasons.length ? 'PUBLISH_BLOCKED' : 'REVIEW_REQUIRED';
+      reviewStatus = 'REVISION_REQUIRED';
+    }
     if (before) {
       database.prepare(`
         UPDATE customer_portal_drafts SET
@@ -580,7 +607,17 @@ function createCustomerPortalDraftService({ sqliteService, reportsDir } = {}) {
       const before = getRow(database, draftId);
       if (!before) throw new Error('Portal draft not found');
       database.prepare(`UPDATE customer_portal_drafts SET ${field} = ?, updated_at = ? WHERE portal_draft_id = ?`).run(clean(value), nowIso(), draftId);
-      addHistory(database, draftId, 'LINKED', before.portal_status, before.portal_status, { ...actionPayload, reason: `${field} linked` });
+      const after = getRow(database, draftId);
+      const safePayload = parseJson(after.customer_safe_payload_json, {});
+      const blockReasons = getDraftBlockReasons(after, safePayload);
+      if (blockReasons.length) {
+        database.prepare('UPDATE customer_portal_drafts SET portal_status = ?, review_status = ?, updated_at = ? WHERE portal_draft_id = ?')
+          .run('PUBLISH_BLOCKED', 'REVISION_REQUIRED', nowIso(), draftId);
+      } else if (before.portal_status === 'PUBLISH_BLOCKED') {
+        database.prepare('UPDATE customer_portal_drafts SET portal_status = ?, updated_at = ? WHERE portal_draft_id = ?')
+          .run('DRAFT', nowIso(), draftId);
+      }
+      addHistory(database, draftId, 'LINKED', before.portal_status, getRow(database, draftId).portal_status, { ...actionPayload, reason: `${field} linked` });
       return rowToDraft(getRow(database, draftId), database);
     });
   }
@@ -659,11 +696,11 @@ function createCustomerPortalDraftService({ sqliteService, reportsDir } = {}) {
     return withDb((database) => {
       const before = getRow(database, draftId);
       if (!before) throw new Error('Portal draft not found');
-      const validation = validateCustomerSafePortalPayload(parseJson(before.customer_safe_payload_json, {}));
-      if (validation.publishBlocked) {
+      const blockReasons = getDraftBlockReasons(before, parseJson(before.customer_safe_payload_json, {}));
+      if (blockReasons.length) {
         database.prepare('UPDATE customer_portal_drafts SET portal_status = ?, review_status = ?, updated_at = ? WHERE portal_draft_id = ?')
           .run('PUBLISH_BLOCKED', 'REVISION_REQUIRED', nowIso(), draftId);
-        addHistory(database, draftId, 'APPROVAL_REVOKED', before.portal_status, 'PUBLISH_BLOCKED', { ...payload, reason: validation.blockedReasons.join('; ') });
+        addHistory(database, draftId, 'APPROVAL_REVOKED', before.portal_status, 'PUBLISH_BLOCKED', { ...payload, reason: blockReasons.join('; ') });
         return rowToDraft(getRow(database, draftId), database);
       }
       database.prepare('UPDATE customer_portal_drafts SET portal_status = ?, review_status = ?, approved_by = ?, approved_at = ?, updated_at = ? WHERE portal_draft_id = ?')
@@ -742,6 +779,11 @@ function createCustomerPortalDraftService({ sqliteService, reportsDir } = {}) {
     return withDb((database) => {
       const session = database.prepare('SELECT * FROM customer_portal_preview_sessions WHERE preview_session_id = ?').get(clean(sessionId));
       if (!session || session.status !== 'ACTIVE') throw new Error('Preview session is not active');
+      if (session.expires_at && new Date(session.expires_at).getTime() <= Date.now()) {
+        database.prepare('UPDATE customer_portal_preview_sessions SET status = ? WHERE preview_session_id = ?').run('EXPIRED', clean(sessionId));
+        addHistory(database, session.portal_draft_id, 'PREVIEW_REVOKED', '', '', { reason: 'preview expired' });
+        throw new Error('Preview session is expired');
+      }
       const row = getRow(database, session.portal_draft_id);
       const payload = parseJson(row.customer_safe_payload_json, {});
       return {

@@ -92,6 +92,18 @@
 - 발견 S1/S2: 없음
 - 보류: 실제 고객 공개 URL, 고객 로그인, 외부 발송, 포털 배포, 권한/역할 세분화
 
+## 안정화 결과 추가
+
+- 아카이브 Draft 수정 차단: PASSED
+- 승인 후 Draft 변경 시 `REVISION_REQUIRED` 전환: PASSED
+- 프로젝트 연결 누락 publish block: PASSED
+- 포털 제목 / 고객 표시명 누락 publish block: PASSED
+- 만료 preview session payload 조회 차단: PASSED
+- 폐기 preview session payload 조회 차단: PASSED
+- null / undefined / wrong-shape payload 안전 처리: PASSED
+- 고객 화면 내부 Draft Center 진입점 없음: PASSED
+- stabilization decision: `MERGE_READY`
+
 ## 최종 판정
 
 MERGE_READY

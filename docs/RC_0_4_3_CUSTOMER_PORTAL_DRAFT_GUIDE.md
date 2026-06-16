@@ -103,3 +103,12 @@ RC-0.4.3은 실제 고객에게 공개되는 포털이 아니라, 고객에게 �
 - authentication: `INTERNAL_PREVIEW_ONLY`
 - public portal: `NOT_AVAILABLE`
 - SMS / Email / Kakao / Push / Calendar / Address API / OAuth: DISABLED
+
+## 안정화 추가 확인
+
+- 아카이브된 Draft는 수정할 수 없다.
+- 내부 승인된 Draft가 변경되면 `REVISION_REQUIRED`로 돌아간다.
+- 프로젝트 연결, 포털 제목, 고객 표시명이 누락되면 `PUBLISH_BLOCKED` 상태가 된다.
+- 만료 또는 폐기된 preview session은 payload 조회가 차단된다.
+- null / undefined / 잘못된 형태의 입력은 앱 중단 없이 안전하게 처리한다.
+- 고객 화면에는 내부 Draft Center 진입점이 없다.
