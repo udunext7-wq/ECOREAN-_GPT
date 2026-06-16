@@ -1548,3 +1548,35 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Packaged binaries, app.asar, userData, DB, backups, and export files remain uncommitted
 - Known warnings: Vite bundle size, SQLite experimental API, electron-builder description/author metadata, Node DEP0190
 - Final decision: `RC-0.4.2 Desktop Release Package 사용 가능`
+
+## RC-0.4.2 Packaged Operational Baseline
+
+- Source commit: `8dfd5ef`
+- Package documentation commit: `8924fbd`
+- Merge commit: `cb41933`
+- Source tag: `v0.4.2-rc`
+- Packaged tag: `v0.4.2-rc-packaged`
+- Packaged launch: PASSED
+- Window title / responsiveness: PASSED
+- app.asar inclusion: PASSED
+- Dev server: not required
+- Address types: PASSED
+- Confidence classification: PASSED
+- Original address protection: PASSED
+- Approval / rejection / deferral: PASSED
+- History: PASSED
+- Duplicate warning: PASSED
+- Automatic merge / delete prevention: PASSED
+- Lead / site survey / project linkage: PASSED
+- Provider: DISABLED
+- External API / geocoding / coordinates: DISABLED
+- Customer safety: PASSED
+- Six internal entry points: PASSED
+- Edge cases: PASSED
+- Git exclusions: packaged EXE, app.asar, `electron/release`, userData, DB / SQLite, backups, exports, real address data, generated PDF / Excel, and temporary logs were not committed.
+- Known warnings: Vite bundle size, SQLite experimental API, electron-builder metadata, Node DEP0190, and npm update notice when shown.
+- Final decision: operational baseline available.
+- Next direction:
+  - RC-0.4.3: Customer Portal Internal Draft
+  - RC-0.4.4: Calendar & Site Survey Sync Readiness
+  - RC-0.5.0: User Roles & Permissions
