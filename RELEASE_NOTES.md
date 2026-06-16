@@ -1639,3 +1639,35 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Visual browser click QA: NOT PERFORMED
 - Source / smoke / build route validation: PASSED
 - Final decision: `RC-0.4.3 Customer Portal Internal Draft main 반영 완료`
+
+## RC-0.4.3 Desktop Release Package
+
+- Source commit: `3a99fdf`
+- Source tag: `v0.4.3-rc`
+- Merge commit: `b6c9500`
+- Implementation commit: `a345991`
+- Stabilization commit: `f22c5a6`
+- Smoke correction commit: `f5be119`
+- Package path: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- app.asar: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\resources\app.asar`
+- Actual packaged launch: PASSED
+- Window title and responsiveness: PASSED
+- Dev server required: NO
+- Visual click QA: BASIC_LAUNCH_VERIFIED_FULL_CLICK_QA_NOT_PERFORMED
+- Draft lifecycle: PASSED
+- Lead / Project / Estimate / Contract linkage: PASSED
+- Allowlist customer payload: PASSED
+- Forbidden internal field exclusion: PASSED
+- Approved customer document filter: PASSED
+- Customer-visible progress safety: PASSED
+- Snapshot / revision retention: PASSED
+- Audit history: PASSED
+- Internal review / approval / rejection / revocation: PASSED
+- Publish block: PASSED
+- Internal preview session and token SHA-256 protection: PASSED
+- External public portal / authentication / API / message delivery: DISABLED
+- Customer safety: PASSED
+- Six internal entry points: PASSED by source/smoke/archive
+- Customer screen isolation: PASSED
+- Known warnings: Vite bundle size, SQLite experimental API, electron-builder metadata, Node DEP0190
+- Final decision: `RC-0.4.3 Desktop Release Package 사용 가능`
