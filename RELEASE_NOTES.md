@@ -1671,3 +1671,37 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Customer screen isolation: PASSED
 - Known warnings: Vite bundle size, SQLite experimental API, electron-builder metadata, Node DEP0190
 - Final decision: `RC-0.4.3 Desktop Release Package 사용 가능`
+
+## RC-0.4.3 Packaged Operational Baseline
+
+- Base tag: `v0.4.2-rc-packaged`
+- Source commit: `3a99fdf`
+- Merge commit: `b6c9500`
+- Package documentation commit: `60cb288`
+- Source tag: `v0.4.3-rc`
+- Packaged tag: `v0.4.3-rc-packaged`
+- Packaged launch: PASSED
+- Window title / responsiveness: PASSED
+- app.asar inclusion: PASSED
+- Dev server: not required
+- Draft lifecycle: PASSED
+- Linkage: PASSED
+- Allowlist payload: PASSED
+- Forbidden fields: excluded
+- Document filter: PASSED
+- Progress safety: PASSED
+- Snapshot / revision: PASSED
+- Audit history: PASSED
+- Review workflow: PASSED
+- Publish block: PASSED
+- Preview / token protection: PASSED
+- Customer safety: PASSED
+- Customer screen isolation: PASSED
+- External portal / authentication / API / message: DISABLED
+- Six internal entry points: source / smoke / archive PASSED
+- Full visual click QA: NOT_PERFORMED
+- Final decision: packaged operational baseline available
+- Next direction:
+  - RC-0.4.4 Calendar & Site Survey Sync Readiness
+  - RC-0.5.0 User Roles & Permissions
+  - Separate QA: Customer Portal packaged full click QA
