@@ -1614,3 +1614,28 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Customer screen internal Draft Center entry: ABSENT
 - Customer safety: PASSED
 - Stabilization decision: `MERGE_READY`
+
+## RC-0.4.3 Customer Portal Internal Draft — Merged to Main
+
+- Source branch: `rc-0.4.3-customer-portal-internal-draft`
+- Base tag: `v0.4.2-rc-packaged`
+- Implementation commit: `a345991`
+- Stabilization commit: `f22c5a6`
+- Smoke compatibility commit: `f5be119`
+- Merge commit: `b6c9500`
+- Included Customer Portal Draft Service and internal Customer Portal Draft Center.
+- Draft lifecycle create / list / detail / update / archive / restore: PASSED
+- Lead / Project / Estimate / Contract linkage: PASSED
+- Allowlist customer payload and internal field exclusion: PASSED
+- Approved document filtering and customer-visible progress: PASSED
+- Snapshot revision, previous snapshot retention, and audit history: PASSED
+- Internal review / approval / rejection / revocation: PASSED
+- Publish block and internal preview session: PASSED
+- Preview token SHA-256 protection: PASSED
+- External public portal, external URL, customer login, external auth/API, SMS, Email, Kakao, Push, Calendar, geocoding, and coordinate lookup: DISABLED
+- Six internal entry points: PASSED by source/smoke validation
+- Customer screen internal Draft Center entry: ABSENT
+- Customer safety: PASSED
+- Visual browser click QA: NOT PERFORMED
+- Source / smoke / build route validation: PASSED
+- Final decision: `RC-0.4.3 Customer Portal Internal Draft main 반영 완료`
