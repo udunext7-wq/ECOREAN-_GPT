@@ -45,7 +45,10 @@ export function CeoControlTowerView() {
           <span className="eyebrow">CEO OPERATING COCKPIT</span>
           <h4>CEO Control Tower</h4>
         </div>
-        <span className="preliminary-badge">{data?.summary.redAlertCount ?? 0} RED ALERT</span>
+        <div className="button-row">
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'customerPortalDraft' }))}>고객 포털 내부 초안</button>
+          <span className="preliminary-badge">{data?.summary.redAlertCount ?? 0} RED ALERT</span>
+        </div>
       </div>
       <p className="small-note">{messageKo}</p>
 

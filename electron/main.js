@@ -16,6 +16,7 @@ const { createCrmPipelineService } = require('./services/crmPipelineService');
 const { createCrmNextActionService } = require('./services/crmNextActionService');
 const { createAddressNormalizationService } = require('./services/addressNormalizationService');
 const { createAddressProviderAdapter } = require('./services/addressProviderAdapter');
+const { createCustomerPortalDraftService } = require('./services/customerPortalDraftService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -35,6 +36,7 @@ let realProjectIntakeService;
 let crmPipelineService;
 let crmNextActionService;
 let addressNormalizationService;
+let customerPortalDraftService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -243,6 +245,30 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:address-normalization:summary', () => addressNormalizationService.getAddressNormalizationSummary());
   ipcMain.handle('boc:address-normalization:customer-safe', (_event, payload = {}) => addressNormalizationService.getCustomerSafeAddressPayload(payload.addressId || payload.address_id || payload));
   ipcMain.handle('boc:address-normalization:report', (_event, payload = {}) => addressNormalizationService.createAddressNormalizationReport(payload));
+  ipcMain.handle('boc:customer-portal-draft:create', (_event, payload = {}) => customerPortalDraftService.createPortalDraft(payload));
+  ipcMain.handle('boc:customer-portal-draft:update', (_event, payload = {}) => customerPortalDraftService.updatePortalDraft(payload));
+  ipcMain.handle('boc:customer-portal-draft:list', (_event, payload = {}) => customerPortalDraftService.listPortalDrafts(payload));
+  ipcMain.handle('boc:customer-portal-draft:detail', (_event, payload = {}) => customerPortalDraftService.getPortalDraftDetail(payload.draftId || payload.portalDraftId || payload.portal_draft_id || payload));
+  ipcMain.handle('boc:customer-portal-draft:archive', (_event, payload = {}) => customerPortalDraftService.archivePortalDraft(payload));
+  ipcMain.handle('boc:customer-portal-draft:restore', (_event, payload = {}) => customerPortalDraftService.restorePortalDraft(payload));
+  ipcMain.handle('boc:customer-portal-draft:build-safe', (_event, payload = {}) => customerPortalDraftService.buildCustomerSafePortalPayload(payload));
+  ipcMain.handle('boc:customer-portal-draft:validate-safe', (_event, payload = {}) => customerPortalDraftService.validateCustomerSafePortalPayload(payload));
+  ipcMain.handle('boc:customer-portal-draft:snapshot', (_event, payload = {}) => customerPortalDraftService.createPortalSnapshot(payload));
+  ipcMain.handle('boc:customer-portal-draft:list-snapshots', (_event, payload = {}) => customerPortalDraftService.listPortalSnapshots(payload.draftId || payload.portalDraftId || payload.portal_draft_id || payload));
+  ipcMain.handle('boc:customer-portal-draft:snapshot-detail', (_event, payload = {}) => customerPortalDraftService.getPortalSnapshotDetail(payload.snapshotId || payload.snapshot_id || payload));
+  ipcMain.handle('boc:customer-portal-draft:link-lead', (_event, payload = {}) => customerPortalDraftService.linkPortalDraftToLead(payload));
+  ipcMain.handle('boc:customer-portal-draft:link-project', (_event, payload = {}) => customerPortalDraftService.linkPortalDraftToProject(payload));
+  ipcMain.handle('boc:customer-portal-draft:link-estimate', (_event, payload = {}) => customerPortalDraftService.linkPortalDraftToEstimate(payload));
+  ipcMain.handle('boc:customer-portal-draft:link-contract', (_event, payload = {}) => customerPortalDraftService.linkPortalDraftToContract(payload));
+  ipcMain.handle('boc:customer-portal-draft:approve', (_event, payload = {}) => customerPortalDraftService.approvePortalDraftInternal(payload));
+  ipcMain.handle('boc:customer-portal-draft:reject', (_event, payload = {}) => customerPortalDraftService.rejectPortalDraftInternal(payload));
+  ipcMain.handle('boc:customer-portal-draft:request-review', (_event, payload = {}) => customerPortalDraftService.requestPortalDraftReview(payload));
+  ipcMain.handle('boc:customer-portal-draft:revoke-approval', (_event, payload = {}) => customerPortalDraftService.revokePortalDraftApproval(payload));
+  ipcMain.handle('boc:customer-portal-draft:create-preview', (_event, payload = {}) => customerPortalDraftService.createInternalPreviewSession(payload));
+  ipcMain.handle('boc:customer-portal-draft:revoke-preview', (_event, payload = {}) => customerPortalDraftService.revokeInternalPreviewSession(payload.sessionId || payload.previewSessionId || payload.preview_session_id || payload));
+  ipcMain.handle('boc:customer-portal-draft:preview-payload', (_event, payload = {}) => customerPortalDraftService.getInternalPreviewPayload(payload.sessionId || payload.previewSessionId || payload.preview_session_id || payload));
+  ipcMain.handle('boc:customer-portal-draft:summary', () => customerPortalDraftService.getPortalDraftSummary());
+  ipcMain.handle('boc:customer-portal-draft:report', (_event, payload = {}) => customerPortalDraftService.createPortalDraftAuditReport(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
@@ -486,6 +512,7 @@ app.whenReady().then(() => {
     sqliteService,
     providerAdapter: createAddressProviderAdapter()
   });
+  customerPortalDraftService = createCustomerPortalDraftService({ sqliteService });
   registerIpcHandlers();
   createWindow();
 
