@@ -190,7 +190,7 @@ assert.ok(reportText.includes('MERGE_READY'), 'CRM report records stabilization 
 const entryPointExpectations = {
   firstEntry: ["view: 'crmPipeline'", '고객 CRM 파이프라인'],
   ceoDashboard: ["openView('crmPipeline'", '고객 CRM 파이프라인'],
-  drawer: ["view === 'crmPipeline'", '<CrmPipelineCenterView />'],
+  drawer: ["view === 'crmPipeline'", '<CrmPipelineCenterView'],
   intake: ["navigate('crmPipeline')", '고객 CRM 파이프라인']
 };
 Object.entries(entryPointFiles).forEach(([key, filePath]) => {
