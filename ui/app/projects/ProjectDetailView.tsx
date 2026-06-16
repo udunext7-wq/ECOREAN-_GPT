@@ -55,6 +55,7 @@ export function ProjectDetailView({ project }: Props) {
             <span>{loadStatusKo}</span>
           </div>
           <button onClick={handleLoadDraft}>예비 견적 다시 열기</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'customerPortalDraft' }))}>고객 포털 내부 초안</button>
         </div>
         <div className="cost-leak-list">
           {rootCauses.map((item) => (

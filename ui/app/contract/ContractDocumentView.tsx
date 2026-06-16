@@ -6,6 +6,9 @@ export function ContractDocumentView() {
       <button className="primary-action" onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'clientPortal' }))}>
         고객 포털 열기
       </button>
+      <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'customerPortalDraft' }))}>
+        고객 포털 내부 초안 검토
+      </button>
       <button onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'lightbimCustomerMap' }))}>
         공간 구성 및 공사 범위 요약
       </button>

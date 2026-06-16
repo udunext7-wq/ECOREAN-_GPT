@@ -218,6 +218,7 @@ export function CrmPipelineCenterView({ onNavigate }: Props) {
         <div className="button-row">
           <button onClick={() => onNavigate ? onNavigate('crmNextActions') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'crmNextActions' }))}>CRM 다음 액션 / 알림</button>
           <button onClick={() => onNavigate ? onNavigate('addressNormalization') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'addressNormalization' }))}>주소 정규화 센터</button>
+          <button onClick={() => onNavigate ? onNavigate('customerPortalDraft') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'customerPortalDraft' }))}>고객 포털 내부 초안</button>
           <button className="command" disabled={busy} onClick={createLead}>신규 고객 등록</button>
           <button disabled={busy} onClick={createReport}>CRM 리포트 생성</button>
         </div>
@@ -350,6 +351,7 @@ export function CrmPipelineCenterView({ onNavigate }: Props) {
           <button disabled={!selectedLeadId || busy} onClick={linkEstimate}>견적 요청으로 연결</button>
           <label className="field"><span>프로젝트 ID</span><input value={linkedProjectId} onChange={(event) => setLinkedProjectId(event.target.value)} /></label>
           <button disabled={!selectedLeadId || busy} onClick={linkProject}>기존 프로젝트와 연결</button>
+          <button disabled={!selectedLeadId} onClick={() => onNavigate ? onNavigate('customerPortalDraft') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'customerPortalDraft' }))}>선택 고객 포털 초안 검토</button>
           <p>견적: {value(selected, 'linked_estimate_id') || '미연결'}</p>
           <p>프로젝트: {value(selected, 'linked_project_id') || '미연결'}</p>
           <p>계약: {value(selected, 'linked_contract_id') || '미연결'}</p>

@@ -1580,3 +1580,14 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - RC-0.4.3: Customer Portal Internal Draft
   - RC-0.4.4: Calendar & Site Survey Sync Readiness
   - RC-0.5.0: User Roles & Permissions
+
+## RC-0.4.3 Customer Portal Internal Draft started
+
+- Branch: `rc-0.4.3-customer-portal-internal-draft`
+- Base tag: `v0.4.2-rc-packaged`
+- Added internal `고객 포털 내부 초안` center.
+- Added `customerPortalDraftService` with draft lifecycle, allowlist customer-safe payload builder, snapshot, audit history, internal preview session, and publish block validation.
+- External public portal, customer login, external hosting, SMS, Email, Kakao, Push, Calendar, Address API, geocoding, coordinates, API key, and OAuth remain DISABLED.
+- Customer-safe payloads are built as new allowlist DTOs, not by copying internal objects and deleting fields.
+- Internal draft approval does not mean public release.
+- Customer screens do not expose the internal Draft Center entry point.
