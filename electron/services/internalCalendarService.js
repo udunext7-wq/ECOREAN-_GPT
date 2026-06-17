@@ -7,9 +7,21 @@ const { DatabaseSync } = require('node:sqlite');
 const { createCalendarProviderAdapter } = require('./calendarProviderAdapter');
 
 const EVENT_TYPES = ['SITE_SURVEY', 'CONSULTATION', 'ESTIMATE_REVIEW', 'CONTRACT', 'CONSTRUCTION_START', 'CONSTRUCTION_MILESTONE', 'CUSTOMER_MEETING', 'INTERNAL_REVIEW', 'FOLLOW_UP'];
-const EVENT_STATUSES = ['DRAFT', 'SCHEDULED', 'CONFIRMED', 'RESCHEDULED', 'COMPLETED', 'NO_SHOW', 'CANCELLED'];
+const EVENT_STATUSES = ['DRAFT', 'SCHEDULED', 'CONFIRMED', 'RESCHEDULED', 'RESCHEDULE_REQUIRED', 'COMPLETED', 'NO_SHOW', 'CANCELLED'];
 const SYNC_STATUSES = ['DISABLED', 'NOT_CONFIGURED', 'READY_INTERNAL_ONLY', 'SYNC_PENDING', 'SYNCED', 'SYNC_FAILED', 'CONFLICT'];
-const REMINDER_TYPES = ['CALL', 'SMS_DISABLED', 'EMAIL_DISABLED', 'IN_APP', 'CRM_ACTION'];
+const REMINDER_TYPES = [
+  'CALL',
+  'SMS_DISABLED',
+  'EMAIL_DISABLED',
+  'IN_APP',
+  'CRM_ACTION',
+  'SURVEY_CONFIRMATION',
+  'SURVEY_PREPARATION',
+  'CUSTOMER_CONTACT',
+  'DOCUMENT_PREPARATION',
+  'TRAVEL_PREPARATION',
+  'EVENT_FOLLOW_UP'
+];
 const REMINDER_STATUSES = ['OPEN', 'SNOOZED', 'COMPLETED', 'CANCELLED', 'OVERDUE'];
 const DEFAULT_TIMEZONE = 'Asia/Seoul';
 
@@ -296,7 +308,7 @@ function createInternalCalendarService({ sqliteService, reportsDir, providerAdap
         status: normalizeEnum(payload.status, EVENT_STATUSES, 'SCHEDULED'),
         conflict_status: conflicts.conflicts.length ? 'CONFLICT' : 'CLEAR',
         external_sync_status: 'DISABLED',
-        external_provider: 'NONE',
+        external_provider: '',
         external_event_reference_hash: hashReference(payload.externalEventId || payload.external_event_id),
         provider_status: 'DISABLED',
         created_by: clean(payload.createdBy || 'CEO'),
@@ -362,7 +374,30 @@ function createInternalCalendarService({ sqliteService, reportsDir, providerAdap
   }
 
   function transition(eventId, status, action, payload = {}) {
-    return withDb((db) => writeEvent(db, clean(eventId || payload.eventId || payload.event_id), { status }, { ...payload, action }));
+    return withDb((db) => {
+      const targetId = clean(eventId || payload.eventId || payload.event_id);
+      const before = getEventRow(db, targetId);
+      if (!before) return { ok: false, error: '일정을 찾을 수 없습니다.' };
+      if (before.status === 'COMPLETED' && status === 'COMPLETED') {
+        return { ok: false, error: '이미 완료된 일정입니다.', event: serializeRow(before) };
+      }
+      if (before.status === 'CANCELLED' && !['RESTORE_EVENT'].includes(action)) {
+        return { ok: false, error: '취소된 일정은 복원 전 변경할 수 없습니다.', event: serializeRow(before) };
+      }
+      return writeEvent(db, targetId, { status }, { ...payload, action });
+    });
+  }
+
+  function restoreCalendarEvent(eventId, payload = {}) {
+    return withDb((db) => {
+      const targetId = clean(eventId || payload.eventId || payload.event_id);
+      const before = getEventRow(db, targetId);
+      if (!before) return { ok: false, error: '일정을 찾을 수 없습니다.' };
+      if (!['CANCELLED', 'NO_SHOW', 'RESCHEDULE_REQUIRED'].includes(before.status)) {
+        return { ok: false, error: '복원 가능한 상태가 아닙니다.', event: serializeRow(before) };
+      }
+      return writeEvent(db, targetId, { status: 'SCHEDULED' }, { ...payload, action: 'RESTORE_EVENT' });
+    });
   }
 
   function rescheduleEvent(eventId, payload = {}) {
@@ -397,8 +432,9 @@ function createInternalCalendarService({ sqliteService, reportsDir, providerAdap
   function createEventReminder(payload = {}) {
     const eventId = clean(payload.eventId || payload.event_id);
     const reminderType = normalizeEnum(payload.reminderType || payload.reminder_type, REMINDER_TYPES, 'IN_APP');
-    const dueAt = toDate(payload.dueAt || payload.due_at || nowIso());
-    if (!eventId || !dueAt) return { ok: false, error: '일정과 알림 시간이 필요합니다.' };
+    const rawDueAt = payload.dueAt || payload.due_at;
+    const dueAt = toDate(rawDueAt);
+    if (!eventId || !rawDueAt || !dueAt) return { ok: false, error: '일정과 알림 시간이 필요합니다.' };
     return withDb((db) => {
       const duplicate = db.prepare(`
         SELECT * FROM calendar_event_reminders
@@ -430,6 +466,8 @@ function createInternalCalendarService({ sqliteService, reportsDir, providerAdap
     return withDb((db) => {
       const before = db.prepare('SELECT * FROM calendar_event_reminders WHERE reminder_id = ?').get(clean(reminderId));
       if (!before) return { ok: false, error: '알림을 찾을 수 없습니다.' };
+      if (before.status === 'COMPLETED' && status === 'COMPLETED') return { ok: false, error: '이미 완료된 알림입니다.', ...before };
+      if (before.status === 'CANCELLED' && status !== 'CANCELLED') return { ok: false, error: '취소된 알림은 재활성화할 수 없습니다.', ...before };
       const after = { ...before, ...patch, status, updated_at: nowIso() };
       db.prepare('UPDATE calendar_event_reminders SET status = ?, snoozed_until = ?, note = ?, updated_at = ? WHERE reminder_id = ?')
         .run(after.status, after.snoozed_until || '', after.note || '', after.updated_at, reminderId);
@@ -501,7 +539,7 @@ function createInternalCalendarService({ sqliteService, reportsDir, providerAdap
     getCalendarEvent,
     listCalendarEvents,
     cancelCalendarEvent: (eventId, payload = {}) => transition(eventId, 'CANCELLED', 'CANCEL_EVENT', payload),
-    restoreCalendarEvent: (eventId, payload = {}) => withDb((db) => writeEvent(db, clean(eventId || payload.eventId || payload.event_id), { status: 'SCHEDULED' }, { ...payload, action: 'RESTORE_EVENT' })),
+    restoreCalendarEvent,
     markEventCompleted: (eventId, payload = {}) => transition(eventId, 'COMPLETED', 'COMPLETE_EVENT', payload),
     markEventNoShow: (eventId, payload = {}) => transition(eventId, 'NO_SHOW', 'NO_SHOW_EVENT', payload),
     rescheduleEvent,

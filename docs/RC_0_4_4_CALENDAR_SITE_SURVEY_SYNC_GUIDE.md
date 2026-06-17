@@ -66,3 +66,6 @@ RC-0.4.4 기준 외부 연동 상태는 항상 `DISABLED`다.
 - 지원하지 않는 시간대 문자열은 저장 전에 차단/보정한다.
 - Survey와 Calendar가 다를 때 원본을 자동 덮어쓰지 않는다.
 - 외부 provider는 `DISABLED` 상태를 유지한다.
+- Provider 응답은 `provider: null`, `authentication_status: NOT_CONFIGURED`, `external_call_performed: false`를 기준으로 확인한다.
+- 완료된 일정/알림의 재완료와 취소된 일정/알림의 임의 재활성화는 차단한다.
+- 동일 Survey가 여러 Event에 연결되면 자동 병합하지 않고 `REVIEW_REQUIRED`로 남긴다.

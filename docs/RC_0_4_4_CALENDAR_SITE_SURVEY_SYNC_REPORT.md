@@ -69,3 +69,13 @@ RC-0.4.4 Calendar / Site Survey Sync Readiness는 내부 운영 준비 흐름으
 ## 최종 판정
 
 MERGE_READY
+
+## 안정화 추가 결과
+
+- Stabilization smoke: PASSED
+- Provider adapter response shape: PASSED
+- Completed/cancelled event guard: PASSED
+- Completed/cancelled reminder guard: PASSED
+- Reminder `due_at` required validation: PASSED
+- Same Survey multiple Event review-required signal: PASSED
+- Visual click QA: NOT_PERFORMED

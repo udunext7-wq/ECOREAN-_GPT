@@ -103,6 +103,7 @@ function createSiteSurveyScheduleSyncService({ sqliteService, internalCalendarSe
     return withDb((db) => {
       const existing = db.prepare('SELECT * FROM site_survey_schedule_links WHERE site_survey_id = ? AND event_id = ?').get(siteSurveyId, eventId);
       if (existing) return { ok: true, duplicatePrevented: true, ...serializeLink(existing) };
+      const existingSurveyLink = db.prepare('SELECT * FROM site_survey_schedule_links WHERE site_survey_id = ?').get(siteSurveyId);
       const now = nowIso();
       const row = {
         link_id: clean(payload.linkId || payload.link_id) || makeId('SURVEY-CAL'),
@@ -110,9 +111,9 @@ function createSiteSurveyScheduleSyncService({ sqliteService, internalCalendarSe
         event_id: eventId,
         lead_id: clean(payload.leadId || payload.lead_id),
         project_id: clean(payload.projectId || payload.project_id),
-        sync_status: 'READY_INTERNAL_ONLY',
-        mismatch_status: 'CLEAR',
-        mismatch_json: '[]',
+        sync_status: existingSurveyLink ? 'REVIEW_REQUIRED' : 'READY_INTERNAL_ONLY',
+        mismatch_status: existingSurveyLink ? 'OPEN' : 'CLEAR',
+        mismatch_json: existingSurveyLink ? stableJson([{ field: 'site_survey_id', mismatch_type: 'MULTIPLE', existing_event_id: existingSurveyLink.event_id, new_event_id: eventId }]) : '[]',
         last_checked_at: now,
         resolved_at: '',
         resolution_note: '',

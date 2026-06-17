@@ -1718,3 +1718,14 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Validation resumed and passed: service syntax, RC-0.4.4 smoke, RC-0.4.x / RC-0.3.x regression, `build:ui`, `smoke:prod`, and `smoke:release`.
 - Fixed during validation: unsupported timezone fallback, SQLite empty-string literal compatibility, and UI result typing.
 - Next direction: RC-0.4.5 may evaluate manual calendar export/import or provider preparation after security review; RC-0.5.0 can revisit real provider integration.
+
+# RC-0.4.4 Calendar & Site Survey Sync Readiness Stabilized
+
+- Stabilization decision: `MERGE_READY`
+- Added branch stabilization smoke for calendar lifecycle, timezone, Survey link protection, mismatch, conflict detection, reminders, Provider DISABLED state, and customer-safe payload.
+- Provider adapter remains disabled: `provider: null`, `authentication_status: NOT_CONFIGURED`, `external_call_performed: false`.
+- External Calendar/OAuth/invitation/SMS/email/push calls remain absent.
+- Completed/cancelled event and reminder edge cases are guarded.
+- Same Survey multiple Event linkage now requires review instead of automatic merge/delete.
+- Customer safety: PASSED.
+- Visual click QA: NOT_PERFORMED.
