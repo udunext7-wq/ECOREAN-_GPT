@@ -1729,3 +1729,26 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Same Survey multiple Event linkage now requires review instead of automatic merge/delete.
 - Customer safety: PASSED.
 - Visual click QA: NOT_PERFORMED.
+
+# RC-0.4.4 Calendar & Site Survey Sync Readiness — Merged to Main
+
+- Source branch: `rc-0.4.4-calendar-site-survey-sync-readiness`
+- Base tag: `v0.4.3-rc-packaged`
+- Implementation commit: `8f92eb1`
+- Stabilization commit: `91e41cc`
+- Merge commit: `ee78a2c`
+- Included improvements:
+  - Internal Calendar & Site Survey Sync readiness center
+  - Calendar lifecycle, timezone handling, conflict detection, reminders, and audit history
+  - Site survey linkage from calendar to survey and survey to calendar
+  - Original event protection, no auto-cancel, no auto-assignment, and no automatic time change
+  - Provider adapter readiness with all external API/OAuth/invitation/message calls disabled
+  - CRM Action duplicate prevention and overdue reminder behavior
+  - Customer-safe payload filtering and customer screen isolation
+- Validation:
+  - Pre-merge source/smoke/build validation: PASSED
+  - Post-merge source/smoke/build validation: PASSED
+  - Customer safety: PASSED
+  - Visual QA: NOT_PERFORMED
+- Known warnings: Vite bundle size warning, SQLite experimental API warning, Node DEP warning if shown
+- Final decision: `RC-0.4.4 Calendar & Site Survey Sync Readiness main 반영 완료`
