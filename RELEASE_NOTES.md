@@ -1748,7 +1748,38 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Validation:
   - Pre-merge source/smoke/build validation: PASSED
   - Post-merge source/smoke/build validation: PASSED
-  - Customer safety: PASSED
-  - Visual QA: NOT_PERFORMED
+- Customer safety: PASSED
+- Visual QA: NOT_PERFORMED
 - Known warnings: Vite bundle size warning, SQLite experimental API warning, Node DEP warning if shown
 - Final decision: `RC-0.4.4 Calendar & Site Survey Sync Readiness main 반영 완료`
+
+# RC-0.4.4 Desktop Release Package
+
+- Source commit: `06b92be`
+- Source tag: `v0.4.4-rc`
+- Merge commit: `ee78a2c`
+- Package path: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- app.asar path: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\resources\app.asar`
+- app.asar size: 2,763,169 bytes
+- Packaged launch: PASSED
+- Window title/responsiveness: PASSED
+- Dev server required: NO
+- Visual QA: NOT_PERFORMED; source/smoke/archive and packaged launch verified
+- Calendar lifecycle: PASSED
+- Timezone: PASSED
+- Survey sync: PASSED
+- Survey to Calendar / Calendar to Survey: PASSED
+- Mismatch/original protection: PASSED
+- Conflict detection: PASSED
+- Automatic change prevention: PASSED
+- Reminder/OVERDUE: PASSED
+- CRM Action duplicate prevention: PASSED
+- Provider: DISABLED
+- external API/OAuth/invitation: DISABLED
+- Customer-safe payload: PASSED
+- Customer safety: PASSED
+- Seven internal entry points: PASSED by source/smoke/archive
+- Customer screen isolation: PASSED
+- Known warnings: Vite bundle size warning, SQLite experimental API warning, electron-builder metadata warning, Node DEP0190 warning
+- Packaged baseline tag: not created in this step
+- Final decision: `RC-0.4.4 Desktop Release Package 사용 가능`
