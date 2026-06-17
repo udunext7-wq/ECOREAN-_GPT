@@ -1783,3 +1783,36 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Known warnings: Vite bundle size warning, SQLite experimental API warning, electron-builder metadata warning, Node DEP0190 warning
 - Packaged baseline tag: not created in this step
 - Final decision: `RC-0.4.4 Desktop Release Package 사용 가능`
+
+# RC-0.4.4 Packaged Operational Baseline
+
+- Base tag: `v0.4.3-rc-packaged`
+- Source commit: `06b92be`
+- Merge commit: `ee78a2c`
+- Package documentation commit: `517aa1d`
+- Source tag: `v0.4.4-rc`
+- Packaged tag: `v0.4.4-rc-packaged`
+- Packaged launch: PASSED
+- app.asar inclusion: PASSED
+- Dev server: not required
+- Calendar lifecycle: PASSED
+- Timezone: PASSED
+- Survey sync: PASSED
+- mismatch/original protection: PASSED
+- conflict detection: PASSED
+- automatic change prevention: PASSED
+- Reminder/OVERDUE: PASSED
+- CRM Action duplicate prevention: PASSED
+- audit history: PASSED
+- Provider/external API/OAuth/invitation/message: DISABLED
+- Customer-safe payload: PASSED
+- Customer safety: PASSED
+- Seven entry points: source/smoke/archive PASSED
+- Customer screen isolation: PASSED
+- Full visual click QA: NOT_PERFORMED
+- Known warnings: Vite bundle size warning, SQLite experimental API warning, electron-builder metadata warning, Node DEP0190 warning
+- Next direction:
+  - RC-0.5.0 User Roles & Permissions
+  - Separate QA: Calendar packaged full click QA
+  - External Provider integration only in a separate future version
+- Final decision: operational baseline available
