@@ -1705,3 +1705,16 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - RC-0.4.4 Calendar & Site Survey Sync Readiness
   - RC-0.5.0 User Roles & Permissions
   - Separate QA: Customer Portal packaged full click QA
+# RC-0.4.4 Calendar & Site Survey Sync Readiness started
+
+- Branch: `rc-0.4.4-calendar-site-survey-sync-readiness`
+- Base tag: `v0.4.3-rc-packaged`
+- Added internal-only Calendar / Site Survey Sync readiness layer.
+- Added local DB tables for internal calendar events, site survey links, reminders, and audit history.
+- Added disabled calendar provider adapter for Google / Outlook / Apple Calendar readiness without external API calls.
+- Added Korean internal UI center for calendar, site survey sync, conflict review, reminders, and audit report actions.
+- Customer safety rule remains enforced: no internal calendar metadata, conflict details, reminders, provider data, personal raw contact data, cost, margin, PCE, vendor, purchase, backup, or risk score may be exposed.
+- External sync, OAuth, API keys, customer invitations, SMS, email, and public calendar delivery remain disabled.
+- Validation resumed and passed: service syntax, RC-0.4.4 smoke, RC-0.4.x / RC-0.3.x regression, `build:ui`, `smoke:prod`, and `smoke:release`.
+- Fixed during validation: unsupported timezone fallback, SQLite empty-string literal compatibility, and UI result typing.
+- Next direction: RC-0.4.5 may evaluate manual calendar export/import or provider preparation after security review; RC-0.5.0 can revisit real provider integration.
