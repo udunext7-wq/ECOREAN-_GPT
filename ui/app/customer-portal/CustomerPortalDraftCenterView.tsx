@@ -171,6 +171,7 @@ export function CustomerPortalDraftCenterView() {
           <p>고객에게 공개 가능한 정보만 allowlist payload로 새로 구성하고 내부 승인 전 검토합니다.</p>
         </div>
         <div className="button-row">
+          <button disabled={busy} onClick={() => window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'calendarSiteSurveySync' }))}>캘린더 / 현장조사 Sync</button>
           <button className="command" disabled={busy} onClick={createDraft}>초안 생성</button>
           <button disabled={!selectedId || busy} onClick={updateDraft}>초안 저장</button>
           <button disabled={busy} onClick={() => run(() => customerPortalDraftService.report({ finalDecision: 'IN_PROGRESS' }), '감사 리포트가 생성되었습니다.')}>감사 리포트</button>

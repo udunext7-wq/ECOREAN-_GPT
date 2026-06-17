@@ -17,6 +17,9 @@ const { createCrmNextActionService } = require('./services/crmNextActionService'
 const { createAddressNormalizationService } = require('./services/addressNormalizationService');
 const { createAddressProviderAdapter } = require('./services/addressProviderAdapter');
 const { createCustomerPortalDraftService } = require('./services/customerPortalDraftService');
+const { createCalendarProviderAdapter } = require('./services/calendarProviderAdapter');
+const { createInternalCalendarService } = require('./services/internalCalendarService');
+const { createSiteSurveyScheduleSyncService } = require('./services/siteSurveyScheduleSyncService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -37,6 +40,9 @@ let crmPipelineService;
 let crmNextActionService;
 let addressNormalizationService;
 let customerPortalDraftService;
+let calendarProviderAdapter;
+let internalCalendarService;
+let siteSurveyScheduleSyncService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -269,6 +275,52 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:customer-portal-draft:preview-payload', (_event, payload = {}) => customerPortalDraftService.getInternalPreviewPayload(payload.sessionId || payload.previewSessionId || payload.preview_session_id || payload));
   ipcMain.handle('boc:customer-portal-draft:summary', () => customerPortalDraftService.getPortalDraftSummary());
   ipcMain.handle('boc:customer-portal-draft:report', (_event, payload = {}) => customerPortalDraftService.createPortalDraftAuditReport(payload));
+  ipcMain.handle('boc:calendar-provider:status', () => calendarProviderAdapter.getProviderStatus());
+  ipcMain.handle('boc:calendar-provider:validate', () => calendarProviderAdapter.validateProviderConfiguration());
+  ipcMain.handle('boc:calendar-provider:list', () => calendarProviderAdapter.listExternalCalendars());
+  ipcMain.handle('boc:calendar:create', (_event, payload = {}) => internalCalendarService.createCalendarEvent(payload));
+  ipcMain.handle('boc:calendar:update', (_event, payload = {}) => internalCalendarService.updateCalendarEvent(payload.eventId || payload.event_id, payload));
+  ipcMain.handle('boc:calendar:detail', (_event, payload = {}) => internalCalendarService.getCalendarEvent(payload.eventId || payload.event_id || payload));
+  ipcMain.handle('boc:calendar:list', (_event, payload = {}) => internalCalendarService.listCalendarEvents(payload));
+  ipcMain.handle('boc:calendar:cancel', (_event, payload = {}) => internalCalendarService.cancelCalendarEvent(payload.eventId || payload.event_id || payload, payload));
+  ipcMain.handle('boc:calendar:restore', (_event, payload = {}) => internalCalendarService.restoreCalendarEvent(payload.eventId || payload.event_id || payload, payload));
+  ipcMain.handle('boc:calendar:complete', (_event, payload = {}) => internalCalendarService.markEventCompleted(payload.eventId || payload.event_id || payload, payload));
+  ipcMain.handle('boc:calendar:no-show', (_event, payload = {}) => internalCalendarService.markEventNoShow(payload.eventId || payload.event_id || payload, payload));
+  ipcMain.handle('boc:calendar:reschedule', (_event, payload = {}) => internalCalendarService.rescheduleEvent(payload.eventId || payload.event_id, payload));
+  ipcMain.handle('boc:calendar:conflicts', (_event, payload = {}) => internalCalendarService.detectScheduleConflicts(payload));
+  ipcMain.handle('boc:calendar:link-lead', (_event, payload = {}) => internalCalendarService.linkEventToLead(payload.eventId || payload.event_id, payload.leadId || payload.lead_id));
+  ipcMain.handle('boc:calendar:link-survey', (_event, payload = {}) => internalCalendarService.linkEventToSiteSurvey(payload.eventId || payload.event_id, payload.siteSurveyId || payload.site_survey_id));
+  ipcMain.handle('boc:calendar:link-project', (_event, payload = {}) => internalCalendarService.linkEventToProject(payload.eventId || payload.event_id, payload.projectId || payload.project_id));
+  ipcMain.handle('boc:calendar:link-portal-draft', (_event, payload = {}) => internalCalendarService.linkEventToPortalDraft(payload.eventId || payload.event_id, payload.portalDraftId || payload.portal_draft_id));
+  ipcMain.handle('boc:calendar:assign-owner', (_event, payload = {}) => internalCalendarService.assignEventOwner(payload.eventId || payload.event_id, payload.ownerId || payload.owner_id));
+  ipcMain.handle('boc:calendar:add-attendee', (_event, payload = {}) => internalCalendarService.addEventAttendeeInternal(payload.eventId || payload.event_id, payload.attendee || payload));
+  ipcMain.handle('boc:calendar:remove-attendee', (_event, payload = {}) => internalCalendarService.removeEventAttendeeInternal(payload.eventId || payload.event_id, payload.attendeeName || payload.attendee_name));
+  ipcMain.handle('boc:calendar:create-reminder', (_event, payload = {}) => internalCalendarService.createEventReminder(payload));
+  ipcMain.handle('boc:calendar:complete-reminder', (_event, payload = {}) => internalCalendarService.completeEventReminder(payload.reminderId || payload.reminder_id, payload));
+  ipcMain.handle('boc:calendar:snooze-reminder', (_event, payload = {}) => internalCalendarService.snoozeEventReminder(payload.reminderId || payload.reminder_id, payload));
+  ipcMain.handle('boc:calendar:cancel-reminder', (_event, payload = {}) => internalCalendarService.cancelEventReminder(payload.reminderId || payload.reminder_id, payload));
+  ipcMain.handle('boc:calendar:list-reminders', (_event, payload = {}) => internalCalendarService.listEventReminders(payload.eventId || payload.event_id || payload));
+  ipcMain.handle('boc:calendar:audit-history', (_event, payload = {}) => internalCalendarService.getCalendarAuditHistory(payload.eventId || payload.event_id || ''));
+  ipcMain.handle('boc:calendar:summary', () => internalCalendarService.getCalendarSummary());
+  ipcMain.handle('boc:calendar:report', (_event, payload = {}) => internalCalendarService.createCalendarAuditReport(payload));
+  ipcMain.handle('boc:calendar:customer-safe', (_event, payload = {}) => internalCalendarService.getCustomerSafeSchedulePayload(payload.eventId || payload.event_id || payload));
+  ipcMain.handle('boc:site-survey-sync:create-link', (_event, payload = {}) => siteSurveyScheduleSyncService.createSurveyScheduleLink(payload));
+  ipcMain.handle('boc:site-survey-sync:update-link', (_event, payload = {}) => siteSurveyScheduleSyncService.updateSurveyScheduleLink(payload.linkId || payload.link_id, payload));
+  ipcMain.handle('boc:site-survey-sync:detail', (_event, payload = {}) => siteSurveyScheduleSyncService.getSurveyScheduleLink(payload.linkId || payload.link_id || payload));
+  ipcMain.handle('boc:site-survey-sync:list', (_event, payload = {}) => siteSurveyScheduleSyncService.listSurveyScheduleLinks(payload));
+  ipcMain.handle('boc:site-survey-sync:remove-link', (_event, payload = {}) => siteSurveyScheduleSyncService.removeSurveyScheduleLink(payload.linkId || payload.link_id || payload));
+  ipcMain.handle('boc:site-survey-sync:create-event', (_event, payload = {}) => siteSurveyScheduleSyncService.createCalendarEventFromSurvey(payload.siteSurveyId || payload.site_survey_id || payload.surveyId || payload.survey_id, payload));
+  ipcMain.handle('boc:site-survey-sync:survey-to-calendar', (_event, payload = {}) => siteSurveyScheduleSyncService.syncSurveyToCalendar(payload.linkId || payload.link_id, payload));
+  ipcMain.handle('boc:site-survey-sync:calendar-to-survey', (_event, payload = {}) => siteSurveyScheduleSyncService.syncCalendarToSurvey(payload.linkId || payload.link_id || payload));
+  ipcMain.handle('boc:site-survey-sync:compare', (_event, payload = {}) => siteSurveyScheduleSyncService.compareSurveyAndEvent(payload));
+  ipcMain.handle('boc:site-survey-sync:detect-mismatch', (_event, payload = {}) => siteSurveyScheduleSyncService.detectSurveyScheduleMismatch(payload));
+  ipcMain.handle('boc:site-survey-sync:resolve-mismatch', (_event, payload = {}) => siteSurveyScheduleSyncService.resolveSurveyScheduleMismatch(payload.linkId || payload.link_id, payload));
+  ipcMain.handle('boc:site-survey-sync:defer-mismatch', (_event, payload = {}) => siteSurveyScheduleSyncService.deferSurveyScheduleMismatch(payload.linkId || payload.link_id, payload));
+  ipcMain.handle('boc:site-survey-sync:cancel-event', (_event, payload = {}) => siteSurveyScheduleSyncService.cancelLinkedSurveyEvent(payload.linkId || payload.link_id, payload));
+  ipcMain.handle('boc:site-survey-sync:complete-event', (_event, payload = {}) => siteSurveyScheduleSyncService.completeLinkedSurveyEvent(payload.linkId || payload.link_id, payload));
+  ipcMain.handle('boc:site-survey-sync:reschedule-event', (_event, payload = {}) => siteSurveyScheduleSyncService.rescheduleLinkedSurveyEvent(payload.linkId || payload.link_id, payload));
+  ipcMain.handle('boc:site-survey-sync:summary', () => siteSurveyScheduleSyncService.getSiteSurveyScheduleSummary());
+  ipcMain.handle('boc:site-survey-sync:report', (_event, payload = {}) => siteSurveyScheduleSyncService.createSiteSurveyScheduleReport(payload));
   ipcMain.handle('boc:bathroom-estimate:calculate', (_event, payload) => sqliteService.calculateBathroomEstimatePreview(payload));
   ipcMain.handle('boc:bathroom-estimate:save', (_event, payload) => sqliteService.saveBathroomEstimate(payload));
   ipcMain.handle('boc:bathroom-estimate:export', (_event, payload) => sqliteService.exportBathroomEstimateDocument(payload));
@@ -513,6 +565,12 @@ app.whenReady().then(() => {
     providerAdapter: createAddressProviderAdapter()
   });
   customerPortalDraftService = createCustomerPortalDraftService({ sqliteService });
+  calendarProviderAdapter = createCalendarProviderAdapter();
+  internalCalendarService = createInternalCalendarService({ sqliteService, providerAdapter: calendarProviderAdapter });
+  siteSurveyScheduleSyncService = createSiteSurveyScheduleSyncService({
+    sqliteService,
+    internalCalendarService
+  });
   registerIpcHandlers();
   createWindow();
 

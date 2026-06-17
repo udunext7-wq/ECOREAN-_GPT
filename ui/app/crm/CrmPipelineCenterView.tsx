@@ -217,6 +217,7 @@ export function CrmPipelineCenterView({ onNavigate }: Props) {
         </div>
         <div className="button-row">
           <button onClick={() => onNavigate ? onNavigate('crmNextActions') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'crmNextActions' }))}>CRM 다음 액션 / 알림</button>
+          <button onClick={() => onNavigate ? onNavigate('calendarSiteSurveySync') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'calendarSiteSurveySync' }))}>캘린더 / 현장조사 Sync</button>
           <button onClick={() => onNavigate ? onNavigate('addressNormalization') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'addressNormalization' }))}>주소 정규화 센터</button>
           <button onClick={() => onNavigate ? onNavigate('customerPortalDraft') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'customerPortalDraft' }))}>고객 포털 내부 초안</button>
           <button className="command" disabled={busy} onClick={createLead}>신규 고객 등록</button>
@@ -333,6 +334,7 @@ export function CrmPipelineCenterView({ onNavigate }: Props) {
 
         <div className="drawer-block">
           <h3>현장조사 요청</h3>
+          <button onClick={() => onNavigate ? onNavigate('calendarSiteSurveySync') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'calendarSiteSurveySync' }))}>현장조사 일정 Sync</button>
           <button onClick={() => onNavigate ? onNavigate('addressNormalization') : window.dispatchEvent(new CustomEvent('ecorean:navigate', { detail: 'addressNormalization' }))}>현장 주소 정규화</button>
           <label className="field"><span>요청일</span><input type="date" value={surveyDate} onChange={(event) => setSurveyDate(event.target.value)} /></label>
           <button disabled={!selectedLeadId || busy} onClick={createSurvey}>현장조사 요청 생성</button>
