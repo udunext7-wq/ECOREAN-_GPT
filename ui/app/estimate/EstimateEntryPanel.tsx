@@ -85,7 +85,7 @@ const primaryActions: EntryAction[] = [
 ];
 
 const secondaryActions: EntryAction[] = [
-  { title: '캘린더 / 현장조사 Sync', headline: '현장 방문 일정 / 내부 알림 / 충돌 / Sync 불일치 검토', note: 'RC-0.4.4', view: 'calendarSiteSurveySync', tone: 'confirm' },
+  { title: '캘린더 / 현장조사 Sync', headline: '현장 방문 일정 / 내부 알림 / 충돌 / Sync 불일치 검토', note: 'v0.4.4', view: 'calendarSiteSurveySync', tone: 'confirm' },
   { title: '고객 포털 내부 초안', headline: '고객 공개 가능 정보만 분리해 내부 검토', note: 'RC-0.4.3', view: 'customerPortalDraft', tone: 'confirm' },
   { title: '주소 정규화 센터', headline: 'CRM / 현장조사 / 프로젝트 주소 품질 검토', note: 'RC-0.4.2', view: 'addressNormalization', tone: 'confirm' },
   { title: 'CRM 다음 액션 / 내부 알림', headline: '오늘 할 일 / 기한 초과 / 후속 연락 / 내부 알림 관리', note: 'RC-0.4.1', view: 'crmNextActions', tone: 'confirm' },

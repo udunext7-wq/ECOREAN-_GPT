@@ -31,7 +31,12 @@ assert.ok(tagTarget.startsWith('06b92be'), '1. v0.4.4-rc points to source/docume
 assert.strictEqual(execFileSync('git', ['tag', '--list', 'v0.4.4-rc-packaged'], {
   cwd: root,
   encoding: 'utf8'
-}).trim(), '', '40. no packaged baseline tag yet');
+}).trim(), 'v0.4.4-rc-packaged', '40. packaged baseline tag exists');
+const packagedTagTarget = execFileSync('git', ['rev-list', '-n', '1', 'v0.4.4-rc-packaged'], {
+  cwd: root,
+  encoding: 'utf8'
+}).trim();
+assert.ok(packagedTagTarget.startsWith('d2d3e1d'), 'v0.4.4-rc-packaged points to packaged operational baseline commit d2d3e1d');
 
 [
   releaseDir,
@@ -206,6 +211,6 @@ console.log(JSON.stringify({
   externalCallPerformed: manifest.external_call_performed,
   customerSafety: manifest.customer_safety_status,
   visualClickQa: manifest.visual_click_qa_status,
-  packagedBaselineTag: 'ABSENT',
+  packagedBaselineTag: 'v0.4.4-rc-packaged',
   decision: 'RC-0.4.4 Desktop Release Package 사용 가능'
 }, null, 2));

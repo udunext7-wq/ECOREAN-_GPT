@@ -7,7 +7,7 @@ const text = (value: unknown, fallback = '-') => String(value ?? fallback);
 
 const defaultEvent = {
   eventType: 'SITE_SURVEY',
-  title: 'RC-0.4.4 현장조사 일정',
+  title: 'v0.4.4 현장조사 일정',
   customerVisibleTitle: '현장 방문 일정',
   startAt: '2026-07-01T10:00:00+09:00',
   endAt: '2026-07-01T11:00:00+09:00',
@@ -26,7 +26,7 @@ export function CalendarSiteSurveySyncCenterView() {
   const [selectedEventId, setSelectedEventId] = useState('');
   const [selectedLinkId, setSelectedLinkId] = useState('');
   const [form, setForm] = useState<Row>(defaultEvent);
-  const [message, setMessage] = useState('RC-0.4.4 일정 / 현장조사 Sync 준비 화면입니다.');
+  const [message, setMessage] = useState('v0.4.4 일정 / 현장조사 Sync 준비 화면입니다.');
   const [busy, setBusy] = useState(false);
 
   const selectedEvent = useMemo(() => events.find((event) => text(event.event_id, '') === selectedEventId), [events, selectedEventId]);
@@ -76,7 +76,7 @@ export function CalendarSiteSurveySyncCenterView() {
     <section className="content-card full-width">
       <div className="section-header">
         <div>
-          <span className="eyebrow">RC-0.4.4</span>
+          <span className="eyebrow">v0.4.4</span>
           <h2>캘린더 / 현장조사 일정 Sync 준비</h2>
           <p>내부 일정과 현장조사 연결 상태만 관리합니다. 외부 캘린더 연동, 초대 발송, OAuth는 비활성입니다.</p>
         </div>

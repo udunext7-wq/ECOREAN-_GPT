@@ -1816,3 +1816,40 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - Separate QA: Calendar packaged full click QA
   - External Provider integration only in a separate future version
 - Final decision: operational baseline available
+
+# v0.4.4 Official Operational Baseline
+
+- Release candidate source tag: `v0.4.4-rc`
+- Packaged operational baseline tag: `v0.4.4-rc-packaged`
+- Official release tag: `v0.4.4`
+- Electron package version: `0.4.4`
+- UI package version: `0.4.4`
+- Official release scope:
+  - Calendar & Site Survey Sync readiness
+  - Internal Calendar SSOT
+  - Survey linkage and explicit manual sync directions
+  - mismatch review, conflict detection, reminders, and audit history
+  - external Calendar provider/OAuth/invitation/message delivery disabled
+  - customer-safe schedule payload filtering
+- Packaged application verification: PASSED
+- Runtime launch verification: PASSED
+- EXE SHA-256: `FFA455C9E224A74695F46767D2A5D3A5DB0038FFA56275A489E70A5FDAEAD06C`
+- app.asar SHA-256: `879B876C0D0AC58362C8288DFECD82DFAB10F25A1AA71120986D290F3DC95051`
+- Customer safety: PASSED
+- Full visual click QA: NOT_PERFORMED
+- Installation/run:
+  - Run `electron/release/win-unpacked/ECOREAN BOC CEO Dashboard.exe`
+  - userData: `%APPDATA%\ecorean-boc-electron`
+  - DB: `%APPDATA%\ecorean-boc-electron\storage\sqlite`
+  - export: `%APPDATA%\ecorean-boc-electron\export`
+  - backups: `%APPDATA%\ecorean-boc-electron\backups`
+- Known limitations:
+  - No real Google/Microsoft/Apple/CalDAV provider integration
+  - No OAuth credential storage
+  - No external invitation delivery
+  - No customer schedule notification delivery
+  - Full visual click QA remains a separate QA item
+- Rollback reference:
+  - `v0.4.4-rc-packaged`
+  - `v0.4.3-rc-packaged`
+- Final decision: official operational baseline release approved after final tag and GitHub Release creation
