@@ -28,7 +28,10 @@ function assertIncludes(text, expected, message) {
 }
 
 const branch = git(['branch', '--show-current']);
-assert.strictEqual(branch, 'v0.4.5-visual-output-qa-stabilization', 'v0.4.5 branch context exists');
+assert.ok(
+  ['v0.4.5-visual-output-qa-stabilization', 'main'].includes(branch),
+  'v0.4.5 stabilization context exists on source branch or merged main'
+);
 
 const officialTagTarget = git(['rev-list', '-n', '1', 'v0.4.4']);
 assert.strictEqual(officialTagTarget, '36aaa3d98b26743a828a879d878b142e9e003905', 'official v0.4.4 tag target preserved');
