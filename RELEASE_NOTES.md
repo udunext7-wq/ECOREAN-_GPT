@@ -1853,3 +1853,42 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - `v0.4.4-rc-packaged`
   - `v0.4.3-rc-packaged`
 - Final decision: official operational baseline release approved after final tag and GitHub Release creation
+
+# v0.4.5 Visual & Output QA Stabilization — Started
+
+- Branch: `v0.4.5-visual-output-qa-stabilization`
+- Base: `v0.4.4` official operational baseline
+- Scope:
+  - release smoke timeout diagnostics
+  - packaged visual QA harness
+  - PDF / Excel / print output artifact QA
+- Added:
+  - `tests/v0-4-5-release-smoke-diagnostics.js`
+  - `tests/v0-4-5-packaged-visual-qa.smoke.js`
+  - `tests/v0-4-5-output-artifact-render.smoke.js`
+  - `smoke:release:diagnose`
+  - `smoke:release:timed`
+- Release smoke diagnostics:
+  - previous aggregate timeout addressed by per-test child process isolation
+  - final diagnostics run completed in 175396 ms from project root
+  - `npm run smoke:release:diagnose` completed in 217628 ms
+  - `npm run smoke:release` completed in 256725 ms
+  - timed out tests: none
+  - failed tests: none
+  - remaining processes: none
+  - `project-profit-closing.smoke.js` measured as a long-running smoke and has a documented 60000 ms per-test timeout
+- Packaged visual QA:
+  - EXE launch: PASSED
+  - window title: PASSED
+  - customer screen isolation: PASSED
+  - full click automation: CONDITIONAL / dependency not added
+  - screenshots: NOT_CAPTURED_PRIVACY_SAFE
+- Output artifact QA:
+  - customer estimate PDF: PASSED
+  - internal cost PDF: PASSED
+  - customer Excel: PASSED
+  - internal Excel: PASSED
+  - customer print HTML: PASSED
+  - customer/internal separation: PASSED
+  - known warning: PDF Korean text uses ASCII fallback
+- Current decision: `CONDITIONAL_MERGE_READY`

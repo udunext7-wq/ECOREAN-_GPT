@@ -35,8 +35,9 @@
 - Packaged EXE launch: PASS.
 - Customer safety regression: PASS.
 - Release asset checksum match: PASS.
-- Full visual click QA: PARTIAL.
-- `smoke:release`: TIMEOUT in current run; focused release and safety smokes passed.
+- Full visual click QA: PARTIAL; v0.4.5 added packaged launch/source-label/customer-safety harness.
+- `smoke:release`: v0.4.5 diagnostics isolate each smoke in a bounded child process and remove the aggregate timeout; final npm `smoke:release` completed in 256725 ms.
+- Output artifact QA: v0.4.5 added PDF/XLSX/print synthetic artifact structure and customer-safety checks.
 
 ## Development Rule After v0.4.4
 
@@ -45,3 +46,8 @@
 - P0/P1 discovered after release must be handled as hotfix work.
 - v0.4.5 should remain small and focus on QA automation and operational reliability.
 
+## Active v0.4.5 Branch
+
+- Branch: `v0.4.5-visual-output-qa-stabilization`
+- Scope: release smoke diagnostics, packaged visual QA harness, output artifact QA.
+- Current decision: `CONDITIONAL_MERGE_READY`; requested regression/build run completed with no P0/P1.
