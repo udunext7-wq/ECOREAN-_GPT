@@ -1892,3 +1892,52 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - customer/internal separation: PASSED
   - known warning: PDF Korean text uses ASCII fallback
 - Current decision: `CONDITIONAL_MERGE_READY`
+
+# v0.4.5 Visual & Output QA Stabilization — Merged to Main
+
+- Source branch: `v0.4.5-visual-output-qa-stabilization`
+- Implementation commit: `d9d84f2`
+- Stabilization commit: `e3089e6`
+- Merge commit: `a1e2213`
+- Main-context smoke adjustment commit: `86d2596`
+- `v0.4.5-rc` tag target: final merge documentation commit
+- Official `v0.4.4` tag preserved:
+  - `36aaa3d98b26743a828a879d878b142e9e003905`
+- Release smoke timeout: resolved
+  - root cause: aggregate release smoke crossed the default 30000 ms boundary on slow tests
+  - action: child-process diagnostics and documented per-test `60000 ms` timeout for `project-profit-closing.smoke.js`
+- Post-merge diagnostics:
+  - project-root diagnostics: PASSED, `171518 ms`
+  - `npm run smoke:release:diagnose`: PASSED, `149741 ms`
+  - `npm run smoke:release`: PASSED, `148005 ms`
+  - timed out tests: none
+  - failed tests: none
+  - remaining process: none
+- Packaged visual QA: `CONDITIONAL_PASSED`
+  - EXE launch: PASSED
+  - customer screen isolation: PASSED
+  - full click automation: PARTIAL / deferred
+  - pixel-level screenshot comparison: deferred
+  - screenshots: NOT_CAPTURED_PRIVACY_SAFE
+- Output artifact QA: `PASSED_WITH_WARNINGS`
+  - customer PDF: PASSED
+  - internal PDF: PASSED
+  - customer Excel: PASSED
+  - internal Excel: PASSED
+  - customer print HTML: PASSED
+  - customer/internal separation: PASSED
+  - warning: `PDF_KOREAN_TEXT_ASCII_FALLBACK`
+- Customer safety: PASSED
+- P0/P1: none
+- P2: release smoke timeout risk resolved
+- P3:
+  - visual click automation remains partial
+  - pixel screenshot comparison remains deferred
+  - safe screenshot capture mode remains deferred
+  - PDF Korean typography improvement remains deferred
+- Known warnings:
+  - Vite bundle size warning
+  - SQLite experimental API warning
+  - PDF Korean text ASCII fallback
+  - npm update notice if shown
+- Final decision: `v0.4.5 Visual & Output QA Stabilization main 반영 완료, CONDITIONAL_MERGE_READY`
