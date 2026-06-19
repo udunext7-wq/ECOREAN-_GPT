@@ -2,7 +2,7 @@
 
 ## Status
 
-`v0.4.4` official operational baseline is released and accepted with warnings.
+`v0.4.4` official operational baseline is released and accepted with warnings. `v0.4.5-visual-output-qa-stabilization` is active to close the QA reliability gaps.
 
 ## What Was Verified
 
@@ -20,19 +20,32 @@
 
 ## Warnings
 
-- `npm run smoke:release` timed out at 120s and 300s without failure logs.
-- Full visual click QA was not fully automated.
-- PDF/Excel/print visual layout was not rendered and inspected in this run.
+- v0.4.4 `npm run smoke:release` timeout was addressed in v0.4.5 by child-process diagnostics.
+- Full packaged visual click QA remains conditional because no click automation dependency is available.
+- PDF/Excel/print structure QA exists in v0.4.5; PDF Korean typography still uses ASCII fallback.
 
 ## Open Issues
 
-- `V044-QA-P2-001`: release aggregate smoke timeout.
-- `V044-QA-P3-001`: packaged visual click automation gap.
-- `V044-QA-P3-002`: output artifact visual inspection gap.
+- `V045-P3-001`: packaged click automation remains partial.
+- `V045-P3-002`: screenshot capture disabled to avoid real desktop/customer data capture.
+- `V045-P3-003`: PDF Korean typography engine remains future improvement.
+
+## Latest Validation
+
+- Syntax checks: PASSED.
+- v0.4.5 release smoke diagnostics: PASSED.
+- v0.4.5 packaged visual QA: CONDITIONAL_PASSED.
+- v0.4.5 output artifact QA: PASSED_WITH_WARNINGS.
+- Requested Node regressions: PASSED.
+- `npm run build:ui`: PASSED.
+- `npm run smoke:prod`: PASSED.
+- `npm run smoke:release:diagnose`: PASSED.
+- `npm run smoke:release`: PASSED.
+- Final decision: `CONDITIONAL_MERGE_READY`.
 
 ## Next Version Recommendation
 
-`v0.4.5` should be a focused QA and operational reliability release, not a feature expansion.
+`v0.4.5` should remain a focused QA and operational reliability release, not a feature expansion.
 
 Recommended headline:
 
@@ -44,4 +57,3 @@ Recommended headline:
 - Do not move `v0.4.4-rc`.
 - Do not move `v0.4.4-rc-packaged`.
 - Do not commit userData, backups, exports, generated PDFs/Excels, SQLite runtime data, or packaged binaries.
-

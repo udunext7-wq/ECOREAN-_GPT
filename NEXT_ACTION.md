@@ -1,12 +1,25 @@
 # Next Action
 
-## Recommended Next Codex Task
+## Current Codex Task
 
-Start `v0.4.5` as a small stabilization release focused on QA automation and operational reliability.
+Continue stabilizing `v0.4.5` as a small release focused on QA automation and operational reliability.
 
-Recommended branch:
+Active branch:
 
 `v0.4.5-visual-output-qa-stabilization`
+
+## Current Implementation Status
+
+- `V045-001`: implemented with `tests/v0-4-5-release-smoke-diagnostics.js`; final `npm run smoke:release` completed in 256725 ms.
+- `V045-002`: implemented as conditional packaged visual harness with launch/source-label/customer-safety checks.
+- `V045-003`: implemented with synthetic PDF/XLSX/print output artifact QA.
+- `V045-004`: deferred unless required after full regression.
+- `V045-005`: deferred unless required after full regression.
+- `V045-006`: deferred; warnings are documented.
+
+## Next Recommended Step
+
+Stabilize the branch for merge review. Do not tag v0.4.5 yet. The branch is suitable for merge-readiness review as `CONDITIONAL_MERGE_READY` because full click/pixel visual QA remains a documented manual gap.
 
 ## Mandatory Scope
 

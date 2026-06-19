@@ -11,6 +11,8 @@
     "db:register-first-project": "node --experimental-sqlite scripts/register-first-operating-project.js",
     "smoke:prod": "cross-env ECOREAN_SMOKE_TEST=1 electron .",
     "smoke:release": "node -e \"const path=require('path'); process.chdir('..'); require(path.join(process.cwd(),'tests','release-candidate.smoke.js'))\"",
+    "smoke:release:diagnose": "node ../tests/v0-4-5-release-smoke-diagnostics.js",
+    "smoke:release:timed": "node -e \"const {performance}=require('perf_hooks'); const {spawnSync}=require('child_process'); const started=performance.now(); const result=spawnSync(process.execPath,['../tests/v0-4-5-release-smoke-diagnostics.js'],{stdio:'inherit',env:{...process.env,BOC_RELEASE_SMOKE_TIMEOUT_MS:process.env.BOC_RELEASE_SMOKE_TIMEOUT_MS||'30000'}}); const elapsed=Math.round(performance.now()-started); console.log(JSON.stringify({script:'smoke:release:timed',duration_ms:elapsed,exit_code:result.status,signal:result.signal},null,2)); process.exit(result.status||0);\"",
     "dist": "npm run build:ui && electron-builder --win --x64 --dir",
     "dist:installer": "npm run build:ui && electron-builder --win --x64"
   },
