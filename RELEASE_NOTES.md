@@ -1989,3 +1989,41 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - Node DEP0190 warning
   - PDF Korean text ASCII fallback
 - Final decision: `v0.4.5 RC Desktop Package 검증 완료`
+
+# v0.4.5 Official Acceptance QA
+
+- RC tag: `v0.4.5-rc`
+- RC target: `b5761f5ffba5cdcd29eedf1e3f9bc1fbd7eb6b0e`
+- RC package docs commit: `c46f378`
+- Official `v0.4.4` preserved:
+  - `36aaa3d98b26743a828a879d878b142e9e003905`
+- Official acceptance decision: `ACCEPTED_WITH_WARNINGS`
+- Official `v0.4.5` tag target: Acceptance QA documentation commit
+- GitHub Release: `NOT_CREATED`
+- Release asset upload: `NOT_CREATED`
+- Package identity:
+  - EXE size: `210149888` bytes
+  - EXE SHA256: `FFA455C9E224A74695F46767D2A5D3A5DB0038FFA56275A489E70A5FDAEAD06C`
+  - app.asar size: `2763157` bytes
+  - app.asar SHA256: `879B876C0D0AC58362C8288DFECD82DFAB10F25A1AA71120986D290F3DC95051`
+- Actual launch: PASSED, 2 runs
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: NO
+- `npm run build:ui`: PASSED
+- `npm run smoke:prod`: PASSED
+- `npm run smoke:release:diagnose`: PASSED, `141883 ms`
+- `npm run smoke:release`: PASSED, `147053 ms`
+- Timeout: none
+- Remaining process: none
+- Packaged visual QA: `CONDITIONAL_PASSED`
+- Output artifact QA: `PASSED_WITH_WARNINGS`
+- Customer/internal separation: PASSED
+- Customer safety: PASSED
+- P0/P1: none
+- P2: none open
+- P3:
+  - full packaged visual click automation remains partial
+  - pixel-level screenshot comparison remains deferred
+  - safe screenshot capture mode remains deferred
+  - PDF Korean typography improvement remains deferred
+- Final decision: `v0.4.5 ACCEPTED WITH WARNINGS`

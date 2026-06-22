@@ -131,3 +131,32 @@ Stabilize the branch for merge review. Do not tag v0.4.5 yet. The branch is suit
 - Customer safety passes.
 - Aggregate smoke no longer hangs or is split into deterministic bounded sub-suites.
 - At least one PDF and one Excel output are rendered and inspected by an automated or documented visual QA path.
+
+## v0.4.5 Official Acceptance Decision
+
+- Decision: `ACCEPTED_WITH_WARNINGS`
+- RC tag: `v0.4.5-rc`
+- RC target: `b5761f5ffba5cdcd29eedf1e3f9bc1fbd7eb6b0e`
+- RC package docs commit: `c46f378`
+- Official `v0.4.4` preserved: `36aaa3d98b26743a828a879d878b142e9e003905`
+- Official `v0.4.5` tag: create after acceptance QA documentation commit
+- GitHub Release: `NOT_CREATED` in this step
+- Release asset upload: `NOT_CREATED` in this step
+
+## Immediate Next Action
+
+- Create/push official annotated tag `v0.4.5` after acceptance QA documentation commit, only if main/origin remains `0/0` and working tree is clean.
+- Do not start the next feature branch until official `v0.4.5` tag verification is complete.
+
+## Follow-Up Candidates
+
+- `v0.4.6`: packaged visual click automation.
+- `v0.4.6`: PDF Korean typography / output render improvement.
+- `v0.5.0`: User Roles & Permissions.
+
+## Guardrails
+
+- Do not move `v0.4.4`, `v0.4.5-rc`, or future `v0.4.5`.
+- Do not enable external address/calendar providers in this release.
+- Do not deploy a public customer portal in this release.
+- Do not commit generated PDFs/Excels, screenshots, `qa-output`, runtime DB, userData, backups, exports, EXE, app.asar, or `electron/release`.
