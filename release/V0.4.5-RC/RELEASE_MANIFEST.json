@@ -1,0 +1,82 @@
+{
+  "version": "v0.4.5-rc",
+  "release_name": "v0.4.5 RC Desktop Package",
+  "branch": "main",
+  "rc_tag": "v0.4.5-rc",
+  "rc_tag_target": "b5761f5ffba5cdcd29eedf1e3f9bc1fbd7eb6b0e",
+  "rc_tag_object": "93c8b473991691abdafd7e7f71cf70d57a06b5e9",
+  "official_v0_4_4_tag_target": "36aaa3d98b26743a828a879d878b142e9e003905",
+  "official_v0_4_5_tag_created": false,
+  "github_release_created": false,
+  "build_date": "2026-06-22",
+  "package_type": "Windows win-unpacked RC desktop package",
+  "package_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked",
+  "executable_name": "ECOREAN BOC CEO Dashboard.exe",
+  "executable_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked\\ECOREAN BOC CEO Dashboard.exe",
+  "executable_size_bytes": 210149888,
+  "asar_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked\\resources\\app.asar",
+  "asar_size_bytes": 2763157,
+  "userData_path": "%APPDATA%\\ecorean-boc-electron",
+  "db_path": "%APPDATA%\\ecorean-boc-electron\\storage\\sqlite",
+  "export_path": "%APPDATA%\\ecorean-boc-electron\\export",
+  "backup_path": "%APPDATA%\\ecorean-boc-electron\\backups",
+  "actual_launch": {
+    "status": "PASSED",
+    "runs": 2,
+    "window_title": "ECOREAN BOC CEO Dashboard",
+    "dev_server_required": false,
+    "remaining_processes": []
+  },
+  "test_status": {
+    "pre_package_regression": "PASSED",
+    "build_ui": "PASSED",
+    "smoke_prod": "PASSED",
+    "smoke_release_diagnose": "PASSED",
+    "smoke_release": "PASSED",
+    "post_package_release_diagnostics": "PASSED",
+    "packaged_visual_qa": "CONDITIONAL_PASSED",
+    "output_artifact_qa": "PASSED_WITH_WARNINGS",
+    "customer_safety": "PASSED"
+  },
+  "timing": {
+    "pre_package_release_diagnostics_ms": 154886,
+    "pre_package_smoke_release_diagnose_ms": 161848,
+    "pre_package_smoke_release_ms": 247454,
+    "package_dist_result": "PASSED",
+    "package_dist_duration_note": "npm run dist completed successfully",
+    "post_package_release_diagnostics_ms": 171934
+  },
+  "output_artifacts": {
+    "pdf": "PASSED_WITH_PDF_KOREAN_TEXT_ASCII_FALLBACK_WARNING",
+    "excel": "PASSED",
+    "print_html": "PASSED",
+    "customer_internal_separation": "PASSED"
+  },
+  "findings": {
+    "P0": [],
+    "P1": [],
+    "P2": [],
+    "P3": [
+      "Full packaged click automation remains partial",
+      "Pixel-level screenshot comparison remains deferred",
+      "Safe screenshot capture mode remains deferred",
+      "PDF Korean typography improvement remains deferred"
+    ]
+  },
+  "known_warnings": [
+    "Vite bundle size warning",
+    "SQLite experimental API warning",
+    "electron-builder description/author metadata warning",
+    "Node DEP0190 warning",
+    "PDF_KOREAN_TEXT_ASCII_FALLBACK"
+  ],
+  "deferred_items": [
+    "Full packaged visual click automation",
+    "Pixel-level screenshot comparison",
+    "Safe screenshot capture mode",
+    "PDF Korean typography improvement",
+    "Official v0.4.5 release package validation",
+    "GitHub Release and release asset publication"
+  ],
+  "final_decision": "v0.4.5 RC Desktop Package 검증 완료"
+}

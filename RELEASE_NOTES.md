@@ -1941,3 +1941,51 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - PDF Korean text ASCII fallback
   - npm update notice if shown
 - Final decision: `v0.4.5 Visual & Output QA Stabilization main 반영 완료, CONDITIONAL_MERGE_READY`
+
+# v0.4.5 RC Desktop Package
+
+- RC tag: `v0.4.5-rc`
+- RC tag target: `b5761f5ffba5cdcd29eedf1e3f9bc1fbd7eb6b0e`
+- Official `v0.4.4` preserved:
+  - `36aaa3d98b26743a828a879d878b142e9e003905`
+- Official `v0.4.5` tag: not created
+- GitHub Release / release asset upload: not created
+- EXE path:
+  - `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- EXE size: `210149888` bytes
+- app.asar path:
+  - `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\resources\app.asar`
+- app.asar size: `2763157` bytes
+- Actual packaged launch: PASSED
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: NO
+- `npm run build:ui`: PASSED
+- `npm run smoke:prod`: PASSED
+- `npm run smoke:release:diagnose`: PASSED
+  - package build precheck: `161848 ms`
+- `npm run smoke:release`: PASSED
+  - package build precheck: `247454 ms`
+- Post-package v0.4.5 diagnostics: PASSED, `171934 ms`
+- Timeout: none
+- Remaining process: none
+- Packaged visual QA: `CONDITIONAL_PASSED`
+- Output artifact QA: `PASSED_WITH_WARNINGS`
+- PDF result: PASSED with `PDF_KOREAN_TEXT_ASCII_FALLBACK`
+- Excel result: PASSED
+- Print result: PASSED
+- Customer/internal separation: PASSED
+- Customer safety: PASSED
+- P0/P1: none
+- P2: none open
+- P3:
+  - full packaged visual click automation remains partial
+  - pixel-level screenshot comparison remains deferred
+  - safe screenshot capture mode remains deferred
+  - PDF Korean typography improvement remains deferred
+- Known warnings:
+  - Vite bundle size warning
+  - SQLite experimental API warning
+  - electron-builder description/author metadata warning
+  - Node DEP0190 warning
+  - PDF Korean text ASCII fallback
+- Final decision: `v0.4.5 RC Desktop Package 검증 완료`

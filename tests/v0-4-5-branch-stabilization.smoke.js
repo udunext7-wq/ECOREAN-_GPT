@@ -36,8 +36,8 @@ assert.ok(
 const officialTagTarget = git(['rev-list', '-n', '1', 'v0.4.4']);
 assert.strictEqual(officialTagTarget, '36aaa3d98b26743a828a879d878b142e9e003905', 'official v0.4.4 tag target preserved');
 
-const v045Tags = git(['tag', '--list', 'v0.4.5*']);
-assert.strictEqual(v045Tags, '', 'v0.4.5 tag should not exist during branch stabilization');
+const officialV045Tag = git(['tag', '--list', 'v0.4.5']);
+assert.strictEqual(officialV045Tag, '', 'official v0.4.5 tag should not exist during RC/package verification');
 
 const diagnostics = read('tests/v0-4-5-release-smoke-diagnostics.js');
 const visualQa = read('tests/v0-4-5-packaged-visual-qa.smoke.js');
