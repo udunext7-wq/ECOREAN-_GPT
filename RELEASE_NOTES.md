@@ -2040,3 +2040,28 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - P0/P1/P2: none
 - Remaining P3: native Excel viewer pixel automation and OS print dialog click automation.
 - Decision: `MERGE_READY`
+# v0.4.6 Packaged Visual Click & Output Typography QA - Merged to Main
+
+- Source branch: `v0.4.6-packaged-visual-click-output-typography-qa`
+- Implementation commit: `318c3d9`
+- Merge commit: `016b50a`
+- Post-merge smoke context commit: `f22874e`
+- Packaged visual click QA: `PASSED`
+- LightBIM / CRM / Client Portal click QA: `PASSED`
+- Safe screenshot viewport-only mode: `PASSED`
+- Full desktop capture: blocked
+- Sensitive customer information capture: blocked
+- Pixel/layout comparison: added and passed
+- PDF Korean font embedding: `PASSED`
+- Poppler PDF render: `PASSED`
+- Customer PDF: 1 page, `PASSED`
+- Internal PDF: 2 pages, `PASSED`
+- PDF/Excel/Print customer/internal separation: `PASSED`
+- Customer safety: `PASSED`
+- P0/P1/P2: none
+- Remaining P3:
+  - Excel native viewer pixel automation
+  - OS print dialog click automation
+- Official `v0.4.5` tag preserved at `abe9094a8f09776a0960f0e65550bf301c5b8c55`.
+- `v0.4.6-rc` target: this final merge documentation commit.
+- Decision: `v0.4.6 Packaged Visual Click & Output Typography QA main 반영 완료, MERGE_READY`
