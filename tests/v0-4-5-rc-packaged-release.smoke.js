@@ -36,11 +36,11 @@ const releaseNotes = read('RELEASE_NOTES.md');
 
 const rcTarget = git(['rev-list', '-n', '1', 'v0.4.5-rc']);
 const officialV044Target = git(['rev-list', '-n', '1', 'v0.4.4']);
-const officialV045 = git(['tag', '--list', 'v0.4.5']);
+const officialV045 = git(['rev-list', '-n', '1', 'v0.4.5']);
 
 assert.strictEqual(rcTarget, 'b5761f5ffba5cdcd29eedf1e3f9bc1fbd7eb6b0e', 'v0.4.5-rc target should be preserved');
 assert.strictEqual(officialV044Target, '36aaa3d98b26743a828a879d878b142e9e003905', 'official v0.4.4 target should be preserved');
-assert.strictEqual(officialV045, '', 'official v0.4.5 tag should not exist');
+assert.strictEqual(officialV045, 'abe9094a8f09776a0960f0e65550bf301c5b8c55', 'official v0.4.5 tag target should be preserved');
 
 assert.ok(exists('release/V0.4.5-RC/RELEASE_MANIFEST.json'), 'manifest exists');
 assert.ok(exists('release/V0.4.5-RC/README_RUN_V0_4_5_RC.md'), 'run guide exists');
@@ -77,7 +77,7 @@ console.log(JSON.stringify({
   test: 'v0-4-5-rc-packaged-release.smoke',
   rcTarget,
   officialV044Target,
-  officialV045Tag: officialV045 || 'NOT_CREATED',
+  officialV045TagTarget: officialV045,
   exeSize: manifest.executable_size_bytes,
   asarSize: manifest.asar_size_bytes,
   launch: manifest.actual_launch.status,

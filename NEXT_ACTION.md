@@ -160,3 +160,14 @@ Stabilize the branch for merge review. Do not tag v0.4.5 yet. The branch is suit
 - Do not enable external address/calendar providers in this release.
 - Do not deploy a public customer portal in this release.
 - Do not commit generated PDFs/Excels, screenshots, `qa-output`, runtime DB, userData, backups, exports, EXE, app.asar, or `electron/release`.
+# Next Action
+
+## v0.4.6
+
+1. Run the complete v0.4.6 and v0.4.5 regression suite.
+2. Run `build:ui`, `smoke:prod`, `smoke:release:diagnose`, and `smoke:release`.
+3. Confirm `qa-output/`, screenshots, generated PDF/XLSX, `electron/release/`, and `release-assets/` are not staged.
+4. Commit only the v0.4.6 QA implementation and documentation.
+5. Push `v0.4.6-packaged-visual-click-output-typography-qa`.
+
+Do not merge to main or create a v0.4.6 tag in this step.

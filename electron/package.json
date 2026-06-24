@@ -13,6 +13,10 @@
     "smoke:release": "node -e \"const path=require('path'); process.chdir('..'); require(path.join(process.cwd(),'tests','release-candidate.smoke.js'))\"",
     "smoke:release:diagnose": "node ../tests/v0-4-5-release-smoke-diagnostics.js",
     "smoke:release:timed": "node -e \"const {performance}=require('perf_hooks'); const {spawnSync}=require('child_process'); const started=performance.now(); const result=spawnSync(process.execPath,['../tests/v0-4-5-release-smoke-diagnostics.js'],{stdio:'inherit',env:{...process.env,BOC_RELEASE_SMOKE_TIMEOUT_MS:process.env.BOC_RELEASE_SMOKE_TIMEOUT_MS||'30000'}}); const elapsed=Math.round(performance.now()-started); console.log(JSON.stringify({script:'smoke:release:timed',duration_ms:elapsed,exit_code:result.status,signal:result.signal},null,2)); process.exit(result.status||0);\"",
+    "qa:v0.4.6:visual-click": "node ../tests/v0-4-6-packaged-visual-click.smoke.js",
+    "qa:v0.4.6:screenshot": "node ../tests/v0-4-6-safe-screenshot-harness.smoke.js",
+    "qa:v0.4.6:output-typography": "node ../tests/v0-4-6-output-typography-render.smoke.js",
+    "qa:v0.4.6:all": "npm run qa:v0.4.6:visual-click && npm run qa:v0.4.6:screenshot && npm run qa:v0.4.6:output-typography",
     "dist": "npm run build:ui && electron-builder --win --x64 --dir",
     "dist:installer": "npm run build:ui && electron-builder --win --x64"
   },
