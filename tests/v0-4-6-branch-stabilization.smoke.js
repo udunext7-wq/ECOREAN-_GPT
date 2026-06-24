@@ -11,7 +11,10 @@ const branch = spawnSync('git', ['branch', '--show-current'], {
   cwd: ROOT,
   encoding: 'utf8'
 }).stdout.trim();
-assert.strictEqual(branch, 'v0.4.6-packaged-visual-click-output-typography-qa');
+assert.ok(
+  ['v0.4.6-packaged-visual-click-output-typography-qa', 'main'].includes(branch),
+  'v0.4.6 stabilization context should be the source branch or merged main'
+);
 
 const expectedFiles = [
   'tests/helpers/packagedVisualClickHarness.js',
