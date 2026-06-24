@@ -2027,3 +2027,16 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - safe screenshot capture mode remains deferred
   - PDF Korean typography improvement remains deferred
 - Final decision: `v0.4.5 ACCEPTED WITH WARNINGS`
+# v0.4.6 Packaged Visual Click & Output Typography QA
+
+- Started from official `v0.4.5` without changing the official or RC tags and without modifying the GitHub Release asset.
+- Added actual packaged renderer click QA for LightBIM, CRM, and Client Portal routes.
+- Added app-viewport-only screenshot capture with isolated synthetic userData and explicit desktop/private-data rejection.
+- Added PNG pixel delta and visible layout-bound inspection.
+- Replaced the real PDF ASCII fallback with runtime Windows Korean font embedding, ToUnicode mapping, CID width correction, line wrapping, and multi-page output.
+- Added Poppler raster verification for every generated PDF page.
+- Expanded customer/internal safety checks across PDF, XLSX, and print layout guards.
+- Customer safety: `PASSED`
+- P0/P1/P2: none
+- Remaining P3: native Excel viewer pixel automation and OS print dialog click automation.
+- Decision: `MERGE_READY`

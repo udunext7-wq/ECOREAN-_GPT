@@ -1,5 +1,16 @@
 # Project Master Context
 
+## v0.4.6 Active QA Branch
+
+- Branch: `v0.4.6-packaged-visual-click-output-typography-qa`
+- Base: official `v0.4.5`
+- Goal: close packaged click, safe screenshot, pixel comparison, and PDF Korean typography P3 gaps.
+- Packaged clicks: LightBIM, CRM, Client Portal passed against the real packaged renderer.
+- Screenshot policy: app viewport only, isolated synthetic userData, no desktop capture.
+- PDF: runtime Korean font embedding and Poppler render passed.
+- Customer safety: passed for packaged customer route and PDF/XLSX/print outputs.
+- Current decision: `MERGE_READY`
+
 ## Current Operational Baseline
 
 - Product: ECOREAN BOC CEO Dashboard
@@ -10,7 +21,7 @@
 - Source RC tag: `v0.4.5-rc`
 - Previous official tag: `v0.4.4`
 - Previous official tag target: `36aaa3d98b26743a828a879d878b142e9e003905`
-- GitHub Release: `NOT_CREATED` for v0.4.5 in this acceptance step
+- GitHub Release: `https://github.com/udunext7-wq/ECOREAN-_GPT/releases/tag/v0.4.5`
 
 ## Runtime Paths
 
@@ -34,7 +45,7 @@
 
 - v0.4.5 official acceptance decision: `ACCEPTED_WITH_WARNINGS`.
 - v0.4.5 official tag: to be created after acceptance documentation commit.
-- GitHub Release / asset upload: `NOT_CREATED`.
+- GitHub Release / asset upload: completed for official `v0.4.5`.
 - Packaged EXE launch: PASS, 2 runs.
 - Customer safety regression: PASS.
 - EXE SHA256: `FFA455C9E224A74695F46767D2A5D3A5DB0038FFA56275A489E70A5FDAEAD06C`.

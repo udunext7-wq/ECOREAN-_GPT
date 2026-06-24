@@ -29,15 +29,19 @@ function assertIncludes(text, expected, message) {
 
 const branch = git(['branch', '--show-current']);
 assert.ok(
-  ['v0.4.5-visual-output-qa-stabilization', 'main'].includes(branch),
-  'v0.4.5 stabilization context exists on source branch or merged main'
+  ['v0.4.5-visual-output-qa-stabilization', 'v0.4.6-packaged-visual-click-output-typography-qa', 'main'].includes(branch),
+  'v0.4.5 stabilization context exists on source branch, v0.4.6 regression branch, or merged main'
 );
 
 const officialTagTarget = git(['rev-list', '-n', '1', 'v0.4.4']);
 assert.strictEqual(officialTagTarget, '36aaa3d98b26743a828a879d878b142e9e003905', 'official v0.4.4 tag target preserved');
 
-const officialV045Tag = git(['tag', '--list', 'v0.4.5']);
-assert.strictEqual(officialV045Tag, '', 'official v0.4.5 tag should not exist during RC/package verification');
+const officialV045Target = git(['rev-list', '-n', '1', 'v0.4.5']);
+assert.strictEqual(
+  officialV045Target,
+  'abe9094a8f09776a0960f0e65550bf301c5b8c55',
+  'official v0.4.5 tag target preserved after release'
+);
 
 const diagnostics = read('tests/v0-4-5-release-smoke-diagnostics.js');
 const visualQa = read('tests/v0-4-5-packaged-visual-qa.smoke.js');

@@ -1,5 +1,20 @@
 # Handoff Summary
 
+## v0.4.6 Work In Progress
+
+- Branch: `v0.4.6-packaged-visual-click-output-typography-qa`
+- Actual packaged click automation: implemented and passed.
+- Safe screenshot: app viewport only; desktop and sensitive DOM capture rejected.
+- Pixel/layout comparison: implemented with direct PNG decoding.
+- PDF Korean typography: ASCII replacement removed when Windows Korean TTF is available; Type0/ToUnicode/FontFile2 render passed.
+- PDF rendering: customer 1 page and internal 2 pages rendered through Poppler with visible content.
+- Excel: OpenXML structure and customer safety passed.
+- Print: CSS pagination/layout guards passed.
+- Customer safety: passed.
+- Full requested regression and build/release smoke: passed.
+- Decision: `MERGE_READY`.
+- Remaining P3: native Excel viewer pixel automation and OS print dialog click automation.
+
 ## Status
 
 `v0.4.5` official acceptance QA completed with decision `ACCEPTED_WITH_WARNINGS`. The release remains a QA/reliability stabilization release after the `v0.4.4` official operational baseline.
