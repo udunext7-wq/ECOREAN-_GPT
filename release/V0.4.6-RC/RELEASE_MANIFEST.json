@@ -1,0 +1,126 @@
+{
+  "version": "v0.4.6-rc",
+  "release_name": "v0.4.6 RC Desktop Package",
+  "branch": "main",
+  "rc_tag": "v0.4.6-rc",
+  "rc_tag_target": "59f646968e7de4aa6c1392216f8c9444a49d6bf8",
+  "rc_tag_object": "4b33558a85e39acaa61fbcf5a5c7e2cf77fe3121",
+  "base_official_version": "v0.4.5",
+  "official_v0_4_5_tag_target": "abe9094a8f09776a0960f0e65550bf301c5b8c55",
+  "official_v0_4_6_tag_created": false,
+  "github_release_created": false,
+  "implementation_commit": "318c3d9b7f173960034d948819805519ecb702d0",
+  "merge_commit": "016b50a27d5744fb5557c382cc0766975815d2d9",
+  "main_smoke_compatibility_commit": "f22874e029d28ff7dd8a1eadf1084135c4ddd510",
+  "final_docs_commit": "59f646968e7de4aa6c1392216f8c9444a49d6bf8",
+  "build_date": "2026-06-25",
+  "package_type": "Windows win-unpacked RC desktop package",
+  "package_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked",
+  "executable_name": "ECOREAN BOC CEO Dashboard.exe",
+  "executable_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked\\ECOREAN BOC CEO Dashboard.exe",
+  "executable_size_bytes": 210149888,
+  "executable_sha256": "CADE74000D0C60E9FD158C167A692275DD5C7FD4046C538EF617B07DD25B113B",
+  "asar_path": "C:\\Users\\udune\\Documents\\Codex\\2026-04-25\\new-chat-2\\electron\\release\\win-unpacked\\resources\\app.asar",
+  "asar_size_bytes": 2772008,
+  "asar_sha256": "AD92EA901A664C231F1D61A4B9AADCF1A3802A4C39337B66D0A1000A494BFD4D",
+  "userData_path": "%APPDATA%\\ecorean-boc-electron",
+  "db_path": "%APPDATA%\\ecorean-boc-electron\\storage\\sqlite",
+  "export_path": "%APPDATA%\\ecorean-boc-electron\\export",
+  "backup_path": "%APPDATA%\\ecorean-boc-electron\\backups",
+  "actual_launch": {
+    "status": "PASSED",
+    "runs": 2,
+    "running_after_6s": true,
+    "window_title": "ECOREAN BOC CEO Dashboard",
+    "dev_server_required": false,
+    "restart_persistence": "PASSED",
+    "missing_userData_files": [],
+    "shrunk_userData_files": [],
+    "remaining_processes": []
+  },
+  "test_status": {
+    "pre_package_regression": "PASSED",
+    "build_ui": "PASSED",
+    "smoke_prod": "PASSED",
+    "smoke_release_diagnose": "PASSED",
+    "smoke_release": "PASSED",
+    "package_dist": "PASSED",
+    "packaged_visual_click": "PASSED",
+    "safe_screenshot": "PASSED",
+    "pixel_layout": "PASSED",
+    "pdf_korean_typography": "PASSED",
+    "poppler_render": "PASSED",
+    "pdf_output": "PASSED",
+    "excel_output": "PASSED",
+    "print_output": "PASSED",
+    "customer_internal_separation": "PASSED",
+    "customer_safety": "PASSED"
+  },
+  "timing": {
+    "pre_package_release_diagnostics_ms": 197816,
+    "build_ui_ms": 6267,
+    "smoke_prod_ms": 2994,
+    "smoke_release_diagnose_ms": 110945,
+    "smoke_release_ms": 100451,
+    "package_dist_ms": 15426
+  },
+  "visual_click": {
+    "screens": [
+      "LightBIM",
+      "CRM",
+      "Client Portal"
+    ],
+    "pixel_change_ratio": {
+      "LightBIM": 0.6541859985565522,
+      "CRM": 0.5153815562723698,
+      "Client Portal": 0.4534370259084147
+    },
+    "layout_status": "PASSED"
+  },
+  "safe_screenshot": {
+    "capture_scope": "APP_VIEWPORT_ONLY",
+    "capture_method": "CDP_PAGE_VIEWPORT",
+    "full_desktop_capture": "REJECTED",
+    "sensitive_information_capture": "REJECTED",
+    "fixture": "SYNTHETIC_V0_4_6_QA"
+  },
+  "output_artifacts": {
+    "customer_pdf": {
+      "status": "PASSED",
+      "page_count": 1,
+      "korean_typography": "PASSED",
+      "poppler_render": "PASSED"
+    },
+    "internal_pdf": {
+      "status": "PASSED",
+      "page_count": 2,
+      "korean_typography": "PASSED",
+      "poppler_render": "PASSED"
+    },
+    "excel": "PASSED_OPEN_XML_STRUCTURE_VERIFIED",
+    "print": "PASSED_CSS_LAYOUT_GUARDS",
+    "customer_internal_separation": "PASSED"
+  },
+  "findings": {
+    "P0": [],
+    "P1": [],
+    "P2": [],
+    "P3": [
+      "Excel native viewer pixel automation",
+      "OS print dialog click automation"
+    ]
+  },
+  "known_warnings": [
+    "Vite bundle size warning",
+    "SQLite experimental API warning",
+    "electron-builder description/author metadata warning",
+    "Node DEP0190 warning"
+  ],
+  "deferred_items": [
+    "Excel native viewer pixel automation",
+    "OS print dialog click automation",
+    "Official v0.4.6 release tag",
+    "GitHub Release and release asset publication"
+  ],
+  "final_decision": "v0.4.6 RC Desktop Package 검증 완료"
+}

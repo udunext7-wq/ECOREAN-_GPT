@@ -2058,6 +2058,8 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Internal PDF: 2 pages, `PASSED`
 - PDF/Excel/Print customer/internal separation: `PASSED`
 - Customer safety: `PASSED`
+- Historical v0.4.5 package smoke updated so a newer mutable `win-unpacked`
+  package does not falsely fail against the archived v0.4.5 app.asar size.
 - P0/P1/P2: none
 - Remaining P3:
   - Excel native viewer pixel automation
@@ -2065,3 +2067,34 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Official `v0.4.5` tag preserved at `abe9094a8f09776a0960f0e65550bf301c5b8c55`.
 - `v0.4.6-rc` target: this final merge documentation commit.
 - Decision: `v0.4.6 Packaged Visual Click & Output Typography QA main 반영 완료, MERGE_READY`
+# v0.4.6 RC Desktop Package
+
+- RC tag: `v0.4.6-rc`
+- RC tag target: `59f646968e7de4aa6c1392216f8c9444a49d6bf8`
+- Official `v0.4.5` preserved at `abe9094a8f09776a0960f0e65550bf301c5b8c55`.
+- Official `v0.4.6` tag / GitHub Release / release asset: not created.
+- EXE: `electron/release/win-unpacked/ECOREAN BOC CEO Dashboard.exe`
+- EXE size: `210149888` bytes
+- app.asar size: `2772008` bytes
+- Actual packaged launch: `PASSED`, 2 runs
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: `NO`
+- Restart persistence: `PASSED`
+- Packaged visual click QA: `PASSED`
+- LightBIM / CRM / Client Portal clicks: `PASSED`
+- Safe screenshot viewport-only mode: `PASSED`
+- Full desktop / sensitive information capture: blocked
+- Pixel/layout comparison: `PASSED`
+- PDF Korean typography: `PASSED`
+- Poppler render: `PASSED`
+- Customer PDF: 1 page, `PASSED`
+- Internal PDF: 2 pages, `PASSED`
+- Excel OpenXML structure: `PASSED`
+- Print CSS layout guards: `PASSED`
+- PDF/Excel/Print customer/internal separation: `PASSED`
+- Customer safety: `PASSED`
+- P0/P1/P2: none
+- P3:
+  - Excel native viewer pixel automation
+  - OS print dialog click automation
+- Final decision: `v0.4.6 RC Desktop Package 검증 완료`
