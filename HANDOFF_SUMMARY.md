@@ -1,5 +1,23 @@
 # Handoff Summary
 
+## v0.4.6 Official Acceptance
+
+- Decision: `ACCEPTED_WITH_WARNINGS`
+- Official acceptance date: `2026-06-25`
+- RC tag target: `59f646968e7de4aa6c1392216f8c9444a49d6bf8`
+- RC package docs commit: `88d2e4e`
+- EXE launch twice, title, restart persistence, and no remaining process: passed.
+- Visual click: LightBIM / CRM / Client Portal passed.
+- Safe screenshot: viewport only; desktop and sensitive capture blocked.
+- Pixel/layout comparison: passed.
+- PDF Korean typography and Poppler render: passed.
+- Customer PDF 1 page and internal PDF 2 pages: passed.
+- Excel, print, customer/internal separation, and customer safety: passed.
+- P0/P1/P2: none.
+- P3: Excel native viewer pixel automation and OS print dialog automation.
+- GitHub Release and asset: `NOT_CREATED`.
+- Recommended next scope: `v0.5.0 User Roles & Permissions`, with `v0.4.7` available for deferred output QA.
+
 ## v0.4.6 Work In Progress
 
 - Branch: `v0.4.6-packaged-visual-click-output-typography-qa`

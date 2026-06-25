@@ -162,6 +162,18 @@ Stabilize the branch for merge review. Do not tag v0.4.5 yet. The branch is suit
 - Do not commit generated PDFs/Excels, screenshots, `qa-output`, runtime DB, userData, backups, exports, EXE, app.asar, or `electron/release`.
 # Next Action
 
+## After v0.4.6 Acceptance
+
+1. Verify the official annotated `v0.4.6` tag points to the acceptance QA documentation commit.
+2. Decide separately whether to publish a GitHub Release and release asset for `v0.4.6`.
+3. Keep the following P3 items deferred:
+   - Excel native viewer pixel QA
+   - OS print dialog automation
+4. Recommended next major scope: `v0.5.0 User Roles & Permissions`.
+5. Alternative small QA release: `v0.4.7` for the two deferred output automation items.
+
+Do not move `v0.4.5`, `v0.4.6-rc`, or official `v0.4.6` after creation.
+
 ## v0.4.6
 
 1. Run the complete v0.4.6 and v0.4.5 regression suite.

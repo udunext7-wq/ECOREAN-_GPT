@@ -2098,3 +2098,24 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - Excel native viewer pixel automation
   - OS print dialog click automation
 - Final decision: `v0.4.6 RC Desktop Package 검증 완료`
+# v0.4.6 Official Acceptance QA
+
+- Decision: `ACCEPTED_WITH_WARNINGS`
+- RC tag: `v0.4.6-rc`
+- RC target: `59f646968e7de4aa6c1392216f8c9444a49d6bf8`
+- RC package docs commit: `88d2e4e`
+- Official `v0.4.5` preserved at `abe9094a8f09776a0960f0e65550bf301c5b8c55`.
+- EXE SHA-256: `CADE74000D0C60E9FD158C167A692275DD5C7FD4046C538EF617B07DD25B113B`
+- app.asar SHA-256: `AD92EA901A664C231F1D61A4B9AADCF1A3802A4C39337B66D0A1000A494BFD4D`
+- Packaged launch and restart persistence: `PASSED`
+- Visual click / safe screenshot / pixel-layout QA: `PASSED`
+- PDF Korean typography / Poppler render: `PASSED`
+- PDF/Excel/Print customer/internal separation: `PASSED`
+- Customer safety: `PASSED`
+- P0/P1/P2: none
+- Remaining P3:
+  - Excel native viewer pixel automation
+  - OS print dialog automation
+- GitHub Release: `NOT_CREATED`
+- Release asset: `NOT_CREATED`
+- Official `v0.4.6` tag target: this acceptance QA documentation commit.

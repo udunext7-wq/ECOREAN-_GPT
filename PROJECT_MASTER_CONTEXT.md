@@ -1,5 +1,19 @@
 # Project Master Context
 
+## v0.4.6 Official Acceptance
+
+- Official version: `v0.4.6`
+- Acceptance decision: `ACCEPTED_WITH_WARNINGS`
+- RC tag: `v0.4.6-rc`
+- RC target: `59f646968e7de4aa6c1392216f8c9444a49d6bf8`
+- RC package docs commit: `88d2e4e`
+- Official `v0.4.5` remains preserved.
+- Packaged visual click, safe screenshot, pixel/layout, PDF Korean typography, Poppler render, and customer safety passed.
+- P0/P1/P2: none.
+- P3: Excel native viewer pixel automation and OS print dialog automation.
+- GitHub Release / release asset: `NOT_CREATED` in the acceptance step.
+- Official `v0.4.6` tag is created only after this acceptance document is committed and main is synced.
+
 ## v0.4.6 Active QA Branch
 
 - Branch: `v0.4.6-packaged-visual-click-output-typography-qa`
