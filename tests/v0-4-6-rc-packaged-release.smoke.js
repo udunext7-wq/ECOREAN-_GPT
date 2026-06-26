@@ -40,10 +40,13 @@ const releaseNotes = read('RELEASE_NOTES.md');
 const rcTarget = git(['rev-list', '-n', '1', 'v0.4.6-rc']);
 const officialV045Target = git(['rev-list', '-n', '1', 'v0.4.5']);
 const officialV046 = git(['tag', '--list', 'v0.4.6']);
+const officialV046Target = officialV046 ? git(['rev-list', '-n', '1', 'v0.4.6']) : '';
 
 assert.strictEqual(rcTarget, '59f646968e7de4aa6c1392216f8c9444a49d6bf8', 'v0.4.6-rc target preserved');
 assert.strictEqual(officialV045Target, 'abe9094a8f09776a0960f0e65550bf301c5b8c55', 'official v0.4.5 target preserved');
-assert.strictEqual(officialV046, '', 'official v0.4.6 tag must not exist');
+if (officialV046) {
+  assert.strictEqual(officialV046Target, 'f1c45d4a10bae5b269b2751ab030cec06df59a58', 'official v0.4.6 target preserved');
+}
 
 assert.ok(exists('release/V0.4.6-RC/RELEASE_MANIFEST.json'), 'manifest exists');
 assert.ok(exists('release/V0.4.6-RC/README_RUN_V0_4_6_RC.md'), 'run guide exists');
@@ -106,6 +109,7 @@ console.log(JSON.stringify({
   rcTarget,
   officialV045Target,
   officialV046Tag: officialV046 || 'NOT_CREATED',
+  officialV046Target: officialV046Target || 'NOT_CREATED',
   exeSize: manifest.executable_size_bytes,
   asarSize: manifest.asar_size_bytes,
   launch: manifest.actual_launch.status,

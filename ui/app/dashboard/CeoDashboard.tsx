@@ -11,15 +11,28 @@ import { useDashboardStore } from '../../state/dashboard-store/useDashboardStore
 import { useApprovalStore } from '../../state/approval-store/useApprovalStore';
 import { useSoundStore } from '../../state/sound-store/useSoundStore';
 import type { ViewKey } from '../../src/types/dashboard';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { PermissionGate } from '../../guards/PermissionGate';
+import {
+  loadPermissionAdminData,
+  type PermissionAdminData
+} from '../../services/permission-service/permissionService';
 
 export function CeoDashboard() {
   const dashboard = useDashboardStore();
   const approval = useApprovalStore(dashboard.setData);
   const sound = useSoundStore();
+  const [permissionData, setPermissionData] = useState<PermissionAdminData | null>(null);
 
   useEffect(() => {
     dashboard.refreshDashboardData();
+    loadPermissionAdminData().then(setPermissionData);
+  }, []);
+
+  useEffect(() => {
+    const refreshRole = () => loadPermissionAdminData().then(setPermissionData);
+    window.addEventListener('ecorean:role-changed', refreshRole);
+    return () => window.removeEventListener('ecorean:role-changed', refreshRole);
   }, []);
 
   useEffect(() => {
@@ -94,7 +107,8 @@ export function CeoDashboard() {
       openOperationalOnboarding: 'operationalOnboarding',
       openRealProjectIntake: 'realProjectIntake',
       openCrmPipeline: 'crmPipeline',
-      openCrmNextActions: 'crmNextActions'
+      openCrmNextActions: 'crmNextActions',
+      openRolePermissions: 'userRolePermissions'
     };
 
     sound.playTone(action === 'openBlockingAlerts' ? 'warning' : 'click');
@@ -110,7 +124,11 @@ export function CeoDashboard() {
     <main className="app-shell command-room">
       <EstimateEntryPanel onOpen={openView} />
 
-      <TopBar kpis={dashboard.data.topBar} onAction={handleAction} />
+      <TopBar
+        kpis={dashboard.data.topBar}
+        onAction={handleAction}
+        roleLabelKo={permissionData?.currentUser.roleDisplayNameKo}
+      />
 
       <section className="red-alert-strip">
         <div className="red-alert-heading">
@@ -303,6 +321,9 @@ export function CeoDashboard() {
       <NotificationLog logs={dashboard.data.notificationLog} />
 
       <div className="floating-actions">
+        <PermissionGate data={permissionData} permission="system.settings.view">
+          <button onClick={() => openView('userRolePermissions', 'click')}>역할 / 권한</button>
+        </PermissionGate>
         <button onClick={() => openView('bathroomEstimate', 'click')}>새 견적</button>
         <button onClick={() => openView('ontology', 'click')}>3D Ontology View</button>
         <button onClick={() => openView('lightbimImport', 'confirm')}>LightBIM 도면 가져오기</button>

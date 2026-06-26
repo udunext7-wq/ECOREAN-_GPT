@@ -12,8 +12,9 @@ const branch = spawnSync('git', ['branch', '--show-current'], {
   encoding: 'utf8'
 }).stdout.trim();
 assert.ok(
-  ['v0.4.6-packaged-visual-click-output-typography-qa', 'main'].includes(branch),
-  'v0.4.6 stabilization context should be the source branch or merged main'
+  ['v0.4.6-packaged-visual-click-output-typography-qa', 'main'].includes(branch)
+    || /^v0\.\d+\.\d+-/.test(branch),
+  'v0.4.6 stabilization context should be the source branch, merged main, or later version branch'
 );
 
 const expectedFiles = [

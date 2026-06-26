@@ -20,6 +20,8 @@ const { createCustomerPortalDraftService } = require('./services/customerPortalD
 const { createCalendarProviderAdapter } = require('./services/calendarProviderAdapter');
 const { createInternalCalendarService } = require('./services/internalCalendarService');
 const { createSiteSurveyScheduleSyncService } = require('./services/siteSurveyScheduleSyncService');
+const { createPermissionAuditService } = require('./services/permissionAuditService');
+const { createRolePermissionService } = require('./services/rolePermissionService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -43,6 +45,8 @@ let customerPortalDraftService;
 let calendarProviderAdapter;
 let internalCalendarService;
 let siteSurveyScheduleSyncService;
+let permissionAuditService;
+let rolePermissionService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -425,6 +429,11 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:ai-automation:run', (_event, payload = {}) => sqliteService.runAIAgentAutomation(payload));
   ipcMain.handle('boc:ai-automation:decide', (_event, payload) => sqliteService.decideAIAgentTask(payload));
   ipcMain.handle('boc:permissions:get', () => sqliteService.getPermissionAdminData());
+  ipcMain.handle('boc:roles:get', () => rolePermissionService.getRolePermissionCenterData());
+  ipcMain.handle('boc:roles:set-active', (_event, payload = {}) => rolePermissionService.setActiveRole(payload.roleId, payload));
+  ipcMain.handle('boc:roles:evaluate', (_event, payload = {}) => rolePermissionService.evaluatePermission(payload));
+  ipcMain.handle('boc:roles:visible-routes', (_event, payload = {}) => rolePermissionService.getVisibleRoutes(payload.roleId));
+  ipcMain.handle('boc:roles:audit', (_event, payload = {}) => rolePermissionService.listAuditEvents(payload));
   ipcMain.handle('boc:portfolio:get', () => sqliteService.getPortfolioDashboardData());
   ipcMain.handle('boc:crew:get', () => sqliteService.getCrewDashboardData());
   ipcMain.handle('boc:finance:get', () => sqliteService.getCompanyFinanceDashboardData());
@@ -571,6 +580,8 @@ app.whenReady().then(() => {
     sqliteService,
     internalCalendarService
   });
+  permissionAuditService = createPermissionAuditService({ sqliteService });
+  rolePermissionService = createRolePermissionService({ sqliteService, auditService: permissionAuditService });
   registerIpcHandlers();
   createWindow();
 

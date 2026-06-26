@@ -381,6 +381,11 @@ declare global {
         runAIAgentAutomation: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
         decideAIAgentTask: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getPermissionAdminData: () => Promise<Record<string, unknown>>;
+        getRolePermissionCenterData: () => Promise<Record<string, unknown>>;
+        setActiveRole: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        evaluateRolePermission: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getVisibleRoutesForRole: (payload?: Record<string, unknown>) => Promise<string[]>;
+        getPermissionAuditEvents: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>[]>;
         getPortfolioDashboardData: () => Promise<Record<string, unknown>>;
         getCrewDashboardData: () => Promise<Record<string, unknown>>;
         getCompanyFinanceDashboardData: () => Promise<Record<string, unknown>>;

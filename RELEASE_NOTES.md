@@ -1,5 +1,19 @@
 # ECOREAN BOC Release Notes
 
+## v0.5.0 User Roles & Permissions Started
+
+- Branch: `v0.5.0-user-roles-permissions`
+- Baseline: official `v0.4.6`
+- Added 7 local operational roles and a default-deny permission matrix.
+- Added role/permission evaluator, route guard, menu gate, output guard, and permission audit logging.
+- Added customer-role data filtering for internal cost, margin, PCE, vendor price, queue, and sensitive contact fields.
+- Added a Korean `사용자 역할 및 권한 센터` with local role badge and audit visibility.
+- External authentication, OAuth, public customer login, and cloud identity providers remain disabled.
+- Validation: syntax, v0.5.0 role/customer/route/output/stabilization smoke, v0.4.6/v0.4.5/RC-0.4.4 regression, customer safety, and Electron build/release smoke passed.
+- Findings: P0/P1/P2/P3 none for v0.5.0 scope. Known warnings are Vite bundle size and SQLite experimental API.
+- Decision: `MERGE_READY`.
+- Main merge/tag/release status: not merged, not tagged, not released.
+
 ## Version: RC-0.3.6
 
 ### RC-0.3.6 Price Calibration UX Started

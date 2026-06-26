@@ -17,6 +17,11 @@
     "qa:v0.4.6:screenshot": "node ../tests/v0-4-6-safe-screenshot-harness.smoke.js",
     "qa:v0.4.6:output-typography": "node ../tests/v0-4-6-output-typography-render.smoke.js",
     "qa:v0.4.6:all": "npm run qa:v0.4.6:visual-click && npm run qa:v0.4.6:screenshot && npm run qa:v0.4.6:output-typography",
+    "qa:v0.5.0:roles": "node ../tests/v0-5-0-user-roles-permissions.smoke.js",
+    "qa:v0.5.0:customer-guard": "node ../tests/v0-5-0-customer-data-guard.smoke.js",
+    "qa:v0.5.0:route-guard": "node ../tests/v0-5-0-route-guard.smoke.js",
+    "qa:v0.5.0:output-guard": "node ../tests/v0-5-0-output-permission-guard.smoke.js",
+    "qa:v0.5.0:all": "npm run qa:v0.5.0:roles && npm run qa:v0.5.0:customer-guard && npm run qa:v0.5.0:route-guard && npm run qa:v0.5.0:output-guard",
     "dist": "npm run build:ui && electron-builder --win --x64 --dir",
     "dist:installer": "npm run build:ui && electron-builder --win --x64"
   },
