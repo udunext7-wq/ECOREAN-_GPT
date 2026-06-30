@@ -1,5 +1,25 @@
 # ECOREAN BOC Release Notes
 
+## v0.5.0 RC Desktop Package
+
+- RC tag: `v0.5.0-rc`
+- RC tag target: `2ed04851024b5b9a2e26195a78a2ceb53afd61cd`
+- Package type: Windows unpacked
+- Packaged executable: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- EXE SHA-256: `A9FD5B48BFF85DA2AEC1D3182509ABFEC4A5B513CB09EE8DF6D5303E39B62B86`
+- app.asar SHA-256: `72FB99056913B2D5167FE977499BE1C5532C1074EADE2B15CF56893BB47176EC`
+- Actual launch: `PASSED`
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: `NO`
+- Role matrix / permission evaluator / default deny: `PASSED`
+- Route / menu / output guard: `PASSED`
+- Customer data guard / audit redaction: `PASSED`
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- Regression and Electron build/smoke: `PASSED`
+- Official `v0.5.0` tag, GitHub Release, and release asset upload were not created.
+- Final decision: `v0.5.0 RC Desktop Package 검증 완료`
+
 ## v0.5.0 User Roles & Permissions — Merged to Main
 
 - Source branch: `v0.5.0-user-roles-permissions`

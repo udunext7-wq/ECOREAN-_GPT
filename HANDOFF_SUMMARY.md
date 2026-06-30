@@ -12,7 +12,12 @@
 - Validation: v0.5.0 smoke, customer safety, v0.4.6/v0.4.5/RC-0.4.4 regression, `build:ui`, `smoke:prod`, `smoke:release:diagnose`, and `smoke:release` passed.
 - Decision: `MERGE_READY`.
 - Main merge: completed with `d0004ff`.
-- RC tag target: final merge documentation commit.
+- RC tag: `v0.5.0-rc`
+- RC tag target: `2ed04851024b5b9a2e26195a78a2ceb53afd61cd`
+- RC Desktop Package: `PASSED`
+- Packaged launch/title/dev-server check: `PASSED`
+- EXE SHA-256: `A9FD5B48BFF85DA2AEC1D3182509ABFEC4A5B513CB09EE8DF6D5303E39B62B86`
+- app.asar SHA-256: `72FB99056913B2D5167FE977499BE1C5532C1074EADE2B15CF56893BB47176EC`
 - Official tag/release: not performed.
 
 ## v0.4.6 Official Acceptance

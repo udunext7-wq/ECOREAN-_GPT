@@ -2,7 +2,7 @@
 
 ## Current Codex Task
 
-Prepare `v0.5.0 RC Desktop Package` after the User Roles & Permissions main merge and `v0.5.0-rc` tag.
+Run `v0.5.0 Official Acceptance QA` after the RC Desktop Package validation.
 
 Completed gates:
 
@@ -13,12 +13,21 @@ Completed gates:
 5. v0.4.6/v0.4.5/RC-0.4.4 regression and Electron build/release smoke: `PASSED`.
 6. Final decision: `MERGE_READY`.
 
+Completed RC package gates:
+
+- Windows unpacked package build: `PASSED`
+- Actual packaged launch: `PASSED`
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: `NO`
+- RBAC / route / menu / output / customer guard: `PASSED`
+- Customer safety: `PASSED`
+
 Next steps:
 
-1. Build and verify the v0.5.0 RC Desktop Package.
-2. Run official v0.5.0 Acceptance QA after RC package validation.
-3. Create GitHub Release only after official acceptance.
-4. Keep official `v0.5.0` tag and release assets deferred until acceptance.
+1. Run official v0.5.0 Acceptance QA.
+2. Create official `v0.5.0` tag only after acceptance.
+3. Create GitHub Release only after official tag.
+4. Upload release assets only after official release approval.
 
 Follow-up candidates:
 
