@@ -2,8 +2,7 @@
 
 ## Current Codex Task
 
-Commit and push `v0.5.0 User Roles & Permissions` on branch
-`v0.5.0-user-roles-permissions` after completed validation.
+Prepare `v0.5.0 RC Desktop Package` after the User Roles & Permissions main merge and `v0.5.0-rc` tag.
 
 Completed gates:
 
@@ -14,7 +13,19 @@ Completed gates:
 5. v0.4.6/v0.4.5/RC-0.4.4 regression and Electron build/release smoke: `PASSED`.
 6. Final decision: `MERGE_READY`.
 
-Next step: push feature branch only; do not merge or tag.
+Next steps:
+
+1. Build and verify the v0.5.0 RC Desktop Package.
+2. Run official v0.5.0 Acceptance QA after RC package validation.
+3. Create GitHub Release only after official acceptance.
+4. Keep official `v0.5.0` tag and release assets deferred until acceptance.
+
+Follow-up candidates:
+
+- `v0.5.1`: role management UX refinement.
+- `v0.5.1`: permission audit viewer refinement.
+- v0.4.x residual P3: Excel native viewer pixel QA.
+- v0.4.x residual P3: OS print dialog automation.
 
 ## Current Codex Task
 

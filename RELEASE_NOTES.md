@@ -1,5 +1,29 @@
 # ECOREAN BOC Release Notes
 
+## v0.5.0 User Roles & Permissions — Merged to Main
+
+- Source branch: `v0.5.0-user-roles-permissions`
+- Implementation commit: `97a284e`
+- Merge commit: `d0004ff`
+- Base official version: `v0.4.6`
+- Official `v0.4.6` tag target preserved: `f1c45d4a10bae5b269b2751ab030cec06df59a58`
+- Included:
+  - 7 local/internal roles
+  - 28 permission keys
+  - default-deny evaluator
+  - unknown/missing role denial
+  - route, menu, output, and customer data guards
+  - audit redaction
+  - role badge and Korean permission center
+  - IPC/preload/type integration
+- External authentication and public login remain disabled.
+- Pre-merge validation: `PASSED`
+- Post-merge validation on `main`: `PASSED`
+- Customer safety: `PASSED`
+- Findings: P0/P1/P2/P3 none for v0.5.0 scope.
+- Final decision: `v0.5.0 User Roles & Permissions main 반영 완료, MERGE_READY`
+- Official `v0.5.0` tag and GitHub Release were not created.
+
 ## v0.5.0 User Roles & Permissions Started
 
 - Branch: `v0.5.0-user-roles-permissions`

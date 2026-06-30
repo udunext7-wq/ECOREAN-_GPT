@@ -11,7 +11,9 @@
 - External login and public authentication remain disabled.
 - Validation: v0.5.0 smoke, customer safety, v0.4.6/v0.4.5/RC-0.4.4 regression, `build:ui`, `smoke:prod`, `smoke:release:diagnose`, and `smoke:release` passed.
 - Decision: `MERGE_READY`.
-- Merge/tag/release: not performed.
+- Main merge: completed with `d0004ff`.
+- RC tag target: final merge documentation commit.
+- Official tag/release: not performed.
 
 ## v0.4.6 Official Acceptance
 
