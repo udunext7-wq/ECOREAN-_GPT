@@ -5,7 +5,7 @@
 - Branch: `v0.5.0-user-roles-permissions`
 - Base official version: `v0.4.6`
 - Main merge commit: `d0004ff`
-- RC package docs commit: pending
+- RC package docs commit: `268a5f9`
 - RC package status: `PASSED`
 - Packaged EXE SHA-256: `A9FD5B48BFF85DA2AEC1D3182509ABFEC4A5B513CB09EE8DF6D5303E39B62B86`
 - Packaged app.asar SHA-256: `72FB99056913B2D5167FE977499BE1C5532C1074EADE2B15CF56893BB47176EC`
