@@ -2,7 +2,7 @@
 
 ## Current Codex Task
 
-Run `v0.5.0 Official Acceptance QA` after the RC Desktop Package validation.
+Publish `v0.5.0 GitHub Release and Asset` after official acceptance and official tag creation.
 
 Completed gates:
 
@@ -13,7 +13,7 @@ Completed gates:
 5. v0.4.6/v0.4.5/RC-0.4.4 regression and Electron build/release smoke: `PASSED`.
 6. Final decision: `MERGE_READY`.
 
-Completed RC package gates:
+Completed acceptance gates:
 
 - Windows unpacked package build: `PASSED`
 - Actual packaged launch: `PASSED`
@@ -21,13 +21,14 @@ Completed RC package gates:
 - Dev server required: `NO`
 - RBAC / route / menu / output / customer guard: `PASSED`
 - Customer safety: `PASSED`
+- Official acceptance decision: `ACCEPTED_WITH_WARNINGS`
 
 Next steps:
 
-1. Run official v0.5.0 Acceptance QA.
-2. Create official `v0.5.0` tag only after acceptance.
-3. Create GitHub Release only after official tag.
-4. Upload release assets only after official release approval.
+1. Create/publish the v0.5.0 GitHub Release.
+2. Upload the v0.5.0 release asset.
+3. Preserve official `v0.5.0`, `v0.5.0-rc`, and `v0.4.6` tags.
+4. Do not replace release assets without explicit approval.
 
 Follow-up candidates:
 

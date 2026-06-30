@@ -18,7 +18,9 @@
 - Packaged launch/title/dev-server check: `PASSED`
 - EXE SHA-256: `A9FD5B48BFF85DA2AEC1D3182509ABFEC4A5B513CB09EE8DF6D5303E39B62B86`
 - app.asar SHA-256: `72FB99056913B2D5167FE977499BE1C5532C1074EADE2B15CF56893BB47176EC`
-- Official tag/release: not performed.
+- Official acceptance: `ACCEPTED_WITH_WARNINGS`
+- Official tag: created after acceptance QA document commit.
+- GitHub Release / asset: not performed.
 
 ## v0.4.6 Official Acceptance
 

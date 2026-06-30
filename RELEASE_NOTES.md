@@ -1,5 +1,27 @@
 # ECOREAN BOC Release Notes
 
+## v0.5.0 Official Acceptance QA
+
+- Official version: `v0.5.0`
+- RC tag: `v0.5.0-rc`
+- RC target: `2ed04851024b5b9a2e26195a78a2ceb53afd61cd`
+- RC package docs commit: `268a5f9`
+- Context follow-up commit: `2630f6a`
+- Official v0.4.6 tag target preserved: `f1c45d4a10bae5b269b2751ab030cec06df59a58`
+- Package integrity: `PASSED`
+- Packaged launch: `PASSED`
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: `NO`
+- RBAC / default deny / route guard / output guard / customer data guard / audit redaction: `PASSED`
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- Build and release smoke: `PASSED`
+- Findings: P0/P1/P2 none.
+- Known warnings: Vite bundle size, SQLite experimental API, electron-builder metadata, Node DEP0190.
+- GitHub Release: `NOT_CREATED`
+- Release asset: `NOT_CREATED`
+- Final decision: `ACCEPTED_WITH_WARNINGS`
+
 ## v0.5.0 RC Desktop Package
 
 - RC tag: `v0.5.0-rc`
