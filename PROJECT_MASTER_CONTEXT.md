@@ -1,5 +1,18 @@
 # Project Master Context
 
+## v0.5.0 User Roles & Permissions
+
+- Branch: `v0.5.0-user-roles-permissions`
+- Base official version: `v0.4.6`
+- Scope: local/internal RBAC only; no external OAuth/Auth0/Firebase/Supabase integration.
+- Roles: `CEO`, `ADMIN`, `MANAGER`, `STAFF`, `SITE_CREW`, `CLIENT_VIEWER`, `READ_ONLY_AUDITOR`.
+- Permissions: 28 dot-notation permission keys with default-deny evaluation.
+- Guards: route, menu, output, customer data sanitizer, audit redaction.
+- UI: role badge, `사용자 역할 및 권한 센터`, access denied view.
+- Validation: v0.5.0 smoke, customer safety, v0.4.6/v0.4.5/RC-0.4.4 regression, `build:ui`, `smoke:prod`, `smoke:release:diagnose`, and `smoke:release` passed.
+- Decision: `MERGE_READY`.
+- Main merge/tag/release: not performed.
+
 ## v0.4.6 Official Acceptance
 
 - Official version: `v0.4.6`
@@ -85,3 +98,11 @@
 - P0/P1: none.
 - P2: none open.
 - P3 deferred: packaged click automation, pixel screenshot comparison, safe screenshot capture mode, PDF Korean typography.
+# v0.5.0 Work In Progress
+
+- Branch: `v0.5.0-user-roles-permissions`
+- Base: official `v0.4.6`
+- Scope: local/internal user roles, permission matrix, route/menu/output guards, customer data filtering, and permission audit.
+- Roles: CEO, ADMIN, MANAGER, STAFF, SITE_CREW, CLIENT_VIEWER, READ_ONLY_AUDITOR.
+- External authentication: disabled and out of scope.
+- Existing v0.4.6 tags and GitHub Release remain unchanged.

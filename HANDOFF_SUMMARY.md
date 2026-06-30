@@ -1,5 +1,18 @@
 # Handoff Summary
 
+## v0.5.0 User Roles & Permissions
+
+- Branch: `v0.5.0-user-roles-permissions`
+- Base: official `v0.4.6`
+- Added local/internal RBAC with 7 roles and default deny.
+- Added route, menu, customer output, and internal output guards.
+- Added customer data sanitizer and privacy-redacted permission audit.
+- Added role badge and Korean role/permission center.
+- External login and public authentication remain disabled.
+- Validation: v0.5.0 smoke, customer safety, v0.4.6/v0.4.5/RC-0.4.4 regression, `build:ui`, `smoke:prod`, `smoke:release:diagnose`, and `smoke:release` passed.
+- Decision: `MERGE_READY`.
+- Merge/tag/release: not performed.
+
 ## v0.4.6 Official Acceptance
 
 - Decision: `ACCEPTED_WITH_WARNINGS`

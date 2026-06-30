@@ -62,6 +62,15 @@ import { SettingsView } from '../../app/settings/SettingsView';
 import { VendorPriceAdminView } from '../../app/vendor/VendorPriceAdminView';
 import { VendorPriceIntelligenceCenterView } from '../../app/vendor/VendorPriceIntelligenceCenterView';
 import { getProjectDecisionText } from '../../state/project-store/useProjectStore';
+import { UserRolePermissionCenterView } from '../../app/settings/UserRolePermissionCenterView';
+import { AccessDeniedView } from '../../app/shared/AccessDeniedView';
+import {
+  canAccessView,
+  getRoutePermission,
+  loadPermissionAdminData,
+  type PermissionAdminData
+} from '../../services/permission-service/permissionService';
+import { useEffect, useState } from 'react';
 
 type Props = {
   view: ViewKey;
@@ -74,6 +83,15 @@ type Props = {
 };
 
 export function DetailDrawer({ view, project, approvals = [], onNavigate, onApproveEstimate, onRejectEstimate, onReviseEstimate }: Props) {
+  const [permissionData, setPermissionData] = useState<PermissionAdminData | null>(null);
+
+  useEffect(() => {
+    const refresh = () => loadPermissionAdminData().then(setPermissionData);
+    refresh();
+    window.addEventListener('ecorean:role-changed', refresh);
+    return () => window.removeEventListener('ecorean:role-changed', refresh);
+  }, []);
+
   if (view === 'dashboard') return null;
 
   const titleMap: Record<ViewKey, string> = {
@@ -107,6 +125,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     addressNormalization: '주소 정규화 센터',
     customerPortalDraft: '고객 포털 내부 초안',
     calendarSiteSurveySync: '캘린더 / 현장조사 Sync',
+    userRolePermissions: '사용자 역할 및 권한',
     masterDb: '기준 데이터 관리',
     franchise: '프랜차이즈 관리',
     fieldMobile: '현장 모바일',
@@ -141,7 +160,25 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
     profitAutomation: '수익 자동화'
   };
 
-  const isWideView = ['masterDb', 'initialMasterData', 'realPriceCalibration', 'realPriceWorkbench', 'priceWorkbookImport', 'priceCalibrationPriority', 'unmatchedPriceRecommendation', 'recommendationScoringRules', 'operationalOnboarding', 'realProjectIntake', 'crmPipeline', 'crmNextActions', 'addressNormalization', 'customerPortalDraft', 'calendarSiteSurveySync', 'franchise', 'fieldMobile', 'clientPortal', 'analytics', 'aiAutomation', 'userTestCenter', 'backupRestore', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'lightbimImport', 'lightbimQuantityReview', 'lightbimExecutionFeedback', 'lightbimTraceability', 'lightbimSpaceMap', 'lightbimCustomerMap', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
+  const isWideView = ['masterDb', 'initialMasterData', 'realPriceCalibration', 'realPriceWorkbench', 'priceWorkbookImport', 'priceCalibrationPriority', 'unmatchedPriceRecommendation', 'recommendationScoringRules', 'operationalOnboarding', 'realProjectIntake', 'crmPipeline', 'crmNextActions', 'addressNormalization', 'customerPortalDraft', 'calendarSiteSurveySync', 'userRolePermissions', 'franchise', 'fieldMobile', 'clientPortal', 'analytics', 'aiAutomation', 'userTestCenter', 'backupRestore', 'estimate', 'bathroomEstimate', 'kitchenEstimate', 'fullRemodelingEstimate', 'lightbimImport', 'lightbimQuantityReview', 'lightbimExecutionFeedback', 'lightbimTraceability', 'lightbimSpaceMap', 'lightbimCustomerMap', 'contractDocuments', 'constructionSchedule', 'purchaseOrders', 'executionManagement', 'ceoControlTower', 'communication', 'payment', 'closing', 'calibration', 'project', 'approvals', 'caseLibrary', 'costCapture', 'marginSafety', 'vendorPrice', 'vendorIntelligence', 'portfolio', 'crew', 'finance', 'sales', 'client', 'settings', 'ontology', 'floorplanCenter', 'aiVisualization', 'boardGeneration', 'profitTemplates', 'profitAutomation'].includes(view);
+
+  if (permissionData && !canAccessView(permissionData, view)) {
+    return (
+      <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
+        <div className="section-header">
+          <div>
+            <span className="eyebrow">DRILL DOWN</span>
+            <h2>{titleMap[view]}</h2>
+          </div>
+          <button onClick={() => onNavigate('dashboard')}>닫기</button>
+        </div>
+        <AccessDeniedView
+          permissionKey={getRoutePermission(permissionData, view)}
+          roleNameKo={permissionData.currentUser.roleDisplayNameKo}
+        />
+      </aside>
+    );
+  }
 
   return (
     <aside className={isWideView ? 'detail-drawer detail-drawer-wide' : 'detail-drawer'}>
@@ -186,6 +223,7 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
       {view === 'addressNormalization' ? <AddressNormalizationCenterView onNavigate={onNavigate} /> : null}
       {view === 'customerPortalDraft' ? <CustomerPortalDraftCenterView /> : null}
       {view === 'calendarSiteSurveySync' ? <CalendarSiteSurveySyncCenterView /> : null}
+      {view === 'userRolePermissions' ? <UserRolePermissionCenterView /> : null}
       {view === 'masterDb' ? <MasterDataCenterView /> : null}
       {view === 'franchise' ? <FranchiseCenterView /> : null}
       {view === 'fieldMobile' ? <FieldMobileCenterView projectId={project.projectId} /> : null}

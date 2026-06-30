@@ -2,6 +2,22 @@
 
 ## Current Codex Task
 
+Commit and push `v0.5.0 User Roles & Permissions` on branch
+`v0.5.0-user-roles-permissions` after completed validation.
+
+Completed gates:
+
+1. Default-deny role and permission evaluator: `PASSED`.
+2. Route/menu/output permission guards: `PASSED`.
+3. Customer role internal-data filtering: `PASSED`.
+4. Permission and role-change audit logs with privacy redaction: `PASSED`.
+5. v0.4.6/v0.4.5/RC-0.4.4 regression and Electron build/release smoke: `PASSED`.
+6. Final decision: `MERGE_READY`.
+
+Next step: push feature branch only; do not merge or tag.
+
+## Current Codex Task
+
 Continue stabilizing `v0.4.5` as a small release focused on QA automation and operational reliability.
 
 Active branch:

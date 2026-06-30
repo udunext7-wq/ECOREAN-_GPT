@@ -1,11 +1,11 @@
 import { BackupRestoreView } from './BackupRestoreView';
 import { ExportDataView } from './ExportDataView';
-import { UserPermissionView } from './UserPermissionView';
+import { UserRolePermissionCenterView } from './UserRolePermissionCenterView';
 
 export function SettingsView() {
   return (
     <section className="settings-stack">
-      <UserPermissionView />
+      <UserRolePermissionCenterView />
       <BackupRestoreView />
       <ExportDataView />
     </section>
