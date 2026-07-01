@@ -5,7 +5,8 @@ const { DatabaseSync } = require('node:sqlite');
 const SENSITIVE_KEY_PARTS = [
   'password', 'credential', 'secret', 'token', 'api_key', 'apikey',
   'customer_phone', 'customer_email', 'detailed_address', 'memo',
-  'raw_phone', 'raw_email', 'resident_registration', 'account_number'
+  'raw_phone', 'raw_email', 'full_address', 'provider_payload', 'providerpayload',
+  'resident_registration', 'account_number'
 ];
 
 function nowIso() {
@@ -102,7 +103,7 @@ function createPermissionAuditService({ sqliteService, databasePath } = {}) {
     return event;
   }
 
-  function listEvents({ roleId = '', decision = '', limit = 100 } = {}) {
+  function listEvents({ roleId = '', decision = '', eventType = '', permissionKey = '', limit = 100 } = {}) {
     return withDb((database) => {
       const clauses = [];
       const values = [];
@@ -113,6 +114,14 @@ function createPermissionAuditService({ sqliteService, databasePath } = {}) {
       if (decision) {
         clauses.push('decision = ?');
         values.push(decision);
+      }
+      if (eventType) {
+        clauses.push('event_type = ?');
+        values.push(eventType);
+      }
+      if (permissionKey) {
+        clauses.push('permission_key = ?');
+        values.push(permissionKey);
       }
       const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
       values.push(Math.max(1, Math.min(500, Number(limit) || 100)));

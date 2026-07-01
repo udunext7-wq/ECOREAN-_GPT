@@ -1,5 +1,24 @@
 # ECOREAN BOC Release Notes
 
+## v0.5.1 RBAC UX & Audit Viewer Refinement
+
+- Branch: `v0.5.1-rbac-ux-audit-viewer`
+- Base official version: `v0.5.0`
+- Official v0.5.0 tag target preserved: `2ae94a13ba7f3f42450684f33946bc4a1cd0604e`
+- GitHub Release preserved: `https://github.com/udunext7-wq/ECOREAN-_GPT/releases/tag/v0.5.0`
+- Added role management UX summaries for 7 roles.
+- Added 7 roles / 28 permissions matrix with search, role filter, and dangerous permission highlighting.
+- Added Permission Audit Viewer for denied, role-change, internal-cost, margin, customer-output, and internal-output events.
+- Added safe access denied reason display without DB path, token, provider payload, or raw customer data.
+- Added customer/internal visibility preview using the existing output/customer sanitizer.
+- Audit redaction: `PASSED`
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- P0/P1 findings: none.
+- Known warnings: Vite bundle size, SQLite experimental API, electron-builder metadata, Node DEP0190, npm update notice.
+- Deferred: external login/provider, real account lifecycle, public portal deployment, advanced audit export, bulk role assignment.
+- Final decision: `MERGE_READY`
+
 ## v0.5.0 Official Acceptance QA
 
 - Official version: `v0.5.0`

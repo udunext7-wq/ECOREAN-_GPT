@@ -1,5 +1,20 @@
 # Handoff Summary
 
+## v0.5.1 RBAC UX & Audit Viewer Refinement
+
+- Branch: `v0.5.1-rbac-ux-audit-viewer`
+- Base official version: `v0.5.0`
+- Official v0.5.0 release: published with asset.
+- Official v0.5.0 tag target: `2ae94a13ba7f3f42450684f33946bc4a1cd0604e`
+- Added role management UX summaries and local role simulation warning.
+- Added permission center matrix with search, role filter, allow/deny/restricted status, and dangerous permission highlighting.
+- Added permission audit viewer filters for denied, role changed, internal cost, margin, customer output, and internal output events.
+- Added safe access denied reason display that hides internal route path, DB path, token, provider payload, and raw customer data.
+- Added customer/internal visibility preview using existing sanitizer and output guard behavior.
+- External auth/provider remains `DISABLED`.
+- Validation target: v0.5.1 smoke, v0.5.0 RBAC regression, customer safety, historical regressions, and Electron build/release smoke.
+- Decision target: `MERGE_READY`.
+
 ## v0.5.0 User Roles & Permissions
 
 - Branch: `v0.5.0-user-roles-permissions`
