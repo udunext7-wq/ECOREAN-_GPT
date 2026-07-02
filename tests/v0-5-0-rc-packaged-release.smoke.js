@@ -31,11 +31,16 @@ const rcTarget = git(['rev-list', '-n', '1', 'v0.5.0-rc']);
 const officialV046Target = git(['rev-list', '-n', '1', 'v0.4.6']);
 const officialV050 = git(['tag', '--list', 'v0.5.0']);
 const remoteOfficialV050 = git(['ls-remote', '--tags', 'origin', 'v0.5.0']);
+const officialV050Target = officialV050 ? git(['rev-list', '-n', '1', 'v0.5.0']) : '';
 
 assert.strictEqual(rcTarget, '2ed04851024b5b9a2e26195a78a2ceb53afd61cd', 'v0.5.0-rc target preserved');
 assert.strictEqual(officialV046Target, 'f1c45d4a10bae5b269b2751ab030cec06df59a58', 'official v0.4.6 target preserved');
-assert.strictEqual(officialV050, '', 'official v0.5.0 tag must not exist yet');
-assert.strictEqual(remoteOfficialV050, '', 'remote official v0.5.0 tag must not exist yet');
+if (officialV050) {
+  assert.strictEqual(officialV050Target, '2ae94a13ba7f3f42450684f33946bc4a1cd0604e', 'official v0.5.0 target preserved after release');
+  assert.ok(remoteOfficialV050.includes('refs/tags/v0.5.0'), 'remote official v0.5.0 tag exists after release');
+} else {
+  assert.strictEqual(remoteOfficialV050, '', 'remote official v0.5.0 tag must not exist before official release');
+}
 
 assert.ok(exists('release/V0.5.0-RC'), 'release directory exists');
 assert.ok(exists('release/V0.5.0-RC/RELEASE_MANIFEST.json'), 'manifest exists');
@@ -103,6 +108,7 @@ console.log(JSON.stringify({
   rcTarget,
   officialV046Target,
   officialV050: officialV050 || 'NOT_CREATED',
+  officialV050Target: officialV050Target || 'NOT_CREATED',
   exeSize: manifest.executable_size_bytes,
   asarSize: manifest.asar_size_bytes,
   launch: manifest.actual_launch.status,

@@ -2,38 +2,41 @@
 
 ## Current Codex Task
 
-Publish `v0.5.0 GitHub Release and Asset` after official acceptance and official tag creation.
+Implement and validate `v0.5.1 RBAC UX & Audit Viewer Refinement` on branch `v0.5.1-rbac-ux-audit-viewer`.
 
-Completed gates:
+Base:
 
-1. Default-deny role and permission evaluator: `PASSED`.
-2. Route/menu/output permission guards: `PASSED`.
-3. Customer role internal-data filtering: `PASSED`.
-4. Permission and role-change audit logs with privacy redaction: `PASSED`.
-5. v0.4.6/v0.4.5/RC-0.4.4 regression and Electron build/release smoke: `PASSED`.
-6. Final decision: `MERGE_READY`.
+- Official version: `v0.5.0`
+- Official tag target: `2ae94a13ba7f3f42450684f33946bc4a1cd0604e`
+- GitHub Release: `https://github.com/udunext7-wq/ECOREAN-_GPT/releases/tag/v0.5.0`
 
-Completed acceptance gates:
+Current scope:
 
-- Windows unpacked package build: `PASSED`
-- Actual packaged launch: `PASSED`
-- Window title: `ECOREAN BOC CEO Dashboard`
-- Dev server required: `NO`
-- RBAC / route / menu / output / customer guard: `PASSED`
-- Customer safety: `PASSED`
-- Official acceptance decision: `ACCEPTED_WITH_WARNINGS`
+1. Role Management UX refinement.
+2. Permission Center matrix/search/filter.
+3. Permission Audit Viewer.
+4. Access denied safe reason display.
+5. Customer/internal visibility preview.
+6. v0.5.0 RBAC regression preservation.
+7. Customer safety regression.
+
+Validation status:
+
+- v0.5.1 smoke tests: `PASSED`
+- v0.5.0 RBAC regressions: `PASSED`
+- Customer safety and historical regressions: `PASSED`
+- Electron `build:ui`, `smoke:prod`, `smoke:release:diagnose`, `smoke:release`: `PASSED`
 
 Next steps:
 
-1. Create/publish the v0.5.0 GitHub Release.
-2. Upload the v0.5.0 release asset.
-3. Preserve official `v0.5.0`, `v0.5.0-rc`, and `v0.4.6` tags.
-4. Do not replace release assets without explicit approval.
+1. Commit v0.5.1 implementation.
+2. Push `v0.5.1-rbac-ux-audit-viewer`.
+3. Prepare merge-readiness review.
 
 Follow-up candidates:
 
-- `v0.5.1`: role management UX refinement.
-- `v0.5.1`: permission audit viewer refinement.
+- v0.5.2: advanced audit export and operational review workflow.
+- v0.5.2: bulk role assignment simulation.
 - v0.4.x residual P3: Excel native viewer pixel QA.
 - v0.4.x residual P3: OS print dialog automation.
 

@@ -175,6 +175,8 @@ export function DetailDrawer({ view, project, approvals = [], onNavigate, onAppr
         <AccessDeniedView
           permissionKey={getRoutePermission(permissionData, view)}
           roleNameKo={permissionData.currentUser.roleDisplayNameKo}
+          safeReasonKo="현재 역할에는 이 내부 화면을 열 권한이 없습니다."
+          actionKo="필요한 경우 관리자에게 역할 또는 업무 범위 변경을 요청하세요."
         />
       </aside>
     );

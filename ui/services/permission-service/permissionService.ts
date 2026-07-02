@@ -29,9 +29,50 @@ export type PermissionAuditRecord = {
   roleId: RoleId;
   eventType: string;
   permissionKey: string;
+  resourceType?: string;
+  resourceId?: string;
   decision: 'ALLOWED' | 'DENIED';
   reasonKo: string;
+  payload?: Record<string, unknown>;
   createdAt: string;
+};
+
+export type RoleSummaryRecord = RoleRecord & {
+  allowedCount: number;
+  deniedCount: number;
+  restrictedCount: number;
+  dangerousAllowed: string[];
+  blockedFieldLabels: string[];
+};
+
+export type PermissionMatrixRecord = {
+  roleId: RoleId;
+  roleDisplayNameKo: string;
+  permissionKey: string;
+  descriptionKo: string;
+  allowed: boolean;
+  status: 'ALLOW' | 'DENY' | 'RESTRICTED';
+  isDangerous: boolean;
+};
+
+export type AccessDeniedReasonRecord = {
+  roleId: RoleId | 'UNKNOWN';
+  roleDisplayNameKo: string;
+  permissionKey: string;
+  routeKey?: string;
+  reasonKo: string;
+  actionKo: string;
+  safeForCustomer: boolean;
+  hiddenDetails: string[];
+};
+
+export type RoleVisibilityPreviewRecord = {
+  roleId: RoleId;
+  roleDisplayNameKo: string;
+  visibleFieldKeys: string[];
+  hiddenFieldLabels: string[];
+  previewPayload: Record<string, unknown>;
+  customerSafe: boolean;
 };
 
 export type PermissionAdminData = {
@@ -48,6 +89,13 @@ export type PermissionAdminData = {
   routePermissionMap: Partial<Record<ViewKey, string>>;
   visibleRoutes: ViewKey[];
   recentAudit: PermissionAuditRecord[];
+  roleSummaries?: RoleSummaryRecord[];
+  permissionMatrix?: PermissionMatrixRecord[];
+  dangerousPermissions?: Array<{ permissionKey: string; descriptionKo: string }>;
+  auditEventFilters?: string[];
+  accessDeniedSamples?: AccessDeniedReasonRecord[];
+  visibilityPreview?: RoleVisibilityPreviewRecord[];
+  uxVersion?: string;
   externalAuthentication: 'DISABLED';
   securityModel: 'LOCAL_INTERNAL_RBAC';
 };
@@ -93,6 +141,10 @@ export async function evaluatePermission(permissionKey: string, roleId?: RoleId)
     permissionKey: string;
     reasonKo: string;
   } | undefined>;
+}
+
+export async function loadPermissionAuditEvents(payload: Record<string, unknown> = {}) {
+  return window.ecorean?.bocDb?.getPermissionAuditEvents?.(payload) as Promise<PermissionAuditRecord[] | undefined>;
 }
 
 export function hasPermission(data: PermissionAdminData | null, permissionKey?: string) {

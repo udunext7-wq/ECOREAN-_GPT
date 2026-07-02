@@ -438,9 +438,9 @@ function createInternalCalendarService({ sqliteService, reportsDir, providerAdap
     return withDb((db) => {
       const duplicate = db.prepare(`
         SELECT * FROM calendar_event_reminders
-        WHERE event_id = ? AND reminder_type = ? AND status IN ('OPEN', 'SNOOZED')
+        WHERE event_id = ? AND reminder_type = ? AND status IN ('OPEN', 'SNOOZED', 'OVERDUE')
       `).get(eventId, reminderType);
-      if (duplicate) return { ok: true, duplicatePrevented: true, ...duplicate };
+      if (duplicate) return { ok: true, ...duplicate, duplicatePrevented: true };
       const now = nowIso();
       const row = {
         reminder_id: clean(payload.reminderId || payload.reminder_id) || makeId('CAL-REM'),

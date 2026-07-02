@@ -132,6 +132,38 @@ const VENDOR_PRICE_KEY_PARTS = [
   'price_queue', 'pricequeue', 'approval_queue', 'approvalqueue',
   'calibration', 'variance'
 ];
+const DANGEROUS_PERMISSION_KEYS = [
+  'estimate.internal_cost.view',
+  'estimate.margin.view',
+  'vendor.price.view',
+  'internal_output.generate',
+  'audit.view',
+  'system.settings.edit'
+];
+const V051_SAMPLE_PROJECT = {
+  project_name: 'RBAC 미리보기 테스트 프로젝트',
+  site_summary: '고객 공유용 현장 요약',
+  customer_name: '테스트 고객',
+  customer_phone: '010-0000-0000',
+  customer_email: 'customer@example.invalid',
+  detailed_address: '테스트 상세주소 101동 1001호',
+  memo: '고객 메모 원문',
+  estimate_total: 12000000,
+  internal_cost: 8300000,
+  labor_cost: 2400000,
+  margin: 3700000,
+  profit_rate: 30.8,
+  pce: 'GO',
+  vendor_price: 3100000,
+  approval_queue: [{ queue_id: 'Q-RBAC-1', suggested_price: 150000 }],
+  provider_payload: { raw_email: 'provider@example.invalid' },
+  access_token: 'must-not-leak',
+  nested: {
+    public_summary: '고객에게 보여도 되는 요약',
+    risk_score: 81,
+    internal_note: '내부 검토 메모'
+  }
+};
 
 function nowIso() {
   return new Date().toISOString();
@@ -156,6 +188,28 @@ function normalizeRoleId(value) {
 function hasKeyPart(key, parts) {
   const normalized = normalizeKey(key);
   return parts.some((part) => normalized.includes(normalizeKey(part)));
+}
+
+function getPermissionDescription(permissionKey) {
+  return PERMISSION_DEFINITIONS.find((item) => item.permissionKey === permissionKey)?.descriptionKo || permissionKey;
+}
+
+function permissionStatusForRole(roleId, permissionKey) {
+  const allowed = ROLE_PERMISSION_MATRIX[roleId]?.includes(permissionKey) || false;
+  if (!allowed) return 'DENY';
+  if (roleId === 'CLIENT_VIEWER') return 'RESTRICTED';
+  return 'ALLOW';
+}
+
+function blockedFieldLabelsForRole(roleId) {
+  const permissions = ROLE_PERMISSION_MATRIX[roleId] || [];
+  const labels = [];
+  if (roleId === 'CLIENT_VIEWER') labels.push('고객 연락처', '상세주소', '고객 메모 원문');
+  if (!permissions.includes('estimate.internal_cost.view')) labels.push('내부 원가', '노무 원가');
+  if (!permissions.includes('estimate.margin.view')) labels.push('마진', 'PCE', 'risk_score');
+  if (!permissions.includes('vendor.price.view')) labels.push('협력업체 단가', '단가 Queue', 'variance');
+  labels.push('token', 'credential', 'provider payload');
+  return Array.from(new Set(labels));
 }
 
 function sanitizeObject(value, blockedKeyParts) {
@@ -406,6 +460,71 @@ function createRolePermissionService({ sqliteService, databasePath, auditService
     };
   }
 
+  function getRoleSummaries() {
+    return ROLE_DEFINITIONS.map((role) => {
+      const allowedPermissions = ROLE_PERMISSION_MATRIX[role.roleId] || [];
+      return {
+        roleId: role.roleId,
+        displayNameKo: role.displayNameKo,
+        descriptionKo: role.descriptionKo,
+        allowedCount: allowedPermissions.length,
+        deniedCount: ALL_PERMISSIONS.length - allowedPermissions.length,
+        restrictedCount: role.roleId === 'CLIENT_VIEWER' ? allowedPermissions.length : 0,
+        dangerousAllowed: DANGEROUS_PERMISSION_KEYS.filter((key) => allowedPermissions.includes(key)),
+        blockedFieldLabels: blockedFieldLabelsForRole(role.roleId)
+      };
+    });
+  }
+
+  function getPermissionMatrix() {
+    return ROLE_DEFINITIONS.flatMap((role) => PERMISSION_DEFINITIONS.map((permission) => ({
+      roleId: role.roleId,
+      roleDisplayNameKo: role.displayNameKo,
+      permissionKey: permission.permissionKey,
+      descriptionKo: permission.descriptionKo,
+      allowed: ROLE_PERMISSION_MATRIX[role.roleId].includes(permission.permissionKey),
+      status: permissionStatusForRole(role.roleId, permission.permissionKey),
+      isDangerous: DANGEROUS_PERMISSION_KEYS.includes(permission.permissionKey)
+    })));
+  }
+
+  function getSafeAccessDeniedReason({ roleId, permissionKey, routeKey = '', audience = 'INTERNAL' } = {}) {
+    const normalizedRoleId = normalizeRoleId(roleId || getCurrentRole().roleId);
+    const role = ROLE_DEFINITIONS.find((item) => item.roleId === normalizedRoleId);
+    const permissionLabel = getPermissionDescription(permissionKey);
+    const isCustomerAudience = String(audience || '').toUpperCase().includes('CUSTOMER') || normalizedRoleId === 'CLIENT_VIEWER';
+    return {
+      roleId: normalizedRoleId || 'UNKNOWN',
+      roleDisplayNameKo: role?.displayNameKo || '알 수 없음',
+      permissionKey: String(permissionKey || 'UNKNOWN'),
+      routeKey: isCustomerAudience ? '' : String(routeKey || ''),
+      reasonKo: `${role?.displayNameKo || normalizedRoleId || '현재 역할'} 역할에는 ${permissionLabel} 권한이 없습니다.`,
+      actionKo: '역할 또는 업무 범위 확인을 관리자에게 요청하세요.',
+      safeForCustomer: true,
+      hiddenDetails: [
+        'internal route path',
+        'database path',
+        'token',
+        'raw customer data',
+        'provider payload'
+      ]
+    };
+  }
+
+  function getRoleVisibilityPreview({ payload = V051_SAMPLE_PROJECT } = {}) {
+    return ROLE_DEFINITIONS.map((role) => {
+      const sanitized = sanitizeDataForRole(role.roleId, payload);
+      return {
+        roleId: role.roleId,
+        roleDisplayNameKo: role.displayNameKo,
+        visibleFieldKeys: Object.keys(sanitized),
+        hiddenFieldLabels: blockedFieldLabelsForRole(role.roleId),
+        previewPayload: sanitized,
+        customerSafe: !JSON.stringify(sanitized).toLowerCase().includes('access_token')
+      };
+    });
+  }
+
   function getRolePermissionCenterData() {
     const currentUser = getCurrentRole();
     return withDb((database) => ({
@@ -426,6 +545,27 @@ function createRolePermissionService({ sqliteService, databasePath, auditService
       routePermissionMap: ROUTE_PERMISSION_MAP,
       visibleRoutes: getVisibleRoutes(currentUser.roleId),
       recentAudit: audit.listEvents({ limit: 50 }),
+      roleSummaries: getRoleSummaries(),
+      permissionMatrix: getPermissionMatrix(),
+      dangerousPermissions: DANGEROUS_PERMISSION_KEYS.map((permissionKey) => ({
+        permissionKey,
+        descriptionKo: getPermissionDescription(permissionKey)
+      })),
+      auditEventFilters: [
+        'PERMISSION_DENIED',
+        'ACTIVE_ROLE_CHANGED',
+        'INTERNAL_COST_ACCESSED',
+        'MARGIN_VIEWED',
+        'CUSTOMER_OUTPUT_GENERATED',
+        'INTERNAL_OUTPUT_GENERATED'
+      ],
+      accessDeniedSamples: [
+        getSafeAccessDeniedReason({ roleId: 'CLIENT_VIEWER', permissionKey: 'system.settings.view', routeKey: 'settings', audience: 'CUSTOMER' }),
+        getSafeAccessDeniedReason({ roleId: 'STAFF', permissionKey: 'estimate.margin.view', routeKey: 'marginSafety' }),
+        getSafeAccessDeniedReason({ roleId: 'SITE_CREW', permissionKey: 'vendor.price.view', routeKey: 'vendorPrice' })
+      ],
+      visibilityPreview: getRoleVisibilityPreview(),
+      uxVersion: 'v0.5.1-rbac-ux-audit-viewer',
       externalAuthentication: 'DISABLED',
       securityModel: 'LOCAL_INTERNAL_RBAC'
     }));
@@ -439,6 +579,10 @@ function createRolePermissionService({ sqliteService, databasePath, auditService
     getVisibleRoutes,
     sanitizeDataForRole,
     sanitizeOutputForRole,
+    getRoleSummaries,
+    getPermissionMatrix,
+    getSafeAccessDeniedReason,
+    getRoleVisibilityPreview,
     getRolePermissionCenterData,
     listAuditEvents: audit.listEvents
   };
