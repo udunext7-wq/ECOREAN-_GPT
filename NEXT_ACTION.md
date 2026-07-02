@@ -2,7 +2,7 @@
 
 ## Current Codex Task
 
-Implement and validate `v0.5.1 RBAC UX & Audit Viewer Refinement` on branch `v0.5.1-rbac-ux-audit-viewer`.
+Prepare `v0.5.1 RC Desktop Package` after `v0.5.1 RBAC UX & Audit Viewer` main merge and RC tag creation.
 
 Base:
 
@@ -12,13 +12,12 @@ Base:
 
 Current scope:
 
-1. Role Management UX refinement.
-2. Permission Center matrix/search/filter.
-3. Permission Audit Viewer.
-4. Access denied safe reason display.
-5. Customer/internal visibility preview.
-6. v0.5.0 RBAC regression preservation.
-7. Customer safety regression.
+1. Build Windows unpacked package from main.
+2. Verify packaged launch and no dev server requirement.
+3. Verify RBAC UX and Permission Audit Viewer are present in packaged app.
+4. Verify Access Denied safe reason and visibility preview behavior.
+5. Run v0.5.1/v0.5.0 RBAC regression and customer safety.
+6. Create v0.5.1 RC package docs and manifest.
 
 Validation status:
 
@@ -26,12 +25,16 @@ Validation status:
 - v0.5.0 RBAC regressions: `PASSED`
 - Customer safety and historical regressions: `PASSED`
 - Electron `build:ui`, `smoke:prod`, `smoke:release:diagnose`, `smoke:release`: `PASSED`
+- Main merge: `PASSED`
+- Merge commit: `4d69cd4`
+- v0.5.1 RC tag target: this final merge documentation commit.
 
 Next steps:
 
-1. Commit v0.5.1 implementation.
-2. Push `v0.5.1-rbac-ux-audit-viewer`.
-3. Prepare merge-readiness review.
+1. Push main with final merge documentation.
+2. Create annotated `v0.5.1-rc` tag on the final merge documentation commit.
+3. Build and verify v0.5.1 RC Desktop Package.
+4. Do not create official `v0.5.1` tag or GitHub Release until official acceptance QA.
 
 Follow-up candidates:
 

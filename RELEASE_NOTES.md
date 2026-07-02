@@ -1,5 +1,29 @@
 # ECOREAN BOC Release Notes
 
+## v0.5.1 RBAC UX & Audit Viewer — Merged to Main
+
+- Source branch: `v0.5.1-rbac-ux-audit-viewer`
+- Implementation commit: `7eca99efbb08403136c98ffc3f414ced9721db48`
+- Regression fix commit: `34fc6aedca0579ae0da9a8cafaad86f28b2d7833`
+- Merge commit: `4d69cd4`
+- Base official version: `v0.5.0`
+- Official v0.5.0 tag target preserved: `2ae94a13ba7f3f42450684f33946bc4a1cd0604e`
+- Included:
+  - Role Management UX
+  - Permission Center matrix/search/filter
+  - Permission Audit Viewer
+  - Access Denied safe reason display
+  - Role Visibility Preview
+  - Audit redaction preservation
+  - Customer/internal visibility separation
+  - Calendar reminder duplicate prevention for overdue CRM actions
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- v0.5.0 RBAC regression: `PASSED`
+- Build and release smoke: `PASSED`
+- Findings: P0/P1/P2 none.
+- Final decision: `v0.5.1 RBAC UX & Audit Viewer main 반영 완료, MERGE_READY`
+
 ## v0.5.1 RBAC UX & Audit Viewer Refinement
 
 - Branch: `v0.5.1-rbac-ux-audit-viewer`

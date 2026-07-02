@@ -6,6 +6,9 @@
 - Base official version: `v0.5.0`
 - Official v0.5.0 tag target: `2ae94a13ba7f3f42450684f33946bc4a1cd0604e`
 - GitHub Release: `https://github.com/udunext7-wq/ECOREAN-_GPT/releases/tag/v0.5.0`
+- Main merge: completed
+- Merge commit: `4d69cd4`
+- Final merge report: `docs/V0_5_1_FINAL_MERGE_REPORT.md`
 - Goal: make the v0.5.0 RBAC foundation operable through clearer role, permission, audit, denied-reason, and visibility-preview UX.
 - Role Management UX: role summaries, local role simulation warning, role-change audit.
 - Permission Center UX: 7 roles / 28 permissions matrix, search, role filter, dangerous permission highlighting.
@@ -13,7 +16,9 @@
 - Access Denied: safe Korean reason without internal route path, DB path, token, provider payload, or raw customer data.
 - Visibility Preview: role-based customer/internal payload sanitizer preview.
 - External auth/provider: `DISABLED`.
-- Decision target: `MERGE_READY` after smoke, regression, customer safety, and Electron build/release smoke pass.
+- Validation: v0.5.1 smoke, v0.5.0 RBAC regression, customer safety, historical regressions, and Electron build/release smoke passed.
+- Decision: `MERGE_READY`.
+- Next: v0.5.1 RC Desktop Package verification, then official acceptance QA.
 
 ## v0.5.0 User Roles & Permissions
 
