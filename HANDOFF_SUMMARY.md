@@ -145,3 +145,31 @@ Follow-up candidates:
 - Do not move `v0.4.4-rc`.
 - Do not move `v0.4.4-rc-packaged`.
 - Do not commit userData, backups, exports, generated PDFs/Excels, SQLite runtime data, or packaged binaries.
+
+## v0.5.1 RC Desktop Package Handoff
+
+`v0.5.1` RC desktop package verification is complete on `main`.
+
+Verified package:
+
+- RC tag: `v0.5.1-rc`
+- RC target: `12b7f37eae8a9bde2c8a8f91ff4c77c09a50bc51`
+- Official `v0.5.0` preserved: `2ae94a13ba7f3f42450684f33946bc4a1cd0604e`
+- Official `v0.5.1` tag: `NOT_CREATED`
+- GitHub Release / release asset: `NOT_CREATED`
+- EXE: `C:\Users\udune\Documents\Codex\2026-04-25\new-chat-2\electron\release\win-unpacked\ECOREAN BOC CEO Dashboard.exe`
+- EXE SHA-256: `17E8A0CAF81F3BEC5AC464B1F9A75B6FE11EBE7084FD0D651EBDF6BC9BE19319`
+- app.asar SHA-256: `95D21A9DE575FD5BC14723EBE46F2B558393572CB2E095A0574F350B3B5EEAF4`
+
+Validation result:
+
+- Packaged launch: `PASSED`, 2 runs.
+- Window title: `ECOREAN BOC CEO Dashboard`.
+- Dev server required: `NO`.
+- Role Management UX, Permission Center UX, Permission Audit Viewer: `PASSED`.
+- Access Denied Reason, Visibility Preview, audit redaction: `PASSED`.
+- Customer safety: `PASSED`.
+- v0.5.0 RBAC regression and OVERDUE CRM duplicate prevention: `PASSED`.
+- Final decision: `v0.5.1 RC Desktop Package 검증 완료`.
+
+Next step: perform v0.5.1 official acceptance QA. Do not create the official `v0.5.1` tag, GitHub Release, or asset before that decision.

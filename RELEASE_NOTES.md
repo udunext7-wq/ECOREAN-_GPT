@@ -2242,3 +2242,34 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - GitHub Release: `NOT_CREATED`
 - Release asset: `NOT_CREATED`
 - Official `v0.4.6` tag target: this acceptance QA documentation commit.
+
+# v0.5.1 RC Desktop Package
+
+- RC tag: `v0.5.1-rc`
+- RC tag target: `12b7f37eae8a9bde2c8a8f91ff4c77c09a50bc51`
+- Official `v0.5.0` preserved at `2ae94a13ba7f3f42450684f33946bc4a1cd0604e`.
+- Official `v0.5.1` tag / GitHub Release / release asset: not created.
+- EXE: `electron/release/win-unpacked/ECOREAN BOC CEO Dashboard.exe`
+- EXE size: `210149888` bytes
+- EXE SHA-256: `17E8A0CAF81F3BEC5AC464B1F9A75B6FE11EBE7084FD0D651EBDF6BC9BE19319`
+- app.asar size: `2816483` bytes
+- app.asar SHA-256: `95D21A9DE575FD5BC14723EBE46F2B558393572CB2E095A0574F350B3B5EEAF4`
+- Actual packaged launch: `PASSED`, 2 runs
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: `NO`
+- Restart persistence: `PASSED`
+- Role Management UX: `PASSED`
+- Permission Center UX: `PASSED`
+- Permission Audit Viewer: `PASSED`
+- Access Denied Reason: `PASSED`
+- Visibility Preview: `PASSED`
+- Audit redaction: `PASSED`
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- v0.5.0 RBAC regression: `PASSED`
+- OVERDUE CRM reminder duplicate prevention: `PASSED`
+- P0/P1/P2: none
+- P3:
+  - Excel native viewer pixel automation
+  - OS print dialog automation
+- Final decision: `v0.5.1 RC Desktop Package 검증 완료`

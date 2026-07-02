@@ -226,3 +226,13 @@ Do not move `v0.4.5`, `v0.4.6-rc`, or official `v0.4.6` after creation.
 5. Push `v0.4.6-packaged-visual-click-output-typography-qa`.
 
 Do not merge to main or create a v0.4.6 tag in this step.
+
+## After v0.5.1 RC Desktop Package
+
+1. Run v0.5.1 official acceptance QA from the verified RC package.
+2. Confirm official `v0.5.1` tag is still absent before acceptance.
+3. Preserve official `v0.5.0` at `2ae94a13ba7f3f42450684f33946bc4a1cd0604e`.
+4. Keep GitHub Release and release asset creation out of scope until official acceptance.
+5. Continue to defer P3 Excel native viewer pixel automation and OS print dialog automation.
+
+Do not move `v0.5.1-rc`, official `v0.5.0`, or any existing official tags.
