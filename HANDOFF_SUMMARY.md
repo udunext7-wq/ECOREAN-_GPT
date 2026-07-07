@@ -173,3 +173,31 @@ Validation result:
 - Final decision: `v0.5.1 RC Desktop Package 검증 완료`.
 
 Next step: perform v0.5.1 official acceptance QA. Do not create the official `v0.5.1` tag, GitHub Release, or asset before that decision.
+
+## v0.5.1 Official Acceptance QA Handoff
+
+`v0.5.1` official acceptance QA completed with decision `ACCEPTED_WITH_WARNINGS`.
+
+Verified state:
+
+- Branch: `main`
+- RC tag: `v0.5.1-rc`
+- RC target: `12b7f37eae8a9bde2c8a8f91ff4c77c09a50bc51`
+- RC package docs commit: `c4c19c9`
+- Official `v0.5.0` preserved: `2ae94a13ba7f3f42450684f33946bc4a1cd0604e`
+- GitHub Release / release asset: `NOT_CREATED`
+
+Acceptance result:
+
+- Packaged launch: `PASSED`, 2 runs.
+- Window title: `ECOREAN BOC CEO Dashboard`.
+- Dev server required: `NO`.
+- `build:ui`, `smoke:prod`, `smoke:release:diagnose`, `smoke:release`: `PASSED`.
+- Role Management UX, Permission Center UX, Permission Audit Viewer: `PASSED`.
+- Access Denied Reason, Visibility Preview, audit redaction: `PASSED`.
+- Customer safety and v0.5.0 RBAC regression: `PASSED`.
+- External auth/provider: `DISABLED`.
+- P0/P1/P2: none.
+- P3 deferred: Excel native viewer pixel automation, OS print dialog automation.
+
+Next step: create official annotated tag `v0.5.1`, then publish GitHub Release and asset in a separate step.

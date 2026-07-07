@@ -236,3 +236,18 @@ Do not merge to main or create a v0.4.6 tag in this step.
 5. Continue to defer P3 Excel native viewer pixel automation and OS print dialog automation.
 
 Do not move `v0.5.1-rc`, official `v0.5.0`, or any existing official tags.
+
+## After v0.5.1 Official Acceptance
+
+1. Create and verify the official annotated `v0.5.1` tag on the acceptance QA documentation commit.
+2. Publish the `v0.5.1` GitHub Release in a separate step.
+3. Upload the release ZIP asset only after the GitHub Release step begins.
+4. Preserve official `v0.5.0`, `v0.5.1-rc`, and official `v0.5.1` after creation.
+5. Recommended follow-up candidates:
+   - `v0.5.2` permission audit export
+   - `v0.5.2` role change approval workflow
+   - `v0.6.0` external auth strategy
+   - Excel native viewer pixel QA
+   - OS print dialog automation
+
+Do not create a GitHub Release or upload assets inside the official tag creation step.

@@ -2273,3 +2273,31 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - Excel native viewer pixel automation
   - OS print dialog automation
 - Final decision: `v0.5.1 RC Desktop Package 검증 완료`
+
+# v0.5.1 Official Acceptance QA
+
+- Acceptance QA commit: pending at document creation time
+- RC tag: `v0.5.1-rc`
+- RC target: `12b7f37eae8a9bde2c8a8f91ff4c77c09a50bc51`
+- RC package docs commit: `c4c19c9`
+- Official `v0.5.0` preserved at `2ae94a13ba7f3f42450684f33946bc4a1cd0604e`.
+- Official `v0.5.1` tag: create after this acceptance QA documentation commit.
+- GitHub Release / release asset: `NOT_CREATED` in this step.
+- Packaged launch: `PASSED`, 2 runs.
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: `NO`
+- Role Management UX: `PASSED`
+- Permission Center UX: `PASSED`
+- Permission Audit Viewer: `PASSED`
+- Access Denied Reason: `PASSED`
+- Visibility Preview: `PASSED`
+- Audit redaction: `PASSED`
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- v0.5.0 RBAC regression: `PASSED`
+- Build and release smoke: `PASSED`
+- P0/P1/P2: none
+- P3 deferred:
+  - Excel native viewer pixel automation
+  - OS print dialog automation
+- Final decision: `v0.5.1 ACCEPTED WITH WARNINGS`

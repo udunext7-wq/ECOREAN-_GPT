@@ -154,3 +154,20 @@
 - Customer safety and v0.5.0 RBAC regression: `PASSED`
 - External auth/provider remains disabled.
 - Final decision: `v0.5.1 RC Desktop Package 검증 완료`
+
+## v0.5.1 Official Acceptance
+
+- Branch: `main`
+- RC tag: `v0.5.1-rc`
+- RC target: `12b7f37eae8a9bde2c8a8f91ff4c77c09a50bc51`
+- RC package docs commit: `c4c19c9`
+- Official `v0.5.0` target: `2ae94a13ba7f3f42450684f33946bc4a1cd0604e`
+- Official acceptance decision: `ACCEPTED_WITH_WARNINGS`
+- Official `v0.5.1` tag: create after acceptance QA documentation commit.
+- GitHub Release / release asset: `NOT_CREATED`
+- Packaged launch, restart, build, release smoke: `PASSED`
+- RBAC UX, Permission Center, Permission Audit Viewer, Access Denied Reason, Visibility Preview: `PASSED`
+- Audit redaction and customer safety: `PASSED`
+- External auth/provider remains `DISABLED`.
+- P0/P1/P2: none
+- Remaining P3: Excel native viewer pixel automation, OS print dialog automation.
