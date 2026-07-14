@@ -1,6 +1,36 @@
 # Next Action
 
-## v0.5.2 Current Codex Task
+## v0.5.2 Official Acceptance QA
+
+The v0.5.2 RC Desktop Package is built and verified from `v0.5.2-rc`.
+
+Verified baseline:
+
+- Branch: `main`
+- RC target: `6271159b021e3c4a179ec4cb0e0a582e95480b64`
+- Base official version: `v0.5.1`
+- Package launch and restart: `PASSED`
+- Role change approval/apply workflow and rollback: `PASSED`
+- Permission audit JSON/CSV/HTML export and redaction: `PASSED`
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- P0/P1/P2: none
+
+Next steps:
+
+1. Run v0.5.2 Official Acceptance QA.
+2. Create official `v0.5.2` annotated tag only after acceptance.
+3. Create the GitHub Release only after the official tag.
+4. Upload a release asset only in the separate release publication step.
+
+Deferred:
+
+- External multi-user identity binding and approver identity proof
+- Excel native viewer pixel QA
+- OS print dialog automation
+- External authentication strategy
+
+## v0.5.2 Merge Task (Completed)
 
 Verify the `v0.5.2 RC Desktop Package` after the Permission Audit Export & Role Change Approval main merge and RC tag creation.
 

@@ -1,5 +1,41 @@
 # Handoff Summary
 
+## v0.5.2 RC Desktop Package Handoff
+
+`v0.5.2-rc` Windows Desktop Package verification is complete on `main`.
+
+Package identity:
+
+- RC target: `6271159b021e3c4a179ec4cb0e0a582e95480b64`
+- Official v0.5.1 target preserved: `4961573340280cc19a749d01e05359e97d700d1d`
+- EXE size/hash: `210149888` / `91AA0B4F6AC7A3958003622B6DCE64C61E918EB5149E58C7A7C4705CC32A128C`
+- app.asar size/hash: `2866494` / `E7A7E204769D2F4A2F305C0D444DD187AAD349393B90E743E926BF636C9E1534`
+
+Verification:
+
+- Actual EXE launch: `PASSED`, 2 runs.
+- Window title and no-dev-server behavior: `PASSED`.
+- Restart persistence: `PASSED`; 346 pre-existing files retained.
+- Remaining process: `0`.
+- Actual packaged `역할 / 권한` click, layout and visible v0.5.2 controls: `PASSED`.
+- Packaged app.asar services and renderer markers: `PASSED`.
+- Role request states, approval/apply separation, self-approval prevention and approver validation: `PASSED`.
+- Reject/cancel/expire guards, rollback and replay prevention: `PASSED`.
+- Permission diff and risk classification: `PASSED`.
+- JSON/CSV/print-safe HTML audit export, filters and redaction: `PASSED`.
+- Customer safety: `PASSED`.
+- External auth/provider: `DISABLED`.
+- Full requested regression and Electron build/smoke: `PASSED`.
+- P0/P1/P2: none.
+
+Publication state:
+
+- Official `v0.5.2` tag: `NOT_CREATED`
+- GitHub Release: `NOT_CREATED`
+- Release asset: `NOT_UPLOADED`
+
+Next: v0.5.2 Official Acceptance QA, then official tag and separate GitHub Release publication if accepted.
+
 ## v0.5.2 Main Merge Handoff
 
 `v0.5.2 Permission Audit Export & Role Change Approval` is merged into `main` and is ready for RC tagging and desktop package verification.

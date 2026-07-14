@@ -1,5 +1,28 @@
 # ECOREAN BOC Release Notes
 
+## v0.5.2 RC Desktop Package
+
+- RC tag: `v0.5.2-rc`
+- RC target: `6271159b021e3c4a179ec4cb0e0a582e95480b64`
+- Base official version: `v0.5.1`
+- Official v0.5.1 target preserved: `4961573340280cc19a749d01e05359e97d700d1d`
+- Windows unpacked package build: `PASSED`
+- Actual EXE launch: `PASSED`, 2 runs
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: `NO`
+- Restart persistence / remaining process: `PASSED` / `0`
+- Actual packaged `역할 / 권한` click and layout: `PASSED`
+- Role request, approval Queue, audit export UI: `PASSED`
+- Approval/apply separation, self-approval prevention, approver validation: `PASSED`
+- Apply rollback, replay prevention, permission diff, risk classification: `PASSED`
+- JSON/CSV/print-safe HTML export and redaction: `PASSED`
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- v0.5.2/v0.5.1/v0.5.0 and historical regressions: `PASSED`
+- P0/P1/P2: none
+- Official v0.5.2 tag / GitHub Release / asset: `NOT_CREATED`
+- Final decision: `v0.5.2 RC Desktop Package 검증 완료`
+
 ## v0.5.2 Permission Audit Export & Role Change Approval — Merged to Main
 
 - Source branch: `v0.5.2-audit-export-role-change-approval`

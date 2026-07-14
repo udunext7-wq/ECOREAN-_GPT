@@ -1,5 +1,26 @@
 # Project Master Context
 
+## v0.5.2 RC Desktop Package
+
+- Branch: `main`
+- RC tag target: `6271159b021e3c4a179ec4cb0e0a582e95480b64`
+- Base official version: `v0.5.1`
+- Official v0.5.1 target preserved: `4961573340280cc19a749d01e05359e97d700d1d`
+- Package: Windows unpacked
+- EXE SHA-256: `91AA0B4F6AC7A3958003622B6DCE64C61E918EB5149E58C7A7C4705CC32A128C`
+- app.asar SHA-256: `E7A7E204769D2F4A2F305C0D444DD187AAD349393B90E743E926BF636C9E1534`
+- Actual launch: `PASSED`, 2 runs, no development server required.
+- Restart persistence: `PASSED`; remaining processes: `0`.
+- Actual packaged role/permission center click and layout: `PASSED`.
+- Role change request, approval/apply separation, self-approval and unauthorized-approver prevention: `PASSED`.
+- Apply rollback, replay prevention, permission diff and risk classification: `PASSED`.
+- JSON/CSV/print-safe HTML audit export, filters and redaction: `PASSED`.
+- Customer safety: `PASSED`.
+- External auth/provider: `DISABLED`.
+- P0/P1/P2: none.
+- Official v0.5.2 tag / GitHub Release / asset: not created.
+- Next: v0.5.2 Official Acceptance QA.
+
 ## v0.5.2 Permission Audit Export & Role Change Approval
 
 - Branch: `main`
