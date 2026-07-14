@@ -1,5 +1,27 @@
 # Project Master Context
 
+## v0.5.2 Permission Audit Export & Role Change Approval
+
+- Branch: `main`
+- Source branch: `v0.5.2-audit-export-role-change-approval`
+- Base official version: `v0.5.1`
+- Official v0.5.1 tag target: `4961573340280cc19a749d01e05359e97d700d1d`
+- Implementation commit: `ce88ac3f1fa060ca34fbaf51721096cb1bb38f46`
+- Main merge commit: `7f12c4c711c08bb7e1925abb72ca5175410f7d33`
+- Main merge: completed without conflicts.
+- Role changes require request, authorized approval, and explicit apply.
+- Direct role changes, self-approval, unauthorized approval, unknown roles, stale role claims, duplicate processing, and terminal-state apply are blocked.
+- Permission additions/removals and high-risk changes are classified before approval.
+- Apply failures retain the previous role and record redacted audit events.
+- Permission audit export supports JSON, CSV, and print-safe HTML with operational filters and redaction.
+- Customer safety: `PASSED`.
+- External auth/provider: `DISABLED`.
+- v0.5.2, v0.5.1, v0.5.0, customer safety, and historical regressions: `PASSED`.
+- Electron build, production smoke, release diagnostics, and aggregate release smoke before/after merge: `PASSED`.
+- P0/P1/P2: none.
+- Decision: `MERGE_READY`.
+- Next: create `v0.5.2-rc` on the final merge documentation commit, then verify the RC Desktop Package.
+
 ## v0.5.1 RBAC UX & Audit Viewer Refinement
 
 - Branch: `v0.5.1-rbac-ux-audit-viewer`

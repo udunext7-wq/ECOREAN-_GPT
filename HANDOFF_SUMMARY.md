@@ -1,5 +1,42 @@
 # Handoff Summary
 
+## v0.5.2 Main Merge Handoff
+
+`v0.5.2 Permission Audit Export & Role Change Approval` is merged into `main` and is ready for RC tagging and desktop package verification.
+
+Repository state:
+
+- Source branch: `v0.5.2-audit-export-role-change-approval`
+- Base official version: `v0.5.1`
+- Official v0.5.1 target preserved: `4961573340280cc19a749d01e05359e97d700d1d`
+- Implementation commit: `ce88ac3f1fa060ca34fbaf51721096cb1bb38f46`
+- Merge commit: `7f12c4c711c08bb7e1925abb72ca5175410f7d33`
+- Merge conflict: `NO`
+
+Delivered and verified:
+
+- Role change request states and explicit approval/apply separation: `PASSED`
+- Self-approval and unauthorized approver prevention: `PASSED`
+- Unknown/missing role, stale role claim, direct change, duplicate/replay, and terminal-state guards: `PASSED`
+- Permission additions/removals diff and risk classification: `PASSED`
+- Approve/reject/cancel/expire and approved apply: `PASSED`
+- Apply failure rollback: `PASSED`
+- JSON/CSV/print-safe HTML audit export and filters: `PASSED`
+- Export redaction and Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- v0.5.1/v0.5.0 and historical regressions: `PASSED`
+- Pre/post-merge Electron build and release smoke: `PASSED`
+- Timeout, failed test, and remaining process: none
+- P0/P1/P2: none
+
+Deferred P3:
+
+- External multi-user identity binding and approver identity proof
+- Excel native viewer pixel QA
+- OS print dialog automation
+
+Next: create `v0.5.2-rc` on the final merge documentation commit, verify the RC Desktop Package, and perform Official Acceptance QA before any official tag or GitHub Release.
+
 ## v0.5.1 RBAC UX & Audit Viewer Refinement
 
 - Branch: `v0.5.1-rbac-ux-audit-viewer`

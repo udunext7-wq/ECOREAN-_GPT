@@ -1,5 +1,30 @@
 # ECOREAN BOC Release Notes
 
+## v0.5.2 Permission Audit Export & Role Change Approval — Merged to Main
+
+- Source branch: `v0.5.2-audit-export-role-change-approval`
+- Base official version: `v0.5.1`
+- Official v0.5.1 tag target preserved: `4961573340280cc19a749d01e05359e97d700d1d`
+- Implementation commit: `ce88ac3f1fa060ca34fbaf51721096cb1bb38f46`
+- Merge commit: `7f12c4c711c08bb7e1925abb72ca5175410f7d33`
+- Merge conflict: `NO`
+- Included:
+  - Role change request with explicit approval and apply stages
+  - DRAFT / PENDING / APPROVED / REJECTED / CANCELLED / EXPIRED / APPLIED / FAILED state transitions
+  - Self-approval and unauthorized-approver prevention
+  - Unknown-role, stale-role, duplicate, replay, and terminal-state fail-closed guards
+  - Permission additions/removals diff and high-risk classification
+  - Apply failure rollback to the previous role
+  - JSON / CSV / print-safe HTML permission audit export
+  - Date / event / role / status / risk / decision filters and export redaction
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- v0.5.1/v0.5.0 regression: `PASSED`
+- Build and release smoke before/after merge: `PASSED`
+- Timeout / remaining process: none
+- Findings: P0/P1/P2 none; P3 items documented.
+- Final decision: `v0.5.2 Permission Audit Export & Role Change Approval main 반영 완료, MERGE_READY`
+
 ## v0.5.1 RBAC UX & Audit Viewer — Merged to Main
 
 - Source branch: `v0.5.1-rbac-ux-audit-viewer`

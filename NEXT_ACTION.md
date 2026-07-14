@@ -1,6 +1,34 @@
 # Next Action
 
-## Current Codex Task
+## v0.5.2 Current Codex Task
+
+Verify the `v0.5.2 RC Desktop Package` after the Permission Audit Export & Role Change Approval main merge and RC tag creation.
+
+Current baseline:
+
+- Branch: `main`
+- Base official version: `v0.5.1`
+- Official v0.5.1 target: `4961573340280cc19a749d01e05359e97d700d1d`
+- Implementation commit: `ce88ac3f1fa060ca34fbaf51721096cb1bb38f46`
+- Merge commit: `7f12c4c711c08bb7e1925abb72ca5175410f7d33`
+- Merge decision: `MERGE_READY`
+
+Next steps:
+
+1. Push the final merge documentation commit to `origin/main`.
+2. Create annotated `v0.5.2-rc` on that documentation commit.
+3. Build and verify the v0.5.2 RC Desktop Package.
+4. Run v0.5.2 Official Acceptance QA.
+5. Create the official tag and GitHub Release only after acceptance.
+
+Deferred:
+
+- External multi-user identity binding and approver identity proof
+- Excel native viewer pixel QA
+- OS print dialog automation
+- External authentication strategy
+
+## Previous v0.5.1 Task
 
 Prepare `v0.5.1 RC Desktop Package` after `v0.5.1 RBAC UX & Audit Viewer` main merge and RC tag creation.
 
