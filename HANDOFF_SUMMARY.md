@@ -201,3 +201,29 @@ Acceptance result:
 - P3 deferred: Excel native viewer pixel automation, OS print dialog automation.
 
 Next step: create official annotated tag `v0.5.1`, then publish GitHub Release and asset in a separate step.
+
+## v0.5.2 Audit Export And Role Change Approval Handoff
+
+Implementation is complete on `v0.5.2-audit-export-role-change-approval`, based on official `v0.5.1`.
+
+Delivered:
+
+- Role change requests with DRAFT/PENDING/APPROVED/REJECTED/CANCELLED/EXPIRED/APPLIED/FAILED states.
+- Permission additions/removals diff and dangerous-permission risk classification.
+- Authorized approval, rejection, cancellation, expiration, explicit apply, and failure rollback.
+- Self-approval, unknown role, stale current role, direct renderer role change, duplicate processing, and terminal-state apply prevention.
+- Permission audit export in JSON, CSV, and print-safe HTML with operational filters.
+- Double-pass export redaction and `AUDIT_EXPORT_GENERATED` audit event.
+- Customer payload filtering for role-change, permission-diff, audit, approver, approval status, and risk-level data.
+- External authentication/provider remains `DISABLED`.
+
+Validation:
+
+- v0.5.2 smoke suite: `PASSED`.
+- v0.5.1/v0.5.0 RBAC regressions: `PASSED`.
+- v0.4.6, RC-0.4.4, Real Project Intake, and LightBIM regressions: `PASSED`.
+- Electron build, production smoke, release diagnostics, and aggregate release smoke: `PASSED`.
+- P0/P1/P2: none.
+- Decision: `MERGE_READY`.
+
+Do not merge to main or create a v0.5.2 tag in this implementation step.

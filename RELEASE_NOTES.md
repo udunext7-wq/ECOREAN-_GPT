@@ -2301,3 +2301,23 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
   - Excel native viewer pixel automation
   - OS print dialog automation
 - Final decision: `v0.5.1 ACCEPTED WITH WARNINGS`
+
+# v0.5.2 Permission Audit Export & Role Change Approval Workflow
+
+- Branch: `v0.5.2-audit-export-role-change-approval`
+- Base official version: `v0.5.1`
+- Permission Audit Export: JSON / CSV / print-safe HTML `PASSED`
+- Audit filters and redaction: `PASSED`
+- Role change draft/request/approval/apply workflow: `PASSED`
+- Approval / rejection / cancellation / expiration: `PASSED`
+- Self-approval and unauthorized approval: `BLOCKED`
+- Direct renderer role change: `BLOCKED`
+- Permission diff and dangerous permission classification: `PASSED`
+- Apply failure previous-role preservation: `PASSED`
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- v0.5.1 and v0.5.0 RBAC regressions: `PASSED`
+- Build and release smoke: `PASSED`
+- P0/P1/P2: none
+- P3: external multi-user identity binding, Excel native viewer pixel QA, OS print dialog automation
+- Final decision: `MERGE_READY`

@@ -251,3 +251,18 @@ Do not move `v0.5.1-rc`, official `v0.5.0`, or any existing official tags.
    - OS print dialog automation
 
 Do not create a GitHub Release or upload assets inside the official tag creation step.
+
+## v0.5.2 Next Action
+
+1. Review and stabilize `v0.5.2-audit-export-role-change-approval` without adding external authentication.
+2. Re-run the v0.5.2 approval/export tests and v0.5.1/v0.5.0 RBAC regressions before merge.
+3. Confirm renderer direct role switching remains blocked and only `APPROVED` requests can be applied.
+4. Confirm export redaction blocks raw phone/email/address/memo/token/provider/path/coordinate data.
+5. Merge to `main` and create a v0.5.2 RC tag only in a separate approved step.
+
+Deferred follow-up:
+
+- External multi-user identity binding and approver identity proof
+- Permission audit export retention/signature policy
+- Excel native viewer pixel QA
+- OS print dialog automation

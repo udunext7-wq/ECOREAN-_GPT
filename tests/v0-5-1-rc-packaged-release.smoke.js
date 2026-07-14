@@ -39,13 +39,15 @@ const rcTarget = git(['rev-list', '-n', '1', 'v0.5.1-rc']);
 const officialV050Target = git(['rev-list', '-n', '1', 'v0.5.0']);
 const officialV051Local = git(['tag', '--list', 'v0.5.1']);
 const officialV051Remote = git(['ls-remote', '--tags', 'origin', 'refs/tags/v0.5.1']);
+const officialV051Target = git(['rev-list', '-n', '1', 'v0.5.1']);
 const manifest = readJson('release/V0.5.1-RC/RELEASE_MANIFEST.json');
 
 assert.strictEqual(rcTarget, '12b7f37eae8a9bde2c8a8f91ff4c77c09a50bc51', 'v0.5.1-rc target preserved');
 assert.strictEqual(manifest.rc_tag_target, rcTarget, 'manifest records v0.5.1-rc target');
 assert.strictEqual(officialV050Target, '2ae94a13ba7f3f42450684f33946bc4a1cd0604e', 'official v0.5.0 preserved');
-assert.strictEqual(officialV051Local, '', 'official v0.5.1 tag is not created locally');
-assert.strictEqual(officialV051Remote, '', 'official v0.5.1 tag is not created remotely');
+assert.strictEqual(officialV051Local, 'v0.5.1', 'official v0.5.1 tag exists locally');
+assert.ok(officialV051Remote.includes('refs/tags/v0.5.1'), 'official v0.5.1 tag exists remotely');
+assert.strictEqual(officialV051Target, '4961573340280cc19a749d01e05359e97d700d1d', 'official v0.5.1 acceptance target is preserved');
 
 assert.ok(exists('release/V0.5.1-RC'), 'release directory exists');
 assert.ok(exists('release/V0.5.1-RC/RELEASE_MANIFEST.json'), 'manifest exists');
@@ -55,9 +57,9 @@ assert.ok(exists('release/V0.5.1-RC/RC_PACKAGE_TEST_REPORT.md'), 'test report ex
 assert.strictEqual(manifest.version, 'v0.5.1-rc');
 assert.strictEqual(manifest.rc_tag, 'v0.5.1-rc');
 assert.strictEqual(manifest.official_v0_5_0_tag_target, '2ae94a13ba7f3f42450684f33946bc4a1cd0604e');
-assert.strictEqual(manifest.official_v0_5_1_tag_created, false);
-assert.strictEqual(manifest.github_release_created, false);
-assert.strictEqual(manifest.release_asset_uploaded, false);
+assert.strictEqual(manifest.official_v0_5_1_tag_created, false, 'RC package-time tag state remains historical');
+assert.strictEqual(manifest.github_release_created, false, 'RC package-time release state remains historical');
+assert.strictEqual(manifest.release_asset_uploaded, false, 'RC package-time asset state remains historical');
 
 assert.ok(fs.existsSync(manifest.executable_path), 'packaged EXE exists');
 assert.ok(fs.existsSync(manifest.asar_path), 'packaged app.asar exists');
@@ -95,13 +97,14 @@ const report = read('release/V0.5.1-RC/RC_PACKAGE_TEST_REPORT.md');
 });
 
 const releaseView = gh(['release', 'view', 'v0.5.1']);
-assert.notStrictEqual(releaseView.status, 0, 'GitHub Release v0.5.1 is not created');
+assert.strictEqual(releaseView.status, 0, 'official GitHub Release v0.5.1 remains published');
 
 console.log(JSON.stringify({
   ok: true,
   test: 'v0-5-1-rc-packaged-release',
   rcTarget,
   officialV050Target,
+  officialV051Target,
   exeSize: manifest.executable_size_bytes,
   asarSize: manifest.asar_size_bytes,
   launch: manifest.actual_launch.status,

@@ -2,12 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   evaluatePermission,
   loadPermissionAdminData,
-  setActiveRole,
   type PermissionAdminData,
   type PermissionMatrixRecord,
   type RoleId
 } from '../../services/permission-service/permissionService';
+import { createRoleChangeRequest } from '../../services/permission-service/roleChangeApprovalService';
 import { PermissionAuditViewer } from './PermissionAuditViewer';
+import { PermissionAuditExportPanel } from './PermissionAuditExportPanel';
+import { RoleChangeApprovalQueue } from './RoleChangeApprovalQueue';
+import { RoleChangeRequestPanel } from './RoleChangeRequestPanel';
 import { RoleVisibilityPreview } from './RoleVisibilityPreview';
 
 const permissionGroups = [
@@ -23,6 +26,7 @@ export function UserRolePermissionCenterView() {
   const [messageKo, setMessageKo] = useState('역할과 권한을 불러오는 중입니다.');
   const [permissionSearch, setPermissionSearch] = useState('');
   const [matrixRoleFilter, setMatrixRoleFilter] = useState<RoleId | 'ALL'>('ALL');
+  const [roleRequestRefreshKey, setRoleRequestRefreshKey] = useState(0);
 
   async function refresh() {
     const next = await loadPermissionAdminData();
@@ -45,15 +49,32 @@ export function UserRolePermissionCenterView() {
     }));
   }, [data]);
 
-  async function changeRole(roleId: RoleId) {
+  async function changeRole(roleId: RoleId, reasonKo: string, submit: boolean) {
     const role = data?.roles.find((item) => item.roleId === roleId);
     const confirmed = window.confirm(
-      `${role?.displayNameKo || roleId} 역할로 전환합니다. 로컬 내부 시뮬레이션이며 역할 변경은 감사 로그에 기록됩니다.`
+      `${role?.displayNameKo || roleId} 역할 변경 ${submit ? '승인 요청' : '초안'}을 생성합니다. 승인 전에는 현재 역할이 유지됩니다.`
     );
     if (!confirmed) return;
-    await setActiveRole(roleId);
+    try {
+      const request = await createRoleChangeRequest({
+        requesterId: data?.currentUser.userId,
+        requesterRole: data?.currentUser.roleId,
+        targetUserId: data?.currentUser.userId,
+        currentRole: data?.currentUser.roleId,
+        requestedRole: roleId,
+        reasonKo,
+        submit
+      });
+      setMessageKo(`${request.status} 역할 변경 요청 ${request.requestId}이 생성되었습니다.`);
+      setRoleRequestRefreshKey((value) => value + 1);
+    } catch (error) {
+      setMessageKo(error instanceof Error ? error.message : '역할 변경 요청 생성에 실패했습니다.');
+    }
+  }
+
+  async function handleRoleApplied() {
     await refresh();
-    window.dispatchEvent(new CustomEvent('ecorean:role-changed', { detail: roleId }));
+    window.dispatchEvent(new CustomEvent('ecorean:role-changed', { detail: 'APPROVED_ROLE_APPLIED' }));
   }
 
   async function checkAuditPermission() {
@@ -105,22 +126,18 @@ export function UserRolePermissionCenterView() {
         ))}
       </div>
 
-      <div className="role-control-row">
-        <label>
-          <span>로컬 테스트 역할</span>
-          <select
-            value={data?.currentUser.roleId || 'CEO'}
-            onChange={(event) => changeRole(event.target.value as RoleId)}
-          >
-            {(data?.roles || []).map((role) => (
-              <option key={role.roleId} value={role.roleId}>
-                {role.displayNameKo} ({role.roleId})
-              </option>
-            ))}
-          </select>
-        </label>
-        <button onClick={checkAuditPermission}>감사 권한 확인</button>
-      </div>
+      <RoleChangeRequestPanel data={data} onRequest={changeRole} />
+
+      {data ? (
+        <RoleChangeApprovalQueue
+          currentUser={data.currentUser}
+          refreshKey={roleRequestRefreshKey}
+          onMessage={setMessageKo}
+          onRoleApplied={handleRoleApplied}
+        />
+      ) : null}
+
+      <div className="role-control-row"><button onClick={checkAuditPermission}>감사 권한 확인</button></div>
 
       <p className="small-note">
         외부 로그인과 공개 인증은 비활성화되어 있습니다. 이 화면은 로컬 운영 역할과 권한 경계를 검증합니다.
@@ -190,6 +207,7 @@ export function UserRolePermissionCenterView() {
 
       <RoleVisibilityPreview data={data} />
       <PermissionAuditViewer data={data} onMessage={setMessageKo} />
+      <PermissionAuditExportPanel data={data} onMessage={setMessageKo} />
 
       <div className="estimate-preview-card">
         <h5>Access denied safe reason</h5>

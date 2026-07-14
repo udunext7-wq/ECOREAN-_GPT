@@ -130,10 +130,6 @@ export async function loadPermissionAdminData(): Promise<PermissionAdminData> {
   return fallback;
 }
 
-export async function setActiveRole(roleId: RoleId, reasonKo = '권한 화면에서 로컬 역할 전환') {
-  return window.ecorean?.bocDb?.setActiveRole?.({ roleId, reasonKo }) as Promise<PermissionAdminData['currentUser'] | undefined>;
-}
-
 export async function evaluatePermission(permissionKey: string, roleId?: RoleId) {
   return window.ecorean?.bocDb?.evaluateRolePermission?.({ roleId, permissionKey }) as Promise<{
     allowed: boolean;

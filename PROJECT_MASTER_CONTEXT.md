@@ -171,3 +171,17 @@
 - External auth/provider remains `DISABLED`.
 - P0/P1/P2: none
 - Remaining P3: Excel native viewer pixel automation, OS print dialog automation.
+
+## v0.5.2 Work In Progress
+
+- Branch: `v0.5.2-audit-export-role-change-approval`
+- Base official version: `v0.5.1`
+- Scope: permission audit export and role change approval workflow.
+- Renderer role changes require request, authorized approval, and explicit apply.
+- States: DRAFT, PENDING, APPROVED, REJECTED, CANCELLED, EXPIRED, APPLIED, FAILED.
+- Self-approval, unknown roles, direct role change, duplicate processing, and terminal-state apply are blocked.
+- Apply failures preserve the previous role and create redacted audit events.
+- Audit exports support JSON, CSV, and print-safe HTML with date/event/role/status/risk/decision filters.
+- Customer safety and audit redaction remain enforced.
+- External authentication/provider remains disabled.
+- Implementation decision: `MERGE_READY`.
