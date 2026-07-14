@@ -116,7 +116,9 @@ const ALWAYS_BLOCKED_KEY_PARTS = [
 ];
 const CUSTOMER_PRIVATE_KEY_PARTS = [
   'customer_phone', 'customer_email', 'detailed_address', 'memo', 'raw_phone',
-  'raw_email', 'resident_registration', 'account_number', 'internal_note'
+  'raw_email', 'resident_registration', 'account_number', 'internal_note',
+  'role_change', 'permission_diff', 'permission_audit', 'audit_event',
+  'approval_status', 'risk_level', 'approver', 'requester_id'
 ];
 const INTERNAL_COST_KEY_PARTS = [
   'internal_cost', 'internalcost', 'labor_cost', 'laborcost', 'purchase_cost',
@@ -554,6 +556,14 @@ function createRolePermissionService({ sqliteService, databasePath, auditService
       auditEventFilters: [
         'PERMISSION_DENIED',
         'ACTIVE_ROLE_CHANGED',
+        'ROLE_CHANGE_REQUESTED',
+        'ROLE_CHANGE_APPROVED',
+        'ROLE_CHANGE_REJECTED',
+        'ROLE_CHANGE_CANCELLED',
+        'ROLE_CHANGE_EXPIRED',
+        'ROLE_CHANGE_APPLIED',
+        'ROLE_CHANGE_FAILED',
+        'AUDIT_EXPORT_GENERATED',
         'INTERNAL_COST_ACCESSED',
         'MARGIN_VIEWED',
         'CUSTOMER_OUTPUT_GENERATED',
@@ -566,6 +576,8 @@ function createRolePermissionService({ sqliteService, databasePath, auditService
       ],
       visibilityPreview: getRoleVisibilityPreview(),
       uxVersion: 'v0.5.1-rbac-ux-audit-viewer',
+      roleChangeWorkflow: 'APPROVAL_REQUIRED',
+      auditExportVersion: 'v0.5.2-permission-audit-export',
       externalAuthentication: 'DISABLED',
       securityModel: 'LOCAL_INTERNAL_RBAC'
     }));
@@ -593,5 +605,6 @@ module.exports = {
   PERMISSION_DEFINITIONS,
   ROLE_PERMISSION_MATRIX,
   ROUTE_PERMISSION_MAP,
+  DANGEROUS_PERMISSION_KEYS,
   createRolePermissionService
 };

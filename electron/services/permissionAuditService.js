@@ -6,7 +6,9 @@ const SENSITIVE_KEY_PARTS = [
   'password', 'credential', 'secret', 'token', 'api_key', 'apikey',
   'customer_phone', 'customer_email', 'detailed_address', 'memo',
   'raw_phone', 'raw_email', 'full_address', 'provider_payload', 'providerpayload',
-  'resident_registration', 'account_number'
+  'resident_registration', 'account_number', 'coordinates', 'latitude', 'longitude',
+  'absolute_path', 'file_path', 'filepath', 'db_path', 'database_path', 'runtime_path',
+  'private_staff_contact', 'staff_private_contact'
 ];
 
 function nowIso() {

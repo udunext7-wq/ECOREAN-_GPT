@@ -22,6 +22,8 @@ const { createInternalCalendarService } = require('./services/internalCalendarSe
 const { createSiteSurveyScheduleSyncService } = require('./services/siteSurveyScheduleSyncService');
 const { createPermissionAuditService } = require('./services/permissionAuditService');
 const { createRolePermissionService } = require('./services/rolePermissionService');
+const { createRoleChangeApprovalService } = require('./services/roleChangeApprovalService');
+const { createPermissionAuditExportService } = require('./services/permissionAuditExportService');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -47,6 +49,8 @@ let internalCalendarService;
 let siteSurveyScheduleSyncService;
 let permissionAuditService;
 let rolePermissionService;
+let roleChangeApprovalService;
+let permissionAuditExportService;
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -430,10 +434,24 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:ai-automation:decide', (_event, payload) => sqliteService.decideAIAgentTask(payload));
   ipcMain.handle('boc:permissions:get', () => sqliteService.getPermissionAdminData());
   ipcMain.handle('boc:roles:get', () => rolePermissionService.getRolePermissionCenterData());
-  ipcMain.handle('boc:roles:set-active', (_event, payload = {}) => rolePermissionService.setActiveRole(payload.roleId, payload));
+  ipcMain.handle('boc:roles:set-active', () => {
+    throw new Error('Direct role changes are disabled. Submit an approval request.');
+  });
   ipcMain.handle('boc:roles:evaluate', (_event, payload = {}) => rolePermissionService.evaluatePermission(payload));
   ipcMain.handle('boc:roles:visible-routes', (_event, payload = {}) => rolePermissionService.getVisibleRoutes(payload.roleId));
   ipcMain.handle('boc:roles:audit', (_event, payload = {}) => rolePermissionService.listAuditEvents(payload));
+  ipcMain.handle('boc:role-change:create', (_event, payload = {}) => roleChangeApprovalService.createRoleChangeRequest(payload));
+  ipcMain.handle('boc:role-change:submit', (_event, payload = {}) => roleChangeApprovalService.submitRoleChangeRequest(payload.requestId, payload));
+  ipcMain.handle('boc:role-change:get', (_event, payload = {}) => roleChangeApprovalService.getRoleChangeRequest(payload.requestId));
+  ipcMain.handle('boc:role-change:list', (_event, payload = {}) => roleChangeApprovalService.listRoleChangeRequests(payload));
+  ipcMain.handle('boc:role-change:approve', (_event, payload = {}) => roleChangeApprovalService.approveRoleChangeRequest(payload.requestId, payload));
+  ipcMain.handle('boc:role-change:reject', (_event, payload = {}) => roleChangeApprovalService.rejectRoleChangeRequest(payload.requestId, payload));
+  ipcMain.handle('boc:role-change:cancel', (_event, payload = {}) => roleChangeApprovalService.cancelRoleChangeRequest(payload.requestId, payload));
+  ipcMain.handle('boc:role-change:expire', (_event, payload = {}) => roleChangeApprovalService.expireRoleChangeRequest(payload.requestId, payload));
+  ipcMain.handle('boc:role-change:apply', (_event, payload = {}) => roleChangeApprovalService.applyApprovedRoleChange(payload.requestId, payload));
+  ipcMain.handle('boc:role-change:summary', () => roleChangeApprovalService.getRoleChangeApprovalSummary());
+  ipcMain.handle('boc:permission-audit-export:options', () => permissionAuditExportService.getPermissionAuditExportOptions());
+  ipcMain.handle('boc:permission-audit-export:generate', (_event, payload = {}) => permissionAuditExportService.generatePermissionAuditExport(payload));
   ipcMain.handle('boc:portfolio:get', () => sqliteService.getPortfolioDashboardData());
   ipcMain.handle('boc:crew:get', () => sqliteService.getCrewDashboardData());
   ipcMain.handle('boc:finance:get', () => sqliteService.getCompanyFinanceDashboardData());
@@ -582,6 +600,15 @@ app.whenReady().then(() => {
   });
   permissionAuditService = createPermissionAuditService({ sqliteService });
   rolePermissionService = createRolePermissionService({ sqliteService, auditService: permissionAuditService });
+  roleChangeApprovalService = createRoleChangeApprovalService({
+    sqliteService,
+    rolePermissionService,
+    auditService: permissionAuditService
+  });
+  permissionAuditExportService = createPermissionAuditExportService({
+    sqliteService,
+    auditService: permissionAuditService
+  });
   registerIpcHandlers();
   createWindow();
 
