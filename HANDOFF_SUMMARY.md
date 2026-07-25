@@ -300,3 +300,36 @@ Validation:
 - Decision: `MERGE_READY`.
 
 Do not merge to main or create a v0.5.2 tag in this implementation step.
+
+## v0.5.2 Official Acceptance QA Handoff
+
+`v0.5.2` official acceptance QA completed with decision
+`ACCEPTED_WITH_WARNINGS`.
+
+Verified state:
+
+- Branch: `main`
+- RC tag/target: `v0.5.2-rc` /
+  `6271159b021e3c4a179ec4cb0e0a582e95480b64`
+- RC package docs commit: `af6e829e7e48fb7a549ecc3d2a9d9f9f2222f1ca`
+- Official `v0.5.1` preserved:
+  `4961573340280cc19a749d01e05359e97d700d1d`
+- Package EXE/app.asar integrity: `PASSED`
+- Actual packaged launch: `PASSED`, 2 runs
+- Window title: `ECOREAN BOC CEO Dashboard`
+- Dev server required: `NO`
+- Existing userData file loss: none
+- Packaged role/permission click and layout: `PASSED`
+- Pixel change ratio: `0.5054622715154728`
+- Role-change states, approval/apply separation, rollback, and replay guards: `PASSED`
+- Permission diff/risk classification: `PASSED`
+- Audit JSON/CSV/print-safe HTML export, filters, and redaction: `PASSED`
+- Customer safety: `PASSED`
+- External authentication/provider: `DISABLED`
+- Regression/build/release smoke: `PASSED`
+- P0/P1/P2: none
+- P3: external identity binding, Excel native viewer pixel QA, OS print dialog automation
+- GitHub Release / release asset: `NOT_CREATED`
+
+Next step: verify official annotated tag `v0.5.2`, then publish the GitHub
+Release and ZIP asset in a separate task.

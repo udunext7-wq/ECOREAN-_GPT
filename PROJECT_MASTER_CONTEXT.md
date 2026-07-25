@@ -228,3 +228,22 @@
 - Customer safety and audit redaction remain enforced.
 - External authentication/provider remains disabled.
 - Implementation decision: `MERGE_READY`.
+
+## v0.5.2 Official Acceptance
+
+- Branch: `main`
+- RC tag: `v0.5.2-rc`
+- RC target: `6271159b021e3c4a179ec4cb0e0a582e95480b64`
+- RC package docs commit: `af6e829e7e48fb7a549ecc3d2a9d9f9f2222f1ca`
+- Official `v0.5.1` preserved at `4961573340280cc19a749d01e05359e97d700d1d`.
+- Package integrity and actual two-run launch: `PASSED`
+- Packaged role/permission click, layout, and pixel comparison: `PASSED`
+- Role-change approval/apply separation, rollback, and replay prevention: `PASSED`
+- Permission audit export formats, filters, and redaction: `PASSED`
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- Regression/build/release smoke: `PASSED`
+- P0/P1/P2: none
+- P3: external identity binding, Excel native viewer pixel QA, OS print dialog automation
+- Decision: `ACCEPTED_WITH_WARNINGS`
+- GitHub Release and ZIP asset remain a separate publication step.

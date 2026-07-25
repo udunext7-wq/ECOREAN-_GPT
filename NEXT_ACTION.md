@@ -1,27 +1,24 @@
 # Next Action
 
-## v0.5.2 Official Acceptance QA
+## After v0.5.2 Official Acceptance
 
-The v0.5.2 RC Desktop Package is built and verified from `v0.5.2-rc`.
+The v0.5.2 Acceptance QA decision is `ACCEPTED_WITH_WARNINGS`.
 
 Verified baseline:
 
 - Branch: `main`
+- RC tag: `v0.5.2-rc`
 - RC target: `6271159b021e3c4a179ec4cb0e0a582e95480b64`
-- Base official version: `v0.5.1`
-- Package launch and restart: `PASSED`
-- Role change approval/apply workflow and rollback: `PASSED`
-- Permission audit JSON/CSV/HTML export and redaction: `PASSED`
-- Customer safety: `PASSED`
-- External auth/provider: `DISABLED`
+- RC package docs commit: `af6e829e7e48fb7a549ecc3d2a9d9f9f2222f1ca`
+- Package launch, role-change workflow, audit export, and customer safety: `PASSED`
 - P0/P1/P2: none
 
 Next steps:
 
-1. Run v0.5.2 Official Acceptance QA.
-2. Create official `v0.5.2` annotated tag only after acceptance.
-3. Create the GitHub Release only after the official tag.
-4. Upload a release asset only in the separate release publication step.
+1. Verify the official annotated `v0.5.2` tag points to the Acceptance QA documentation commit.
+2. Publish the official v0.5.2 GitHub Release in a separate step.
+3. Upload the v0.5.2 ZIP asset only during the release publication step.
+4. Review v0.6.0 candidates after release publication.
 
 Deferred:
 
@@ -29,6 +26,8 @@ Deferred:
 - Excel native viewer pixel QA
 - OS print dialog automation
 - External authentication strategy
+
+Do not move `v0.5.1`, `v0.5.2-rc`, or official `v0.5.2` after creation.
 
 ## v0.5.2 Merge Task (Completed)
 

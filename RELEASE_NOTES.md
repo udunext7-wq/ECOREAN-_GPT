@@ -2369,3 +2369,32 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - P0/P1/P2: none
 - P3: external multi-user identity binding, Excel native viewer pixel QA, OS print dialog automation
 - Final decision: `MERGE_READY`
+
+# v0.5.2 Official Acceptance QA
+
+- Acceptance date: `2026-07-26`
+- RC tag: `v0.5.2-rc`
+- RC target: `6271159b021e3c4a179ec4cb0e0a582e95480b64`
+- RC package docs commit: `af6e829e7e48fb7a549ecc3d2a9d9f9f2222f1ca`
+- Official `v0.5.1` preserved at `4961573340280cc19a749d01e05359e97d700d1d`.
+- Package integrity: `PASSED`
+- Actual packaged launch: `PASSED`, 2 runs
+- Window title and no-dev-server operation: `PASSED`
+- userData persistence: `PASSED`, no pre-existing file missing
+- Packaged role/permission click and layout: `PASSED`
+- Pixel change ratio: `0.5054622715154728`
+- Role-change state transitions and rollback: `PASSED`
+- Self-approval, unauthorized approval, duplicate/replay: `BLOCKED`
+- Permission diff and risk classification: `PASSED`
+- Audit JSON/CSV/print-safe HTML export, filters, and redaction: `PASSED`
+- Customer safety: `PASSED`
+- External auth/provider: `DISABLED`
+- Regression/build/release smoke: `PASSED`
+- P0/P1/P2: none
+- P3:
+  - External multi-user identity binding and approver identity proof
+  - Excel native viewer pixel QA
+  - OS print dialog automation
+- Official `v0.5.2` tag: create on this Acceptance QA documentation commit.
+- GitHub Release / release asset: `NOT_CREATED`
+- Final decision: `v0.5.2 ACCEPTED WITH WARNINGS`
