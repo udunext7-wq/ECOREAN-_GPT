@@ -72,7 +72,13 @@ function normalizeEventType(value) {
   return String(value || '').trim().replace(/[- ]/g, '_').toUpperCase();
 }
 
-function createPermissionAuditExportService({ sqliteService, databasePath, auditService } = {}) {
+function createPermissionAuditExportService({
+  sqliteService,
+  databasePath,
+  auditService,
+  rolePermissionService,
+  sessionService
+} = {}) {
   const logsDbPath = databasePath || sqliteService?.dbPaths?.logs;
   if (!logsDbPath) throw new Error('Permission audit export database path is required.');
   const audit = auditService || createPermissionAuditService({ databasePath: logsDbPath });
@@ -82,6 +88,9 @@ function createPermissionAuditExportService({ sqliteService, databasePath, audit
     return {
       auditEventId: redactString(event.auditEventId),
       actorId: redactString(event.actorId),
+      actorIdentityId: redactString(event.actorIdentityId || ''),
+      actorOrganizationId: redactString(event.actorOrganizationId || ''),
+      sessionId: redactString(event.sessionId || ''),
       actorRole: redactString(event.roleId),
       targetRole: redactString(payload.afterRoleId || payload.requestedRole || ''),
       eventType: normalizeEventType(event.eventType),
@@ -150,6 +159,22 @@ function createPermissionAuditExportService({ sqliteService, databasePath, audit
   }
 
   function generatePermissionAuditExport(payload = {}) {
+    let trustedContext = null;
+    if (rolePermissionService?.isIdentityAware?.()) {
+      const session = sessionService?.getCurrentSession?.();
+      if (!session) throw new Error('Missing session is denied for audit export.');
+      const permission = rolePermissionService.evaluateAuthorization({
+        identityId: session.identityId,
+        sessionId: session.sessionId,
+        organizationId: session.organizationId,
+        permissionKey: 'audit.view',
+        resourceType: 'AUDIT_EXPORT',
+        resourceId: 'PERMISSION_AUDIT',
+        auditDecision: false
+      });
+      if (!permission.allowed) throw new Error(`Permission denied for audit export: ${permission.reasonCode}.`);
+      trustedContext = { session, permission };
+    }
     const format = String(payload.format || 'JSON').toUpperCase();
     if (!EXPORT_FORMATS.includes(format)) throw new Error(`Unsupported audit export format: ${format}`);
     const filters = redactExportPayload(payload.filters || {});
@@ -178,8 +203,11 @@ function createPermissionAuditExportService({ sqliteService, databasePath, audit
       externalAuthentication: 'DISABLED'
     };
     audit.recordEvent({
-      actor: payload.actorId || 'LOCAL_USER',
-      roleId: payload.actorRole || 'CEO',
+      actor: trustedContext?.permission.identityId || payload.actorId || 'LOCAL_USER',
+      actorIdentityId: trustedContext?.permission.identityId || '',
+      actorOrganizationId: trustedContext?.permission.organizationId || '',
+      sessionId: trustedContext?.permission.sessionId || '',
+      roleId: trustedContext?.permission.roleId || payload.actorRole || 'CEO',
       eventType: 'AUDIT_EXPORT_GENERATED',
       permissionKey: 'audit.view',
       resourceType: 'AUDIT_EXPORT',

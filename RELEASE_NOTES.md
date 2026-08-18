@@ -2398,3 +2398,24 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Official `v0.5.2` tag: create on this Acceptance QA documentation commit.
 - GitHub Release / release asset: `NOT_CREATED`
 - Final decision: `v0.5.2 ACCEPTED WITH WARNINGS`
+
+# v0.6.0 Identity Core & Authentication Readiness
+
+- Branch: `v0.6.0-identity-auth-architecture`
+- Base official version: `v0.5.2`
+- Identity, Employee, Organization Membership: implemented
+- Session Context with active/expired/revoked/invalid fail-closed policy: implemented
+- GLOBAL / ORGANIZATION / PROJECT / SITE Role Assignment: implemented
+- Identity-aware permission evaluator: implemented
+- Role change requester/target/reviewer/approver/applier Identity binding: implemented
+- Unauthorized apply and cross-Identity legacy role mutation: `BLOCKED`
+- Audit actor Identity, organization, session, and resource context: implemented
+- Deterministic and idempotent v0.5.2 local role migration: implemented
+- Auth Provider Adapter: `DISABLED`, no external calls
+- Local Identity Provider: implemented without credentials or tokens
+- Customer-safe Identity/Session/Assignment metadata filtering: `PASSED`
+- v0.5.2 / v0.5.1 / v0.5.0 and operational regressions: `PASSED`
+- UI build, production smoke, release diagnostics, aggregate release smoke: `PASSED`
+- P0/P1/P2: none
+- Implementation decision: `MERGE_READY`
+- Main merge / v0.6.0 tag / package / release: `NOT_PERFORMED`

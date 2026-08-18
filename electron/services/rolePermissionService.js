@@ -112,7 +112,9 @@ const ROUTE_PERMISSION_MAP = {
 
 const ALWAYS_BLOCKED_KEY_PARTS = [
   'password', 'credential', 'secret', 'token', 'api_key', 'apikey',
-  'private_key', 'hash', 'provider_payload'
+  'private_key', 'hash', 'provider_payload', 'session_id', 'sessionid',
+  'identity_id', 'identityid', 'actor_identity', 'role_assignment',
+  'organization_membership', 'provider_subject'
 ];
 const CUSTOMER_PRIVATE_KEY_PARTS = [
   'customer_phone', 'customer_email', 'detailed_address', 'memo', 'raw_phone',
@@ -223,10 +225,18 @@ function sanitizeObject(value, blockedKeyParts) {
     .map(([key, item]) => [key, sanitizeObject(item, blockedKeyParts)]));
 }
 
-function createRolePermissionService({ sqliteService, databasePath, auditService } = {}) {
+function createRolePermissionService({
+  sqliteService,
+  databasePath,
+  auditService,
+  identityService,
+  sessionService,
+  roleAssignmentService
+} = {}) {
   const logsDbPath = databasePath || sqliteService?.dbPaths?.logs;
   if (!logsDbPath) throw new Error('Role permission database path is required.');
   const audit = auditService || createPermissionAuditService({ databasePath: logsDbPath });
+  const identityAware = Boolean(identityService && sessionService && roleAssignmentService);
 
   function withDb(callback) {
     const database = new DatabaseSync(logsDbPath);
@@ -351,7 +361,126 @@ function createRolePermissionService({ sqliteService, databasePath, auditService
     });
   }
 
-  function evaluatePermission({ roleId, permissionKey, actor = 'LOCAL_USER', resourceType = 'GLOBAL', resourceId = 'GLOBAL', payload = {}, auditDecision = true } = {}) {
+  function auditAuthorization(result, context, auditDecision) {
+    if (!auditDecision) return;
+    audit.recordEvent({
+      actor: result.identityId || context.actor || 'UNKNOWN_IDENTITY',
+      actorIdentityId: result.identityId || '',
+      actorOrganizationId: result.organizationId || '',
+      sessionId: result.sessionId || '',
+      roleId: result.roleId || 'UNKNOWN',
+      eventType: result.allowed ? 'PERMISSION_ALLOWED' : 'PERMISSION_DENIED',
+      permissionKey: result.permissionKey,
+      resourceType: context.resourceType || 'GLOBAL',
+      resourceId: context.resourceId || 'GLOBAL',
+      decision: result.allowed ? 'ALLOWED' : 'DENIED',
+      reasonKo: result.reasonKo,
+      payload: context.payload || {}
+    });
+  }
+
+  function evaluateAuthorization(context = {}) {
+    const permissionKey = String(context.permissionKey || '');
+    if (!ALL_PERMISSIONS.includes(permissionKey)) {
+      const denied = {
+        allowed: false,
+        decision: 'DENY',
+        reasonCode: 'UNKNOWN_PERMISSION',
+        reasonKo: '알 수 없거나 누락된 권한은 차단됩니다.',
+        identityId: '', sessionId: '', organizationId: '', roleId: 'UNKNOWN', permissionKey
+      };
+      auditAuthorization(denied, context, context.auditDecision !== false);
+      return denied;
+    }
+    if (!identityAware) {
+      const legacy = evaluateLegacyPermission(context);
+      return { ...legacy, decision: legacy.allowed ? 'ALLOW' : 'DENY', reasonCode: legacy.allowed ? 'ROLE_PERMISSION_ALLOW' : 'ROLE_PERMISSION_DENY' };
+    }
+
+    const currentSession = context.sessionId
+      ? sessionService.getSession(context.sessionId)
+      : sessionService.getCurrentSession();
+    if (!currentSession) {
+      const denied = {
+        allowed: false, decision: 'DENY', reasonCode: 'MISSING_SESSION',
+        reasonKo: '유효한 세션이 없어 접근이 차단되었습니다.',
+        identityId: '', sessionId: '', organizationId: '', roleId: 'UNKNOWN', permissionKey
+      };
+      auditAuthorization(denied, context, context.auditDecision !== false);
+      return denied;
+    }
+    const validation = sessionService.validateSession(currentSession.sessionId);
+    if (!validation.valid) {
+      const denied = {
+        allowed: false, decision: 'DENY', reasonCode: validation.reasonCode,
+        reasonKo: validation.reasonKo,
+        identityId: validation.session?.identityId || '',
+        sessionId: currentSession.sessionId,
+        organizationId: currentSession.organizationId || '', roleId: 'UNKNOWN', permissionKey
+      };
+      auditAuthorization(denied, context, context.auditDecision !== false);
+      return denied;
+    }
+    const identity = validation.identity;
+    if (context.identityId && context.identityId !== identity.identityId) {
+      const denied = {
+        allowed: false, decision: 'DENY', reasonCode: 'IDENTITY_SESSION_MISMATCH',
+        reasonKo: 'Identity와 세션이 일치하지 않아 접근이 차단되었습니다.',
+        identityId: identity.identityId, sessionId: currentSession.sessionId,
+        organizationId: currentSession.organizationId || '', roleId: 'UNKNOWN', permissionKey
+      };
+      auditAuthorization(denied, context, context.auditDecision !== false);
+      return denied;
+    }
+
+    const scopeContext = {
+      organizationId: context.organizationId || currentSession.organizationId,
+      projectId: context.projectId || '',
+      siteId: context.siteId || '',
+      resourceType: context.resourceType || 'GLOBAL',
+      resourceId: context.resourceId || 'GLOBAL'
+    };
+    const assignmentResult = roleAssignmentService.evaluateAssignments(identity.identityId, scopeContext);
+    const permissionAssignment = assignmentResult.candidates.find(({ assignment }) => (
+      ROLE_DEFINITIONS.some((role) => role.roleId === assignment.roleId)
+      && ROLE_PERMISSION_MATRIX[assignment.roleId]?.includes(permissionKey)
+    ));
+    if (!permissionAssignment) {
+      const firstRole = assignmentResult.candidates[0]?.assignment?.roleId || 'UNKNOWN';
+      const reasonCode = assignmentResult.candidates.length ? 'ROLE_PERMISSION_DENY' : (assignmentResult.rejected[0]?.reasonCode || 'MISSING_ACTIVE_ASSIGNMENT');
+      const denied = {
+        allowed: false, decision: 'DENY', reasonCode,
+        reasonKo: assignmentResult.candidates.length
+          ? `${firstRole} 역할에는 ${permissionKey} 권한이 없습니다.`
+          : '현재 리소스 범위에 유효한 역할 할당이 없습니다.',
+        identityId: identity.identityId, sessionId: currentSession.sessionId,
+        organizationId: scopeContext.organizationId || '', roleId: firstRole, permissionKey
+      };
+      auditAuthorization(denied, context, context.auditDecision !== false);
+      return denied;
+    }
+
+    const roleId = permissionAssignment.assignment.roleId;
+    const approvalRequired = Boolean(context.approvalRequired);
+    const result = {
+      allowed: !approvalRequired,
+      decision: approvalRequired ? 'APPROVAL_REQUIRED' : 'ALLOW',
+      reasonCode: approvalRequired ? 'APPROVAL_REQUIRED' : 'IDENTITY_ROLE_SCOPE_ALLOW',
+      reasonKo: approvalRequired
+        ? `${roleId} 역할 권한은 확인되었으며 추가 승인이 필요합니다.`
+        : `${roleId} 역할과 리소스 범위에서 ${permissionKey} 권한이 확인되었습니다.`,
+      identityId: identity.identityId,
+      sessionId: currentSession.sessionId,
+      organizationId: scopeContext.organizationId || '',
+      roleId,
+      assignmentId: permissionAssignment.assignment.assignmentId,
+      permissionKey
+    };
+    auditAuthorization(result, context, context.auditDecision !== false);
+    return result;
+  }
+
+  function evaluateLegacyPermission({ roleId, permissionKey, actor = 'LOCAL_USER', resourceType = 'GLOBAL', resourceId = 'GLOBAL', payload = {}, auditDecision = true } = {}) {
     const normalizedRoleId = normalizeRoleId(roleId || getCurrentRole().roleId);
     const knownRole = ROLE_DEFINITIONS.some((role) => role.roleId === normalizedRoleId);
     const knownPermission = ALL_PERMISSIONS.includes(String(permissionKey || ''));
@@ -379,6 +508,15 @@ function createRolePermissionService({ sqliteService, databasePath, auditService
       });
     }
     return result;
+  }
+
+  function evaluatePermission(payload = {}) {
+    if (!identityAware) return evaluateLegacyPermission(payload);
+    const result = evaluateAuthorization(payload);
+    return {
+      ...result,
+      decision: result.allowed ? 'ALLOWED' : result.decision === 'APPROVAL_REQUIRED' ? 'APPROVAL_REQUIRED' : 'DENIED'
+    };
   }
 
   function assertPermission(payload = {}) {
@@ -416,6 +554,17 @@ function createRolePermissionService({ sqliteService, databasePath, auditService
     const normalizedRoleId = normalizeRoleId(roleId || getCurrentRole().roleId);
     return Object.entries(ROUTE_PERMISSION_MAP)
       .filter(([, permissionKey]) => ROLE_PERMISSION_MATRIX[normalizedRoleId]?.includes(permissionKey))
+      .map(([route]) => route);
+  }
+
+  function getVisibleRoutesForCurrentContext(context = {}) {
+    if (!identityAware) return getVisibleRoutes(context.roleId);
+    return Object.entries(ROUTE_PERMISSION_MAP)
+      .filter(([, permissionKey]) => evaluateAuthorization({
+        ...context,
+        permissionKey,
+        auditDecision: false
+      }).allowed)
       .map(([route]) => route);
   }
 
@@ -579,7 +728,8 @@ function createRolePermissionService({ sqliteService, databasePath, auditService
       roleChangeWorkflow: 'APPROVAL_REQUIRED',
       auditExportVersion: 'v0.5.2-permission-audit-export',
       externalAuthentication: 'DISABLED',
-      securityModel: 'LOCAL_INTERNAL_RBAC'
+      securityModel: identityAware ? 'IDENTITY_SESSION_SCOPED_RBAC' : 'LOCAL_INTERNAL_RBAC',
+      identityAware
     }));
   }
 
@@ -587,8 +737,10 @@ function createRolePermissionService({ sqliteService, databasePath, auditService
     getCurrentRole,
     setActiveRole,
     evaluatePermission,
+    evaluateAuthorization,
     assertPermission,
     getVisibleRoutes,
+    getVisibleRoutesForCurrentContext,
     sanitizeDataForRole,
     sanitizeOutputForRole,
     getRoleSummaries,
@@ -596,7 +748,8 @@ function createRolePermissionService({ sqliteService, databasePath, auditService
     getSafeAccessDeniedReason,
     getRoleVisibilityPreview,
     getRolePermissionCenterData,
-    listAuditEvents: audit.listEvents
+    listAuditEvents: audit.listEvents,
+    isIdentityAware: () => identityAware
   };
 }
 

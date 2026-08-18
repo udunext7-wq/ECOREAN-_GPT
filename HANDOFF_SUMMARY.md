@@ -333,3 +333,30 @@ Verified state:
 
 Next step: verify official annotated tag `v0.5.2`, then publish the GitHub
 Release and ZIP asset in a separate task.
+
+## v0.6.0 Identity Core Handoff
+
+Implementation is in progress on `v0.6.0-identity-auth-architecture`, based on official `v0.5.2`.
+
+Delivered:
+
+- Provider-neutral Identity, Employee, and Organization Membership records.
+- Local Session Context with expiration, revocation, and disabled-identity checks.
+- GLOBAL, ORGANIZATION, PROJECT, and SITE Role Assignments.
+- Identity-aware fail-closed permission evaluation.
+- Immutable Identity binding for role change request/review/approval/apply.
+- Identity, organization, session, and resource context in permission audit events.
+- Idempotent, non-destructive migration of the v0.5.2 local role.
+- Read-only Identity Summary, Session Status, and Role Assignment UI panels.
+- External authentication remains `DISABLED`; no credentials or tokens are stored.
+
+Validation:
+
+- Eight v0.6.0 Identity/Session/Scope/Audit/Migration/Customer Safety tests: `PASSED`.
+- v0.5.2, v0.5.1, and v0.5.0 RBAC regressions: `PASSED`.
+- Calendar, Real Project Intake, and LightBIM regressions: `PASSED`.
+- UI build, production smoke, release diagnostics, and aggregate release smoke: `PASSED`.
+- P0/P1/P2: none.
+- Decision: `MERGE_READY`.
+
+Next step: review the branch and merge/tag only in a separate approved task.

@@ -397,6 +397,12 @@ declare global {
         getRoleChangeApprovalSummary: () => Promise<Record<string, unknown>>;
         getPermissionAuditExportOptions: () => Promise<Record<string, unknown>>;
         generatePermissionAuditExport: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getIdentitySummary: () => Promise<Record<string, unknown>>;
+        listIdentities: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>[]>;
+        getIdentitySessionSummary: () => Promise<Record<string, unknown>>;
+        getIdentityRoleAssignments: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>[]>;
+        evaluateIdentityAuthorization: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        getAuthProviderStatus: () => Promise<Record<string, unknown>>;
         getPortfolioDashboardData: () => Promise<Record<string, unknown>>;
         getCrewDashboardData: () => Promise<Record<string, unknown>>;
         getCompanyFinanceDashboardData: () => Promise<Record<string, unknown>>;
