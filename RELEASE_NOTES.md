@@ -2439,3 +2439,21 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - Known warnings: Vite bundle size and Node SQLite experimental API
 - Final decision: `v0.6.0 Identity Core & Authentication Readiness main integration MERGE_READY`
 - Next: `v0.6.0 RC Desktop Package`
+
+# v0.6.0 RC Desktop Package
+
+- RC tag/target: `v0.6.0-rc` / `0d25a066e027d2b0ec7fdb58a200a02212e4066d`
+- Windows unpacked package: `PASSED`
+- EXE SHA-256: `E952B620DF29A2205E6BD9912E72422A368035373FC1538AD046F1599561D348`
+- app.asar SHA-256: `49132B5448819264247D51FE5A24A5797CFB74F66917B679684AA8D9CDE1848F`
+- Actual packaged launch, two runs, no dev server: `PASSED`
+- Existing userData preservation and migration idempotency: `PASSED`
+- Identity/Session/RoleAssignment/Organization/Project/Site fail-closed checks: `PASSED`
+- Role Change Identity binding, approver validation, Audit Actor Identity: `PASSED`
+- Packaged Identity UI click/layout/pixel verification: `PASSED`
+- Customer Safety and audit redaction: `PASSED`
+- External authentication/provider: `DISABLED / NOT_IMPLEMENTED`
+- v0.6.0 and v0.5.x regressions, build, release smoke, dist: `PASSED`
+- P0/P1/P2: none
+- Final decision: `v0.6.0 RC Desktop Package 검증 완료`
+- Official `v0.6.0`, GitHub Release, and Windows release ZIP: `NOT_CREATED`

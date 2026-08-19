@@ -380,3 +380,20 @@ The validated Identity Core branch was merged into `main` without conflicts.
 - Decision: `MERGE_READY`
 
 Next: build and verify the `v0.6.0 RC Desktop Package`, then perform official acceptance QA. Official tag, GitHub Release, and Windows asset remain separate later steps.
+
+## v0.6.0 RC Desktop Package Handoff
+
+- RC tag/target remains `v0.6.0-rc` / `0d25a066e027d2b0ec7fdb58a200a02212e4066d`.
+- Fresh Windows package build and `npm run dist`: `PASSED`.
+- EXE SHA-256: `E952B620DF29A2205E6BD9912E72422A368035373FC1538AD046F1599561D348`.
+- app.asar SHA-256: `49132B5448819264247D51FE5A24A5797CFB74F66917B679684AA8D9CDE1848F`.
+- Actual package launch twice, title, graceful close, and no-dev-server operation: `PASSED`.
+- Existing userData file preservation and two-run migration idempotency: `PASSED`.
+- Packaged Identity UI click, layout, pixel change, and safe isolated capture: `PASSED`.
+- Identity/Session/RoleAssignment/scope fail-closed and approver validation: `PASSED`.
+- Audit Actor Identity, audit redaction, and Customer Safety: `PASSED`.
+- External provider: `DISABLED / NOT_IMPLEMENTED`.
+- P0/P1/P2: none.
+- Decision: `v0.6.0 RC Desktop Package 검증 완료`.
+
+Next: `v0.6.0 Official Acceptance QA`, followed separately by the official annotated tag, GitHub Release, Windows ZIP asset, and digest verification.

@@ -326,12 +326,12 @@ Deferred follow-up:
 
 ## v0.6.0 Next Action
 
-NEXT: `v0.6.0 RC Desktop Package`
+NEXT: `v0.6.0 Official Acceptance QA`
 
-1. Build and verify the Windows RC desktop package from the final `v0.6.0-rc` target.
-2. Run `v0.6.0 Official Acceptance QA` against the verified package.
-3. Create official `v0.6.0` only after acceptance passes.
-4. Publish the GitHub Release and Windows asset in a separate approved step.
+1. Run official acceptance against the verified `v0.6.0-rc` Windows package and recorded hashes.
+2. Create official `v0.6.0` annotated tag only after acceptance passes.
+3. Publish the GitHub Release in a separate approved step.
+4. Upload the Windows ZIP asset and verify its digest after the official tag and Release exist.
 
 Deferred architecture:
 

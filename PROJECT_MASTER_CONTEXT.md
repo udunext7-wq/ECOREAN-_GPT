@@ -273,3 +273,16 @@
 - P0/P1/P2: none.
 - Decision: `MERGE_READY`.
 - Next release step: `v0.6.0 RC Desktop Package`.
+
+## v0.6.0 RC Desktop Package
+
+- RC source remains `v0.6.0-rc` at `0d25a066e027d2b0ec7fdb58a200a02212e4066d`.
+- A fresh Windows unpacked package was built and verified on `2026-08-19`.
+- EXE/app.asar integrity, two actual launches, restart persistence, and no-dev-server operation passed.
+- Existing production userData files were preserved; deterministic Identity migration remained idempotent after two launches.
+- Packaged app.asar contains Identity, Session, scoped RoleAssignment, provider adapter, approval Identity binding, audit, and renderer UI implementation.
+- Identity/Session/Assignment/scope fail-closed checks, Customer Safety, and audit redaction passed.
+- External authentication remains `DISABLED / NOT_IMPLEMENTED` with no credential or token storage.
+- P0/P1/P2: none.
+- Decision: `v0.6.0 RC Desktop Package 검증 완료`.
+- Next: `v0.6.0 Official Acceptance QA`.
