@@ -8,6 +8,7 @@ const {
   createRolePermissionService
 } = require('./rolePermissionService');
 const { createPermissionAuditService } = require('./permissionAuditService');
+const { DEFAULT_IDENTITY_ID } = require('./identityService');
 
 const REQUEST_STATUSES = [
   'DRAFT', 'PENDING', 'APPROVED', 'REJECTED',
@@ -45,6 +46,9 @@ function createRoleChangeApprovalService({
   databasePath,
   rolePermissionService,
   auditService,
+  identityService,
+  sessionService,
+  roleAssignmentService,
   clock = () => new Date()
 } = {}) {
   const logsDbPath = databasePath || sqliteService?.dbPaths?.logs;
@@ -54,6 +58,7 @@ function createRoleChangeApprovalService({
     databasePath: logsDbPath,
     auditService: audit
   });
+  const identityAware = Boolean(identityService && sessionService && roleAssignmentService && roles.evaluateAuthorization);
 
   function currentIso() {
     return clock().toISOString();
@@ -106,6 +111,16 @@ function createRoleChangeApprovalService({
         CREATE INDEX IF NOT EXISTS idx_role_change_event_request
           ON role_change_request_events(request_id, created_at DESC);
       `);
+      const requestColumns = new Set(database.prepare('PRAGMA table_info(role_change_requests)').all().map((row) => row.name));
+      [
+        ['requested_by_identity_id', 'TEXT'],
+        ['target_identity_id', 'TEXT'],
+        ['reviewed_by_identity_id', 'TEXT'],
+        ['approved_by_identity_id', 'TEXT'],
+        ['applied_by_identity_id', 'TEXT']
+      ].forEach(([name, type]) => {
+        if (!requestColumns.has(name)) database.exec(`ALTER TABLE role_change_requests ADD COLUMN ${name} ${type}`);
+      });
       return callback(database);
     } finally {
       database.close();
@@ -153,8 +168,10 @@ function createRoleChangeApprovalService({
     return {
       requestId: row.request_id,
       requesterId: row.requester_id,
+      requestedByIdentityId: row.requested_by_identity_id || '',
       requesterRole: row.requester_role,
       targetUserId: row.target_user_id,
+      targetIdentityId: row.target_identity_id || '',
       currentRole: row.current_role,
       requestedRole: row.requested_role,
       reasonKo: row.reason_ko,
@@ -162,6 +179,9 @@ function createRoleChangeApprovalService({
       riskLevel: row.risk_level,
       permissionDiff: parseJson(row.permission_diff_json, {}),
       approvedBy: row.approved_by || '',
+      reviewedByIdentityId: row.reviewed_by_identity_id || '',
+      approvedByIdentityId: row.approved_by_identity_id || '',
+      appliedByIdentityId: row.applied_by_identity_id || '',
       approvedAt: row.approved_at || '',
       rejectedBy: row.rejected_by || '',
       rejectedAt: row.rejected_at || '',
@@ -206,6 +226,9 @@ function createRoleChangeApprovalService({
   function recordAudit(request, eventType, actorId, roleId, decision, noteKo, extra = {}) {
     return audit.recordEvent({
       actor: actorId,
+      actorIdentityId: extra.actorIdentityId || actorId,
+      actorOrganizationId: extra.actorOrganizationId || '',
+      sessionId: extra.sessionId || '',
       roleId,
       eventType,
       permissionKey: 'system.settings.edit',
@@ -226,6 +249,29 @@ function createRoleChangeApprovalService({
     });
   }
 
+  function getTrustedIdentityContext(expectedIdentityId = '') {
+    if (!identityAware) return null;
+    const session = sessionService.getCurrentSession();
+    if (!session) throw new Error('Missing session is denied.');
+    const validation = sessionService.validateSession(session.sessionId);
+    if (!validation.valid) throw new Error(`${validation.reasonCode}: identity action is denied.`);
+    if (expectedIdentityId && expectedIdentityId !== validation.identity.identityId) {
+      throw new Error('Identity and session mismatch is denied.');
+    }
+    const assignmentResult = roleAssignmentService.evaluateAssignments(validation.identity.identityId, {
+      organizationId: session.organizationId
+    });
+    const assignment = assignmentResult.candidates[0]?.assignment;
+    if (!assignment || !isKnownRole(assignment.roleId)) throw new Error('Active known role assignment is required.');
+    return {
+      identity: validation.identity,
+      session,
+      assignment,
+      roleId: assignment.roleId,
+      organizationId: session.organizationId
+    };
+  }
+
   function getRoleChangeRequest(requestId) {
     return withDb((database) => mapRequest(database.prepare(`
       SELECT * FROM role_change_requests WHERE request_id = ?
@@ -239,9 +285,28 @@ function createRoleChangeApprovalService({
   }
 
   function createRoleChangeRequest(payload = {}) {
+    const trusted = getTrustedIdentityContext();
     const currentUser = roles.getCurrentRole();
-    const currentRole = normalizeRoleId(currentUser.roleId);
+    let currentRole = normalizeRoleId(trusted?.roleId || currentUser.roleId);
     const requestedRole = normalizeRoleId(payload.requestedRole);
+    const requesterId = identityAware
+      ? trusted.identity.identityId
+      : String(payload.requesterId || currentUser.userId || '').trim();
+    const targetIdentityId = identityAware
+      ? String(payload.targetIdentityId || trusted.identity.identityId).trim()
+      : '';
+    if (identityAware) {
+      const targetIdentity = identityService.getIdentity(targetIdentityId);
+      if (!targetIdentity || targetIdentity.status !== 'ACTIVE') throw new Error('Active target identity is required.');
+      const targetAssignments = roleAssignmentService.evaluateAssignments(targetIdentityId, {
+        organizationId: trusted.organizationId
+      });
+      const targetAssignment = targetAssignments.candidates[0]?.assignment;
+      if (!targetAssignment || !isKnownRole(targetAssignment.roleId)) {
+        throw new Error('Target identity requires an active known role assignment.');
+      }
+      currentRole = normalizeRoleId(targetAssignment.roleId);
+    }
     if (!isKnownRole(currentRole) || !isKnownRole(requestedRole)) {
       throw new Error('Unknown or missing role is denied.');
     }
@@ -249,13 +314,14 @@ function createRoleChangeApprovalService({
     if (payload.currentRole && normalizeRoleId(payload.currentRole) !== currentRole) {
       throw new Error('Claimed current role does not match the active role.');
     }
-    const requesterId = String(payload.requesterId || currentUser.userId || '').trim();
-    const targetUserId = String(payload.targetUserId || currentUser.userId || '').trim();
+    const targetUserId = identityAware
+      ? targetIdentityId
+      : String(payload.targetUserId || currentUser.userId || '').trim();
     const reasonKo = String(payload.reasonKo || '').trim();
     if (!requesterId || !targetUserId || !reasonKo) {
       throw new Error('Requester, target user, and request reason are required.');
     }
-    if (targetUserId !== currentUser.userId) throw new Error('Unknown target user is denied.');
+    if (!identityAware && targetUserId !== currentUser.userId) throw new Error('Unknown target user is denied.');
 
     const permissionDiff = getPermissionDiff(currentRole, requestedRole);
     const risk = classifyRisk(currentRole, requestedRole, permissionDiff);
@@ -264,7 +330,9 @@ function createRoleChangeApprovalService({
     const expiresAt = payload.expiresAt || new Date(clock().getTime() + 72 * 60 * 60 * 1000).toISOString();
     const request = {
       requestId: payload.requestId || makeId('RCR'), requesterId,
-      requesterRole: normalizeRoleId(payload.requesterRole || currentRole), targetUserId,
+      requestedByIdentityId: identityAware ? requesterId : '',
+      targetIdentityId,
+      requesterRole: normalizeRoleId(payload.requesterRole || trusted?.roleId || currentRole), targetUserId,
       currentRole, requestedRole, reasonKo, status, riskLevel: risk.riskLevel,
       permissionDiff: { ...permissionDiff, riskReasons: risk.reasons }, expiresAt, createdAt
     };
@@ -274,13 +342,15 @@ function createRoleChangeApprovalService({
         INSERT INTO role_change_requests (
           request_id, requester_id, requester_role, target_user_id,
           current_role, requested_role, reason_ko, status, risk_level,
-          permission_diff_json, expires_at, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          permission_diff_json, expires_at, created_at, updated_at,
+          requested_by_identity_id, target_identity_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         request.requestId, request.requesterId, request.requesterRole,
         request.targetUserId, request.currentRole, request.requestedRole,
         request.reasonKo, request.status, request.riskLevel,
-        JSON.stringify(request.permissionDiff), request.expiresAt, createdAt, createdAt
+        JSON.stringify(request.permissionDiff), request.expiresAt, createdAt, createdAt,
+        request.requestedByIdentityId || null, request.targetIdentityId || null
       );
       recordRequestEvent(
         database, request, status === 'DRAFT' ? 'CREATE_DRAFT' : 'SUBMIT',
@@ -291,7 +361,12 @@ function createRoleChangeApprovalService({
     recordAudit(
       saved, status === 'DRAFT' ? 'ROLE_CHANGE_DRAFTED' : 'ROLE_CHANGE_REQUESTED',
       requesterId, request.requesterRole, 'ALLOWED',
-      status === 'DRAFT' ? '역할 변경 요청 초안 저장' : '역할 변경 승인 요청 생성'
+      status === 'DRAFT' ? '역할 변경 요청 초안 저장' : '역할 변경 승인 요청 생성',
+      identityAware ? {
+        actorIdentityId: trusted.identity.identityId,
+        actorOrganizationId: trusted.organizationId,
+        sessionId: trusted.session.sessionId
+      } : {}
     );
     return saved;
   }
@@ -302,8 +377,9 @@ function createRoleChangeApprovalService({
       throw new Error(`Role change request cannot transition from ${request.status} to ${nextStatus}.`);
     }
     if (TERMINAL_STATUSES.has(request.status)) throw new Error('Completed role change request cannot be processed again.');
-    const actorId = String(payload.actorId || 'SYSTEM');
-    const actorRole = normalizeRoleId(payload.actorRole || request.requesterRole || 'UNKNOWN');
+    const trusted = identityAware && payload.actorId !== 'SYSTEM' ? getTrustedIdentityContext(payload.actorIdentityId || '') : null;
+    const actorId = String(trusted?.identity.identityId || payload.actorId || 'SYSTEM');
+    const actorRole = normalizeRoleId(trusted?.roleId || payload.actorRole || request.requesterRole || 'UNKNOWN');
     const noteKo = String(payload.noteKo || payload.reasonKo || '');
     const timestamp = currentIso();
     withDb((database) => {
@@ -322,6 +398,14 @@ function createRoleChangeApprovalService({
         fields.push(`${extras[1]} = ?`);
         values.push(timestamp);
       }
+      if (identityAware && trusted && ['APPROVED', 'REJECTED'].includes(nextStatus)) {
+        fields.push('reviewed_by_identity_id = ?');
+        values.push(trusted.identity.identityId);
+      }
+      if (identityAware && trusted && nextStatus === 'APPROVED') {
+        fields.push('approved_by_identity_id = ?');
+        values.push(trusted.identity.identityId);
+      }
       values.push(request.requestId, request.status);
       const result = database.prepare(`
         UPDATE role_change_requests SET ${fields.join(', ')}
@@ -331,11 +415,22 @@ function createRoleChangeApprovalService({
       recordRequestEvent(database, request, nextStatus, actorId, actorRole, request.status, nextStatus, noteKo);
     });
     const updated = requireRequest(requestId);
-    recordAudit(updated, auditType, actorId, actorRole, decision, noteKo || `${nextStatus} 처리`);
+    recordAudit(updated, auditType, actorId, actorRole, decision, noteKo || `${nextStatus} 처리`, trusted ? {
+      actorIdentityId: trusted.identity.identityId,
+      actorOrganizationId: trusted.organizationId,
+      sessionId: trusted.session.sessionId
+    } : {});
     return updated;
   }
 
   function submitRoleChangeRequest(requestId, payload = {}) {
+    if (identityAware) {
+      const request = requireRequest(requestId);
+      const trusted = getTrustedIdentityContext(payload.actorIdentityId || '');
+      if (request.requestedByIdentityId !== trusted.identity.identityId) {
+        throw new Error('Only the requesting identity can submit this draft.');
+      }
+    }
     return transitionRequest(
       requestId, ['DRAFT'], 'PENDING', payload,
       'ROLE_CHANGE_REQUESTED', 'ALLOWED'
@@ -343,6 +438,25 @@ function createRoleChangeApprovalService({
   }
 
   function assertApprover(request, payload) {
+    if (identityAware) {
+      const trusted = getTrustedIdentityContext(payload.approverIdentityId || payload.actorIdentityId || '');
+      if (trusted.identity.identityId === request.requestedByIdentityId) throw new Error('Self-approval is not allowed.');
+      const permission = roles.evaluateAuthorization({
+        identityId: trusted.identity.identityId,
+        sessionId: trusted.session.sessionId,
+        organizationId: trusted.organizationId,
+        permissionKey: 'system.settings.edit',
+        resourceType: 'ROLE_CHANGE_REQUEST',
+        resourceId: request.requestId,
+        auditDecision: false
+      });
+      if (!permission.allowed) throw new Error('Approver does not have role change approval permission.');
+      return {
+        approverId: trusted.identity.identityId,
+        approverIdentityId: trusted.identity.identityId,
+        approverRole: trusted.roleId
+      };
+    }
     const approverId = String(payload.approverId || payload.actorId || '').trim();
     const approverRole = normalizeRoleId(payload.approverRole || payload.actorRole);
     if (!approverId || !isKnownRole(approverRole)) throw new Error('Known approver and approver role are required.');
@@ -384,16 +498,27 @@ function createRoleChangeApprovalService({
 
   function cancelRoleChangeRequest(requestId, payload = {}) {
     const request = requireRequest(requestId);
-    const actorId = String(payload.actorId || '').trim();
+    const trusted = identityAware ? getTrustedIdentityContext(payload.actorIdentityId || '') : null;
+    const actorId = String(trusted?.identity.identityId || payload.actorId || '').trim();
     if (!actorId) throw new Error('Cancellation actor is required.');
-    const actorRole = normalizeRoleId(payload.actorRole || request.requesterRole);
-    const isRequester = actorId === request.requesterId;
-    const canAdminCancel = roles.evaluatePermission({
-      roleId: actorRole,
-      permissionKey: 'system.settings.edit',
-      actor: actorId,
-      auditDecision: false
-    }).allowed;
+    const actorRole = normalizeRoleId(trusted?.roleId || payload.actorRole || request.requesterRole);
+    const isRequester = actorId === (request.requestedByIdentityId || request.requesterId);
+    const canAdminCancel = identityAware
+      ? roles.evaluateAuthorization({
+        identityId: trusted.identity.identityId,
+        sessionId: trusted.session.sessionId,
+        organizationId: trusted.organizationId,
+        permissionKey: 'system.settings.edit',
+        resourceType: 'ROLE_CHANGE_REQUEST',
+        resourceId: request.requestId,
+        auditDecision: false
+      }).allowed
+      : roles.evaluatePermission({
+        roleId: actorRole,
+        permissionKey: 'system.settings.edit',
+        actor: actorId,
+        auditDecision: false
+      }).allowed;
     if (!isRequester && !canAdminCancel) throw new Error('Only requester or authorized approver can cancel.');
     return transitionRequest(requestId, ['DRAFT', 'PENDING'], 'CANCELLED', {
       actorId, actorRole, noteKo: payload.reasonKo || payload.noteKo || '역할 변경 요청 취소'
@@ -452,44 +577,78 @@ function createRoleChangeApprovalService({
   function applyApprovedRoleChange(requestId, payload = {}) {
     const request = requireRequest(requestId);
     if (request.status !== 'APPROVED') throw new Error(`Only APPROVED requests can be applied; current status is ${request.status}.`);
-    const actorId = String(payload.actorId || request.approvedBy || '').trim();
-    const actorRole = normalizeRoleId(payload.actorRole || 'CEO');
+    const trusted = identityAware ? getTrustedIdentityContext(payload.actorIdentityId || '') : null;
+    const actorId = String(trusted?.identity.identityId || payload.actorId || request.approvedBy || '').trim();
+    const actorRole = normalizeRoleId(trusted?.roleId || payload.actorRole || 'CEO');
     if (!actorId || !isKnownRole(actorRole)) throw new Error('Apply actor and known role are required.');
+    if (identityAware) {
+      const permission = roles.evaluateAuthorization({
+        identityId: trusted.identity.identityId,
+        sessionId: trusted.session.sessionId,
+        organizationId: trusted.organizationId,
+        permissionKey: 'system.settings.edit',
+        resourceType: 'ROLE_CHANGE_REQUEST',
+        resourceId: request.requestId,
+        auditDecision: false
+      });
+      if (!permission.allowed) throw new Error('Apply actor does not have role change apply permission.');
+    }
     const previousRole = roles.getCurrentRole().roleId;
+    const updateLegacyRole = !identityAware || request.targetIdentityId === DEFAULT_IDENTITY_ID;
+    let changedAssignment = null;
     try {
-      if (previousRole !== request.currentRole) throw new Error('Current role changed after request creation; apply is blocked.');
+      if (updateLegacyRole && previousRole !== request.currentRole) throw new Error('Current role changed after request creation; apply is blocked.');
       const safety = verifyCustomerSafetyTransition(request);
       if (!safety.passed) throw new Error('Customer safety transition check failed.');
       if (payload.simulateFailure) throw new Error('Simulated role apply failure.');
-      const changed = roles.setActiveRole(request.requestedRole, {
-        actor: actorId,
-        reasonKo: `승인 요청 ${request.requestId} 적용`
-      });
-      if (changed.roleId !== request.requestedRole) throw new Error('Role apply result did not match requested role.');
+      if (updateLegacyRole) {
+        const changed = roles.setActiveRole(request.requestedRole, {
+          actor: actorId,
+          reasonKo: `승인 요청 ${request.requestId} 적용`
+        });
+        if (changed.roleId !== request.requestedRole) throw new Error('Role apply result did not match requested role.');
+      }
+      if (identityAware) {
+        const targetAssignments = roleAssignmentService.evaluateAssignments(request.targetIdentityId, {
+          organizationId: trusted.organizationId
+        });
+        const targetAssignment = targetAssignments.candidates.find(({ assignment }) => assignment.roleId === request.currentRole)?.assignment;
+        if (!targetAssignment) throw new Error('Target role assignment changed after request creation; apply is blocked.');
+        changedAssignment = roleAssignmentService.updateAssignmentRole(targetAssignment.assignmentId, request.requestedRole);
+      }
 
       const timestamp = currentIso();
       try {
         withDb((database) => {
           const result = database.prepare(`
             UPDATE role_change_requests
-            SET status = 'APPLIED', applied_at = ?, updated_at = ?
+            SET status = 'APPLIED', applied_at = ?, updated_at = ?, applied_by_identity_id = ?
             WHERE request_id = ? AND status = 'APPROVED'
-          `).run(timestamp, timestamp, request.requestId);
+          `).run(timestamp, timestamp, trusted?.identity.identityId || null, request.requestId);
           if (result.changes !== 1) throw new Error('Role change request was already processed.');
           recordRequestEvent(database, request, 'APPLY', actorId, actorRole, 'APPROVED', 'APPLIED', '승인된 역할 변경 적용');
         });
       } catch (error) {
-        roles.setActiveRole(previousRole, { actor: 'SYSTEM_ROLLBACK', reasonKo: `요청 ${request.requestId} 적용 롤백` });
+        if (updateLegacyRole) {
+          roles.setActiveRole(previousRole, { actor: 'SYSTEM_ROLLBACK', reasonKo: `요청 ${request.requestId} 적용 롤백` });
+        }
         throw error;
       }
       const applied = requireRequest(requestId);
       recordAudit(applied, 'ROLE_CHANGE_APPLIED', actorId, actorRole, 'ALLOWED', '승인된 역할 변경 적용', {
         customerSafetyChecked: safety.checked,
-        customerSafetyPassed: safety.passed
+        customerSafetyPassed: safety.passed,
+        assignmentId: changedAssignment?.assignmentId || '',
+        actorIdentityId: trusted?.identity.identityId || '',
+        actorOrganizationId: trusted?.organizationId || '',
+        sessionId: trusted?.session.sessionId || ''
       });
       return applied;
     } catch (error) {
-      if (roles.getCurrentRole().roleId !== previousRole) {
+      if (changedAssignment && changedAssignment.roleId !== request.currentRole) {
+        roleAssignmentService.updateAssignmentRole(changedAssignment.assignmentId, request.currentRole);
+      }
+      if (updateLegacyRole && roles.getCurrentRole().roleId !== previousRole) {
         roles.setActiveRole(previousRole, { actor: 'SYSTEM_ROLLBACK', reasonKo: `요청 ${request.requestId} 실패 롤백` });
       }
       return markApplyFailure(request, actorId || 'SYSTEM', actorRole, error, previousRole);

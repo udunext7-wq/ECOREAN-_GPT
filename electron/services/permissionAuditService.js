@@ -60,6 +60,14 @@ function createPermissionAuditService({ sqliteService, databasePath } = {}) {
         CREATE INDEX IF NOT EXISTS idx_permission_audit_role
           ON permission_audit_events(role_id, decision, created_at DESC);
       `);
+      const columns = new Set(database.prepare('PRAGMA table_info(permission_audit_events)').all().map((row) => row.name));
+      [
+        ['actor_identity_id', 'TEXT'],
+        ['actor_organization_id', 'TEXT'],
+        ['session_id', 'TEXT']
+      ].forEach(([name, type]) => {
+        if (!columns.has(name)) database.exec(`ALTER TABLE permission_audit_events ADD COLUMN ${name} ${type}`);
+      });
       return callback(database);
     } finally {
       database.close();
@@ -70,6 +78,9 @@ function createPermissionAuditService({ sqliteService, databasePath } = {}) {
     const event = {
       auditEventId: payload.auditEventId || makeId('PAUD'),
       actorId: String(payload.actorId || payload.actor || 'LOCAL_USER'),
+      actorIdentityId: String(payload.actorIdentityId || payload.identityId || ''),
+      actorOrganizationId: String(payload.actorOrganizationId || payload.organizationId || ''),
+      sessionId: String(payload.sessionId || ''),
       roleId: String(payload.roleId || 'UNKNOWN'),
       eventType: String(payload.eventType || 'PERMISSION_CHECK'),
       permissionKey: String(payload.permissionKey || ''),
@@ -85,8 +96,9 @@ function createPermissionAuditService({ sqliteService, databasePath } = {}) {
       database.prepare(`
         INSERT INTO permission_audit_events (
           audit_event_id, actor_id, role_id, event_type, permission_key,
-          resource_type, resource_id, decision, reason_ko, payload_json, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          resource_type, resource_id, decision, reason_ko, payload_json, created_at,
+          actor_identity_id, actor_organization_id, session_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         event.auditEventId,
         event.actorId,
@@ -98,7 +110,10 @@ function createPermissionAuditService({ sqliteService, databasePath } = {}) {
         event.decision,
         event.reasonKo,
         JSON.stringify(event.payload),
-        event.createdAt
+        event.createdAt,
+        event.actorIdentityId || null,
+        event.actorOrganizationId || null,
+        event.sessionId || null
       );
     });
 
@@ -135,6 +150,9 @@ function createPermissionAuditService({ sqliteService, databasePath } = {}) {
       `).all(...values).map((row) => ({
         auditEventId: row.audit_event_id,
         actorId: row.actor_id,
+        actorIdentityId: row.actor_identity_id || '',
+        actorOrganizationId: row.actor_organization_id || '',
+        sessionId: row.session_id || '',
         roleId: row.role_id,
         eventType: row.event_type,
         permissionKey: row.permission_key,

@@ -24,6 +24,12 @@ const { createPermissionAuditService } = require('./services/permissionAuditServ
 const { createRolePermissionService } = require('./services/rolePermissionService');
 const { createRoleChangeApprovalService } = require('./services/roleChangeApprovalService');
 const { createPermissionAuditExportService } = require('./services/permissionAuditExportService');
+const { createIdentityService } = require('./services/identityService');
+const { createSessionService } = require('./services/sessionService');
+const { createRoleAssignmentService } = require('./services/roleAssignmentService');
+const { createResourceScopeService } = require('./services/resourceScopeService');
+const { createAuthProviderAdapter } = require('./services/authProviderAdapter');
+const { createLocalIdentityProvider } = require('./services/localIdentityProvider');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -51,6 +57,35 @@ let permissionAuditService;
 let rolePermissionService;
 let roleChangeApprovalService;
 let permissionAuditExportService;
+let identityService;
+let sessionService;
+let roleAssignmentService;
+let resourceScopeService;
+let authProviderAdapter;
+let localIdentityProvider;
+
+function stripClaimedAuthorizationContext(payload = {}) {
+  const {
+    identityId: _identityId,
+    sessionId: _sessionId,
+    organizationId: _organizationId,
+    roleId: _roleId,
+    actor: _actor,
+    actorIdentityId: _actorIdentityId,
+    ...resourceContext
+  } = payload;
+  return resourceContext;
+}
+
+function assertCurrentIdentityPermission(permissionKey) {
+  const result = rolePermissionService.evaluateAuthorization({
+    permissionKey,
+    resourceType: 'IDENTITY_ADMIN',
+    resourceId: 'CURRENT_IDENTITY'
+  });
+  if (!result.allowed) throw new Error(`Permission denied: ${result.reasonCode}.`);
+  return result;
+}
 
 function registerIpcHandlers() {
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
@@ -437,8 +472,8 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:roles:set-active', () => {
     throw new Error('Direct role changes are disabled. Submit an approval request.');
   });
-  ipcMain.handle('boc:roles:evaluate', (_event, payload = {}) => rolePermissionService.evaluatePermission(payload));
-  ipcMain.handle('boc:roles:visible-routes', (_event, payload = {}) => rolePermissionService.getVisibleRoutes(payload.roleId));
+  ipcMain.handle('boc:roles:evaluate', (_event, payload = {}) => rolePermissionService.evaluatePermission(stripClaimedAuthorizationContext(payload)));
+  ipcMain.handle('boc:roles:visible-routes', (_event, payload = {}) => rolePermissionService.getVisibleRoutesForCurrentContext(stripClaimedAuthorizationContext(payload)));
   ipcMain.handle('boc:roles:audit', (_event, payload = {}) => rolePermissionService.listAuditEvents(payload));
   ipcMain.handle('boc:role-change:create', (_event, payload = {}) => roleChangeApprovalService.createRoleChangeRequest(payload));
   ipcMain.handle('boc:role-change:submit', (_event, payload = {}) => roleChangeApprovalService.submitRoleChangeRequest(payload.requestId, payload));
@@ -452,6 +487,29 @@ function registerIpcHandlers() {
   ipcMain.handle('boc:role-change:summary', () => roleChangeApprovalService.getRoleChangeApprovalSummary());
   ipcMain.handle('boc:permission-audit-export:options', () => permissionAuditExportService.getPermissionAuditExportOptions());
   ipcMain.handle('boc:permission-audit-export:generate', (_event, payload = {}) => permissionAuditExportService.generatePermissionAuditExport(payload));
+  ipcMain.handle('boc:identity:summary', () => {
+    const permission = assertCurrentIdentityPermission('system.settings.view');
+    return identityService.getIdentitySummary(permission.identityId);
+  });
+  ipcMain.handle('boc:identity:list', (_event, payload = {}) => {
+    assertCurrentIdentityPermission('system.settings.view');
+    return identityService.listIdentities(payload);
+  });
+  ipcMain.handle('boc:identity:session-summary', () => {
+    assertCurrentIdentityPermission('system.settings.view');
+    return sessionService.getSessionSummary();
+  });
+  ipcMain.handle('boc:identity:assignments', () => {
+    assertCurrentIdentityPermission('system.settings.view');
+    const context = localIdentityProvider.getCurrentContext();
+    const identityId = context.identity?.identityId || '';
+    return roleAssignmentService.listRoleAssignments(identityId);
+  });
+  ipcMain.handle('boc:identity:authorize', (_event, payload = {}) => rolePermissionService.evaluateAuthorization(stripClaimedAuthorizationContext(payload)));
+  ipcMain.handle('boc:identity:provider-status', () => ({
+    local: localIdentityProvider.getProviderStatus(),
+    external: authProviderAdapter.getProviderStatus()
+  }));
   ipcMain.handle('boc:portfolio:get', () => sqliteService.getPortfolioDashboardData());
   ipcMain.handle('boc:crew:get', () => sqliteService.getCrewDashboardData());
   ipcMain.handle('boc:finance:get', () => sqliteService.getCompanyFinanceDashboardData());
@@ -598,16 +656,44 @@ app.whenReady().then(() => {
     sqliteService,
     internalCalendarService
   });
+  identityService = createIdentityService({ sqliteService });
+  resourceScopeService = createResourceScopeService();
+  sessionService = createSessionService({ sqliteService, identityService });
+  identityService.setSessionService(sessionService);
+  roleAssignmentService = createRoleAssignmentService({
+    sqliteService,
+    identityService,
+    resourceScopeService
+  });
   permissionAuditService = createPermissionAuditService({ sqliteService });
-  rolePermissionService = createRolePermissionService({ sqliteService, auditService: permissionAuditService });
+  rolePermissionService = createRolePermissionService({
+    sqliteService,
+    auditService: permissionAuditService,
+    identityService,
+    sessionService,
+    roleAssignmentService
+  });
+  authProviderAdapter = createAuthProviderAdapter();
+  localIdentityProvider = createLocalIdentityProvider({ identityService, sessionService });
+  localIdentityProvider.initialize();
+  identityService.migrateLegacyLocalRole({
+    rolePermissionService,
+    roleAssignmentService,
+    sessionService
+  });
   roleChangeApprovalService = createRoleChangeApprovalService({
     sqliteService,
     rolePermissionService,
-    auditService: permissionAuditService
+    auditService: permissionAuditService,
+    identityService,
+    sessionService,
+    roleAssignmentService
   });
   permissionAuditExportService = createPermissionAuditExportService({
     sqliteService,
-    auditService: permissionAuditService
+    auditService: permissionAuditService,
+    rolePermissionService,
+    sessionService
   });
   registerIpcHandlers();
   createWindow();

@@ -247,3 +247,14 @@
 - P3: external identity binding, Excel native viewer pixel QA, OS print dialog automation
 - Decision: `ACCEPTED_WITH_WARNINGS`
 - GitHub Release and ZIP asset remain a separate publication step.
+
+## v0.6.0 Identity Core Work In Progress
+
+- Branch: `v0.6.0-identity-auth-architecture`
+- Base: official `v0.5.2`
+- Scope: provider-neutral Identity, Session Context, scoped Role Assignment, identity-bound approvals, and audit actor identity.
+- Existing seven roles and 28 permissions remain the policy source.
+- Authorization now supports organization/project/site scope and defaults to deny for invalid identity/session/assignment context.
+- Existing local user is migrated with deterministic IDs without deleting legacy records.
+- External authentication, SSO, OAuth/OIDC, JWT, credentials, and token storage remain out of scope and `DISABLED`.
+- Main merge, tags, desktop packaging, and GitHub Release are not part of this implementation step.

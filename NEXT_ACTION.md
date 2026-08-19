@@ -323,3 +323,13 @@ Deferred follow-up:
 - Permission audit export retention/signature policy
 - Excel native viewer pixel QA
 - OS print dialog automation
+
+## v0.6.0 Next Action
+
+1. Complete the full v0.6.0 and v0.5.x regression suite.
+2. Confirm Identity, Session, Role Assignment, project scope, role-change binding, audit identity, migration, and customer safety tests pass.
+3. Run `build:ui`, `smoke:prod`, `smoke:release:diagnose`, and `smoke:release` from `electron`.
+4. Confirm runtime databases, userData, backups, exports, generated artifacts, release assets, EXE, and app.asar are not staged.
+5. Commit and push only to `v0.6.0-identity-auth-architecture`.
+
+Do not merge to main, create a v0.6.0 tag, enable an external authentication provider, or create a release in this step.

@@ -12,6 +12,7 @@ import { PermissionAuditExportPanel } from './PermissionAuditExportPanel';
 import { RoleChangeApprovalQueue } from './RoleChangeApprovalQueue';
 import { RoleChangeRequestPanel } from './RoleChangeRequestPanel';
 import { RoleVisibilityPreview } from './RoleVisibilityPreview';
+import { IdentityAccessSummaryPanel } from './IdentityAccessSummaryPanel';
 
 const permissionGroups = [
   { label: '프로젝트', prefix: ['dashboard.', 'project.', 'crm.'] },
@@ -110,6 +111,8 @@ export function UserRolePermissionCenterView() {
         <strong>{data?.currentUser.roleId || 'UNKNOWN'}</strong>
         <p>{messageKo}</p>
       </div>
+
+      <IdentityAccessSummaryPanel />
 
       <div className="permission-summary-grid">
         {(data?.roleSummaries || []).map((summary) => (
