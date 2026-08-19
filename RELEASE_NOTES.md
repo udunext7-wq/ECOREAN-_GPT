@@ -2418,4 +2418,24 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - UI build, production smoke, release diagnostics, aggregate release smoke: `PASSED`
 - P0/P1/P2: none
 - Implementation decision: `MERGE_READY`
-- Main merge / v0.6.0 tag / package / release: `NOT_PERFORMED`
+- Implementation-stage main merge / v0.6.0 tag / package / release: `NOT_PERFORMED`
+
+# v0.6.0 Identity Core & Authentication Readiness - Merged to Main
+
+- Source branch: `v0.6.0-identity-auth-architecture`
+- Implementation commit: `743eb51e48b216efa0addc1fbc27b4e98105c611`
+- Merge commit: `bab29ee4c68dc7881a32680d7483d619ac5eb42a`
+- Merge conflicts: `NONE`
+- Identity, SessionContext, RoleAssignment, ResourceScope, and AuthorizationContext: `PASSED`
+- Identity/session/assignment invalid-state and scope mismatch fail-closed checks: `PASSED`
+- Role Change Identity binding and approver validation: `PASSED`
+- Audit actor Identity and redaction: `PASSED`
+- Idempotent, non-destructive v0.5.2 migration: `PASSED`
+- Customer Safety: `PASSED`
+- External authentication/provider: `DISABLED / NOT_IMPLEMENTED`
+- v0.5.2 / v0.5.1 / v0.5.0 and operational regressions: `PASSED`
+- UI build, production smoke, release diagnostics, aggregate release smoke: `PASSED`
+- P0/P1/P2: none
+- Known warnings: Vite bundle size and Node SQLite experimental API
+- Final decision: `v0.6.0 Identity Core & Authentication Readiness main integration MERGE_READY`
+- Next: `v0.6.0 RC Desktop Package`

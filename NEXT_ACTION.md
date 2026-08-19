@@ -326,10 +326,20 @@ Deferred follow-up:
 
 ## v0.6.0 Next Action
 
-1. Complete the full v0.6.0 and v0.5.x regression suite.
-2. Confirm Identity, Session, Role Assignment, project scope, role-change binding, audit identity, migration, and customer safety tests pass.
-3. Run `build:ui`, `smoke:prod`, `smoke:release:diagnose`, and `smoke:release` from `electron`.
-4. Confirm runtime databases, userData, backups, exports, generated artifacts, release assets, EXE, and app.asar are not staged.
-5. Commit and push only to `v0.6.0-identity-auth-architecture`.
+NEXT: `v0.6.0 RC Desktop Package`
 
-Do not merge to main, create a v0.6.0 tag, enable an external authentication provider, or create a release in this step.
+1. Build and verify the Windows RC desktop package from the final `v0.6.0-rc` target.
+2. Run `v0.6.0 Official Acceptance QA` against the verified package.
+3. Create official `v0.6.0` only after acceptance passes.
+4. Publish the GitHub Release and Windows asset in a separate approved step.
+
+Deferred architecture:
+
+- Real external Identity provider
+- OAuth/OIDC
+- Supabase/Google/Microsoft/Kakao provider selection
+- External multi-user synchronization
+- Excel native viewer pixel QA
+- OS print dialog automation
+
+Do not enable external authentication, move existing tags, or create an official tag/release before packaged acceptance.

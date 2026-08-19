@@ -248,7 +248,7 @@
 - Decision: `ACCEPTED_WITH_WARNINGS`
 - GitHub Release and ZIP asset remain a separate publication step.
 
-## v0.6.0 Identity Core Work In Progress
+## v0.6.0 Identity Core Implementation Branch
 
 - Branch: `v0.6.0-identity-auth-architecture`
 - Base: official `v0.5.2`
@@ -257,4 +257,19 @@
 - Authorization now supports organization/project/site scope and defaults to deny for invalid identity/session/assignment context.
 - Existing local user is migrated with deterministic IDs without deleting legacy records.
 - External authentication, SSO, OAuth/OIDC, JWT, credentials, and token storage remain out of scope and `DISABLED`.
-- Main merge, tags, desktop packaging, and GitHub Release are not part of this implementation step.
+- At the implementation stage, main merge, tags, desktop packaging, and GitHub Release were not performed.
+
+## v0.6.0 Identity Core Main Integration
+
+- Source branch: `v0.6.0-identity-auth-architecture`
+- Implementation commit: `743eb51e48b216efa0addc1fbc27b4e98105c611`
+- Merge commit: `bab29ee4c68dc7881a32680d7483d619ac5eb42a`
+- Official base `v0.5.2` remains at `d301f0b87e1ad2122d2bb7fa56cfbaa324af58bb`.
+- Identity, SessionContext, scoped RoleAssignment, provider-neutral adapter, LocalIdentityProvider, approval Identity binding, and audit actor Identity are integrated into `main`.
+- Invalid Identity, Session, Assignment, and scope conditions remain fail-closed.
+- The v0.5.2 local role migration is deterministic, idempotent, and non-destructive.
+- External authentication and provider calls remain `DISABLED / NOT_IMPLEMENTED`; no credentials or tokens are stored.
+- Customer Safety and all requested v0.6.0, v0.5.x, and operational regressions passed.
+- P0/P1/P2: none.
+- Decision: `MERGE_READY`.
+- Next release step: `v0.6.0 RC Desktop Package`.

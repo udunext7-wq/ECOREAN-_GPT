@@ -336,7 +336,7 @@ Release and ZIP asset in a separate task.
 
 ## v0.6.0 Identity Core Handoff
 
-Implementation is in progress on `v0.6.0-identity-auth-architecture`, based on official `v0.5.2`.
+Implementation was completed on `v0.6.0-identity-auth-architecture`, based on official `v0.5.2`.
 
 Delivered:
 
@@ -359,4 +359,24 @@ Validation:
 - P0/P1/P2: none.
 - Decision: `MERGE_READY`.
 
-Next step: review the branch and merge/tag only in a separate approved task.
+This implementation-stage handoff is superseded by the main integration handoff below.
+
+## v0.6.0 Identity Core Main Integration Handoff
+
+The validated Identity Core branch was merged into `main` without conflicts.
+
+- Source branch: `v0.6.0-identity-auth-architecture`
+- Implementation commit: `743eb51e48b216efa0addc1fbc27b4e98105c611`
+- Merge commit: `bab29ee4c68dc7881a32680d7483d619ac5eb42a`
+- Official `v0.5.2` preserved at `d301f0b87e1ad2122d2bb7fa56cfbaa324af58bb`
+- Identity status, Session status, RoleAssignment status, and organization/project/site scope checks: fail-closed `PASSED`
+- Self-approval, disabled approver, and unauthorized approver/apply: `BLOCKED`
+- LocalIdentityProvider migration restore and idempotency: `PASSED`
+- Audit actor Identity, audit redaction, and Customer Safety: `PASSED`
+- External authentication/provider: `DISABLED / NOT_IMPLEMENTED`
+- v0.6.0, v0.5.2, v0.5.1, v0.5.0, and operational regressions: `PASSED`
+- UI build, production smoke, release diagnostics, and aggregate release smoke: `PASSED`
+- P0/P1/P2: none
+- Decision: `MERGE_READY`
+
+Next: build and verify the `v0.6.0 RC Desktop Package`, then perform official acceptance QA. Official tag, GitHub Release, and Windows asset remain separate later steps.
