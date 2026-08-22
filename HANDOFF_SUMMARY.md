@@ -397,3 +397,32 @@ Next: build and verify the `v0.6.0 RC Desktop Package`, then perform official ac
 - Decision: `v0.6.0 RC Desktop Package 검증 완료`.
 
 Next: `v0.6.0 Official Acceptance QA`, followed separately by the official annotated tag, GitHub Release, Windows ZIP asset, and digest verification.
+
+## v0.6.0 Official Acceptance QA Handoff
+
+`v0.6.0` official Acceptance QA completed with decision
+`ACCEPTED_WITH_WARNINGS`.
+
+- Branch: `main`
+- RC tag/target: `v0.6.0-rc` / `0d25a066e027d2b0ec7fdb58a200a02212e4066d`
+- Package docs commit: `745de39d3b2694ea05ae09e1b8da361acaebd5f3`
+- Official `v0.5.2` preserved at `d301f0b87e1ad2122d2bb7fa56cfbaa324af58bb`
+- EXE/app.asar integrity: `PASSED`
+- Actual packaged launch: `PASSED`, 2 runs, title correct, no dev server
+- Stable userData preservation: `346 / 346`, missing `0`
+- Migration/idempotency and local Identity/Session/RoleAssignment restore: `PASSED`
+- Identity, Session, Assignment, and organization/project/site scope fail-closed: `PASSED`
+- Role Change Identity binding and approver validation: `PASSED`
+- Audit Actor Identity and audit redaction: `PASSED`
+- Packaged Identity UI/layout/pixel verification: `PASSED`
+- Customer Safety: `PASSED`
+- External provider: `DISABLED / NOT_IMPLEMENTED`
+- Regression, build, production smoke, diagnostics, and release smoke: `PASSED`
+- P0/P1/P2: none
+- P3: external provider/OAuth, external multi-user sync, Excel native viewer
+  pixel QA, and OS print dialog automation
+- GitHub Release / Windows asset: `NOT_CREATED`
+
+Next: create and verify the official annotated `v0.6.0` tag on the Acceptance
+documentation commit, then publish the GitHub Release and Windows ZIP in a
+separate task.

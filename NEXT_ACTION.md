@@ -343,3 +343,28 @@ Deferred architecture:
 - OS print dialog automation
 
 Do not enable external authentication, move existing tags, or create an official tag/release before packaged acceptance.
+
+## After v0.6.0 Official Acceptance
+
+NEXT: `Publish v0.6.0 GitHub Release and Windows Asset`
+
+Prerequisite: the official annotated `v0.6.0` tag must exist on the Acceptance
+documentation commit and be verified on origin.
+
+1. Create the GitHub Release from the immutable official `v0.6.0` tag.
+2. Build no new source during publication; package the already accepted Windows
+   `win-unpacked` output as the release ZIP.
+3. Compute and verify ZIP, EXE, and app.asar SHA-256 digests.
+4. Upload the Windows ZIP asset and verify its remote size and digest.
+5. Preserve `v0.6.0-rc`, official `v0.5.2`, and the accepted package hashes.
+
+Deferred:
+
+- External authentication provider
+- OAuth/OIDC
+- External multi-user synchronization
+- Excel native viewer pixel QA
+- OS print dialog automation
+
+Do not create or replace the GitHub Release or asset before official tag
+verification. Do not move existing tags or rebuild the accepted package.

@@ -286,3 +286,24 @@
 - P0/P1/P2: none.
 - Decision: `v0.6.0 RC Desktop Package 검증 완료`.
 - Next: `v0.6.0 Official Acceptance QA`.
+
+## v0.6.0 Official Acceptance
+
+- Acceptance date: `2026-08-23`
+- RC tag/target remains `v0.6.0-rc` / `0d25a066e027d2b0ec7fdb58a200a02212e4066d`.
+- Package docs commit: `745de39d3b2694ea05ae09e1b8da361acaebd5f3`.
+- Official `v0.5.2` remains at `d301f0b87e1ad2122d2bb7fa56cfbaa324af58bb`.
+- Package integrity and two actual visible launches passed without a dev server.
+- Stable production userData remained `346 / 346` with no missing path.
+- Identity migration is deterministic and idempotent; the production Identity,
+  RoleAssignment, membership, schema version, and local Session each remain unique.
+- Identity, Session, RoleAssignment, organization/project/site scope, and evaluator
+  error conditions remain fail-closed.
+- Role Change Identity binding, approver validation, Audit Actor Identity, audit
+  redaction, packaged Identity UI, and Customer Safety passed.
+- External authentication remains `DISABLED / NOT_IMPLEMENTED`; no credential or
+  token storage was added.
+- P0/P1/P2: none.
+- Decision: `ACCEPTED_WITH_WARNINGS`.
+- Next: publish the `v0.6.0` GitHub Release and Windows asset only after the
+  official annotated tag is created and verified.

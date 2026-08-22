@@ -2457,3 +2457,27 @@ BOC core release hardening for crash-proof startup, stable schemas, contract/pay
 - P0/P1/P2: none
 - Final decision: `v0.6.0 RC Desktop Package 검증 완료`
 - Official `v0.6.0`, GitHub Release, and Windows release ZIP: `NOT_CREATED`
+
+# v0.6.0 Official Acceptance QA
+
+- Acceptance date: `2026-08-23`
+- RC tag/target: `v0.6.0-rc` / `0d25a066e027d2b0ec7fdb58a200a02212e4066d`
+- Package docs commit: `745de39d3b2694ea05ae09e1b8da361acaebd5f3`
+- Official `v0.5.2` preserved at `d301f0b87e1ad2122d2bb7fa56cfbaa324af58bb`.
+- EXE/app.asar size and SHA-256 integrity: `PASSED`
+- Actual packaged launch: `PASSED`, 2 visible runs, no dev server
+- Stable production userData comparison: `346 / 346`, missing `0`
+- Deterministic Identity migration and idempotency: `PASSED`
+- Identity/Session/RoleAssignment and organization/project/site fail-closed: `PASSED`
+- Role Change Identity binding, self-approval prevention, approver validation: `PASSED`
+- Audit Actor Identity and redaction: `PASSED`
+- Packaged Identity UI click, layout, and pixel comparison: `PASSED`
+- Pixel change ratio: `0.5478377741446099`
+- Customer Safety: `PASSED`
+- External authentication/provider: `DISABLED / NOT_IMPLEMENTED`
+- v0.6.0, v0.5.2, v0.5.1, v0.5.0, and operational regressions: `PASSED`
+- Build, production smoke, release diagnostics, and aggregate release smoke: `PASSED`
+- P0/P1/P2: none
+- P3: external provider/OAuth, external multi-user sync, Excel native viewer pixel QA, OS print dialog automation
+- GitHub Release / Windows ZIP asset: `NOT_CREATED`
+- Final decision: `v0.6.0 ACCEPTED WITH WARNINGS`
