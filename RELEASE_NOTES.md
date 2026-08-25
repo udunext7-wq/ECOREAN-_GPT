@@ -2,6 +2,9 @@
 
 ## v0.6.1 Supabase Authentication & Multi-user Identity Binding
 
+- Live QA configuration check (2026-08-25): `NOT_CONFIGURED`; production environment was not used.
+- Provider network/initialization/restore/sign-out exception fail-closed stabilization: `PASSED_SYNTHETIC`.
+- Live QA decision remains `CONDITIONAL_MERGE_READY`; no unexecuted Live E2E item was marked passed.
 - Branch: `v0.6.1-supabase-auth-multi-user-binding`
 - Base official tag: `v0.6.0` at `c54cc338a0b38f57bd229cd5635c84980fb6e62b`
 - Default auth mode: `LOCAL`, v0.6.0 behavior preserved.

@@ -42,6 +42,16 @@
 - production dependency audit: `0 vulnerabilities`
 - `LIVE_SUPABASE_AUTH = NOT_RUN_NOT_CONFIGURED`
 
+## Live QA 준비 검증 (2026-08-25)
+
+- QA Supabase URL/publishable key/synthetic users: `NOT_CONFIGURED`
+- Production Supabase 사용: `NO`
+- provider network/initialization/restore/sign-out exception fail-closed: `PASSED_SYNTHETIC`
+- provider 오류 시 ECOREAN session cleanup 및 business IPC deny: `PASSED_SYNTHETIC`
+- synthetic secret marker leakage: `ABSENT`
+- 추가 회귀와 build/release smoke: `PASSED`
+- 상세: `docs/V0_6_1_LIVE_SUPABASE_AUTH_QA.md`
+
 ## 보안 결론
 
 - 비밀번호와 token은 renderer, SQLite, audit, 문서에 저장하지 않는다.
@@ -53,7 +63,7 @@
 
 `CONDITIONAL_MERGE_READY`
 
-P0/P1/P2 기능 결함은 현재 focused 검증에서 발견되지 않았다. 실제 Supabase 프로젝트 설정이 없으므로 live sign-in, token refresh, restart restore, network failure recovery는 `NOT_RUN_NOT_CONFIGURED`로 남는다.
+P0/P1은 발견되지 않았다. provider exception cleanup 경계의 P2 1건은 안정화 수정 후 합성 회귀를 통과했다. 실제 Supabase 프로젝트 설정이 없으므로 live sign-in, token refresh, restart restore, network failure recovery는 `NOT_RUN_NOT_CONFIGURED`로 남는다.
 
 ## Deferred P3
 

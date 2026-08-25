@@ -90,33 +90,40 @@ function createSupabaseAuthProvider({ createClient, storage, config = {}, clock 
       return getProviderStatus();
     }
     if (!client) {
-      client = createClient(url, publishableKey, {
-        auth: {
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: false,
-          storage
-        }
-      });
-      const result = client.auth.onAuthStateChange((event, session) => {
-        Promise.resolve().then(async () => {
-          if (event === 'SIGNED_OUT' || !session) {
-            currentPrincipal = null;
-            emit('SIGNED_OUT', null);
-            return;
-          }
-          try {
-            currentPrincipal = await verifySession(session);
-            lastError = null;
-            emit(event, currentPrincipal);
-          } catch (error) {
-            currentPrincipal = null;
-            lastError = normalizeError(error);
-            emit('AUTH_ERROR', null);
+      try {
+        client = createClient(url, publishableKey, {
+          auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: false,
+            storage
           }
         });
-      });
-      subscription = result?.data?.subscription || null;
+        const result = client.auth.onAuthStateChange((event, session) => {
+          Promise.resolve().then(async () => {
+            if (event === 'SIGNED_OUT' || !session) {
+              currentPrincipal = null;
+              emit('SIGNED_OUT', null);
+              return;
+            }
+            try {
+              currentPrincipal = await verifySession(session);
+              lastError = null;
+              emit(event, currentPrincipal);
+            } catch (error) {
+              currentPrincipal = null;
+              lastError = normalizeError(error);
+              emit('AUTH_ERROR', null);
+            }
+          });
+        });
+        subscription = result?.data?.subscription || null;
+      } catch (error) {
+        client = null;
+        currentPrincipal = null;
+        lastError = normalizeError(error, 'PROVIDER_INITIALIZATION_FAILED');
+        emit('AUTH_ERROR', null);
+      }
     }
     return getProviderStatus();
   }

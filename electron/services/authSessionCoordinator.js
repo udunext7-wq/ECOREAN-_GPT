@@ -2,6 +2,13 @@
 
 const { DEFAULT_ORGANIZATION_ID } = require('./identityService');
 
+function normalizeProviderError(error, fallbackCode = 'AUTH_PROVIDER_EXCEPTION') {
+  return {
+    code: String(error?.code || fallbackCode).replace(/[^A-Z0-9_-]/gi, '_').toUpperCase(),
+    messageKo: '외부 인증 상태를 확인할 수 없습니다.'
+  };
+}
+
 function createAuthSessionCoordinator({
   authMode,
   authProviderAdapter,
@@ -157,21 +164,45 @@ function createAuthSessionCoordinator({
       return getStatus();
     }
     sessionService.clearCurrentSession();
-    unsubscribe = authProviderAdapter.subscribe?.(({ event, principal }) => {
-      if (['SIGNED_IN', 'INITIAL_SESSION', 'TOKEN_REFRESHED', 'SIGNED_OUT', 'AUTH_ERROR'].includes(event)) {
-        bindPrincipal(principal, event);
+    try {
+      unsubscribe = authProviderAdapter.subscribe?.(({ event, principal }) => {
+        if (['SIGNED_IN', 'INITIAL_SESSION', 'TOKEN_REFRESHED', 'SIGNED_OUT', 'AUTH_ERROR'].includes(event)) {
+          bindPrincipal(principal, event);
+        }
+      }) || null;
+      await authProviderAdapter.initialize();
+      const restored = await authProviderAdapter.restoreSession();
+      if (!restored?.ok && restored?.error) {
+        providerPrincipal = null;
+        bindingState = 'PROVIDER_ERROR';
+        clearEcoreanSession('PROVIDER_SESSION_RESTORE_FAILED');
+      } else {
+        bindPrincipal(restored?.principal || null, 'RESTORE');
       }
-    }) || null;
-    await authProviderAdapter.initialize();
-    const restored = await authProviderAdapter.restoreSession();
-    bindPrincipal(restored?.principal || null, 'RESTORE');
+    } catch (error) {
+      providerPrincipal = null;
+      bindingState = 'PROVIDER_ERROR';
+      clearEcoreanSession('PROVIDER_INITIALIZATION_FAILED');
+      audit('EXTERNAL_AUTH_PROVIDER_FAILED', 'DENIED', '외부 인증 초기화에 실패했습니다.', {
+        errorCode: normalizeProviderError(error, 'PROVIDER_INITIALIZATION_FAILED').code
+      });
+    }
     return getStatus();
   }
 
   async function signIn(payload = {}) {
     if (mode !== 'SUPABASE') return { ok: false, reasonCode: 'AUTH_MODE_LOCAL', status: getStatus() };
-    const result = await authProviderAdapter.authenticate({ email: payload.email, password: payload.password });
+    let result;
+    try {
+      result = await authProviderAdapter.authenticate({ email: payload.email, password: payload.password });
+    } catch (error) {
+      result = { ok: false, error: normalizeProviderError(error, 'SIGN_IN_PROVIDER_EXCEPTION') };
+      providerPrincipal = null;
+      bindingState = 'PROVIDER_ERROR';
+    }
     if (!result?.ok) {
+      providerPrincipal = null;
+      bindingState = result?.error ? 'PROVIDER_ERROR' : 'SIGNED_OUT';
       clearEcoreanSession('PROVIDER_SIGN_IN_FAILED');
       audit('EXTERNAL_AUTH_SIGN_IN_FAILED', 'DENIED', '외부 인증 로그인에 실패했습니다.', { errorCode: result?.error?.code || 'SIGN_IN_FAILED' });
       return { ...result, status: getStatus() };
@@ -182,7 +213,16 @@ function createAuthSessionCoordinator({
 
   async function restoreSession() {
     if (mode !== 'SUPABASE') return { ok: true, status: getStatus() };
-    const result = await authProviderAdapter.restoreSession();
+    let result;
+    try {
+      result = await authProviderAdapter.restoreSession();
+    } catch (error) {
+      result = { ok: false, principal: null, error: normalizeProviderError(error, 'SESSION_RESTORE_PROVIDER_EXCEPTION') };
+      providerPrincipal = null;
+      bindingState = 'PROVIDER_ERROR';
+      clearEcoreanSession('PROVIDER_SESSION_RESTORE_FAILED');
+    }
+    if (!result?.ok && result?.error) return { ...result, status: getStatus() };
     return { ...result, status: bindPrincipal(result?.principal || null, 'RESTORE') };
   }
 
@@ -190,10 +230,16 @@ function createAuthSessionCoordinator({
     if (mode === 'LOCAL') return getStatus();
     const priorContext = currentContext();
     const prior = getStatus();
-    await authProviderAdapter.signOut();
-    clearEcoreanSession('USER_SIGN_OUT');
-    providerPrincipal = null;
-    bindingState = 'SIGNED_OUT';
+    let providerError = null;
+    try {
+      await authProviderAdapter.signOut();
+    } catch (error) {
+      providerError = normalizeProviderError(error, 'SIGN_OUT_PROVIDER_EXCEPTION');
+    } finally {
+      clearEcoreanSession('USER_SIGN_OUT');
+      providerPrincipal = null;
+      bindingState = 'SIGNED_OUT';
+    }
     permissionAuditService?.recordEvent?.({
       actorId: priorContext.identity?.identityId || 'EXTERNAL_AUTH_USER',
       actorIdentityId: priorContext.identity?.identityId || '',
@@ -208,14 +254,25 @@ function createAuthSessionCoordinator({
       reasonKo: '현재 인증 세션에서 로그아웃했습니다.',
       payload: {
         providerType: prior.providerType,
-        providerUserFingerprint: prior.providerUserFingerprint
+        providerUserFingerprint: prior.providerUserFingerprint,
+        providerErrorCode: providerError?.code || ''
       }
     });
-    return getStatus();
+    const status = getStatus();
+    return providerError ? { ...status, error: providerError } : status;
   }
 
   function getStatus() {
-    const providerStatus = authProviderAdapter.getProviderStatus();
+    let providerStatus;
+    try {
+      providerStatus = authProviderAdapter.getProviderStatus();
+    } catch (error) {
+      providerStatus = {
+        status: 'ERROR',
+        authenticationStatus: 'DENIED',
+        error: normalizeProviderError(error, 'PROVIDER_STATUS_EXCEPTION')
+      };
+    }
     const context = currentContext();
     return {
       authMode: mode,
