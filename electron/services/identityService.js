@@ -198,7 +198,7 @@ function createIdentityService({ sqliteService, databasePath } = {}) {
     return getIdentity(DEFAULT_IDENTITY_ID);
   }
 
-  function migrateLegacyLocalRole({ rolePermissionService, roleAssignmentService, sessionService } = {}) {
+  function migrateLegacyLocalRole({ rolePermissionService, roleAssignmentService, sessionService, ensureSession = true } = {}) {
     const existing = withDb((database) => database.prepare(
       'SELECT * FROM identity_schema_versions WHERE version_key = ?'
     ).get(IDENTITY_SCHEMA_VERSION));
@@ -209,7 +209,7 @@ function createIdentityService({ sqliteService, databasePath } = {}) {
       roleId: legacy.roleId,
       organizationId: DEFAULT_ORGANIZATION_ID
     }) || null;
-    const session = sessionService?.ensureLocalSession?.(identity.identityId) || null;
+    const session = ensureSession ? (sessionService?.ensureLocalSession?.(identity.identityId) || null) : null;
     const result = {
       version: IDENTITY_SCHEMA_VERSION,
       alreadyApplied: Boolean(existing),

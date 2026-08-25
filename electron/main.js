@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, safeStorage } = require('electron');
 const path = require('path');
 const { createSqliteService } = require('./services/sqliteService');
 const { createBackupService } = require('./services/backupService');
@@ -28,8 +28,12 @@ const { createIdentityService } = require('./services/identityService');
 const { createSessionService } = require('./services/sessionService');
 const { createRoleAssignmentService } = require('./services/roleAssignmentService');
 const { createResourceScopeService } = require('./services/resourceScopeService');
-const { createAuthProviderAdapter } = require('./services/authProviderAdapter');
+const { createAuthProviderAdapter, normalizeAuthMode } = require('./services/authProviderAdapter');
 const { createLocalIdentityProvider } = require('./services/localIdentityProvider');
+const { createSecureSessionStore } = require('./services/secureSessionStore');
+const { createSupabaseAuthProvider } = require('./services/supabaseAuthProvider');
+const { createExternalIdentityBindingService } = require('./services/externalIdentityBindingService');
+const { createAuthSessionCoordinator } = require('./services/authSessionCoordinator');
 
 const isDev = process.env.ECOREAN_DEV_SERVER_URL;
 const shouldOpenDevTools = process.env.ECOREAN_OPEN_DEVTOOLS === '1';
@@ -63,6 +67,9 @@ let roleAssignmentService;
 let resourceScopeService;
 let authProviderAdapter;
 let localIdentityProvider;
+let supabaseAuthProvider;
+let externalIdentityBindingService;
+let authSessionCoordinator;
 
 function stripClaimedAuthorizationContext(payload = {}) {
   const {
@@ -88,6 +95,23 @@ function assertCurrentIdentityPermission(permissionKey) {
 }
 
 function registerIpcHandlers() {
+  const originalHandle = ipcMain.handle;
+  const registerHandle = originalHandle.bind(ipcMain);
+  const unauthenticatedChannels = new Set([
+    'boc:auth:get-status',
+    'boc:auth:sign-in',
+    'boc:auth:sign-out',
+    'boc:auth:restore',
+    'boc:auth:get-binding-status'
+  ]);
+  ipcMain.handle = (channel, listener) => registerHandle(channel, async (event, ...args) => {
+    const status = authSessionCoordinator?.getStatus?.();
+    const blocked = status?.authMode === 'SUPABASE' && status.businessAccess !== 'ALLOWED_BY_RBAC';
+    if (blocked && !unauthenticatedChannels.has(channel)) {
+      throw new Error('AUTHENTICATED_IDENTITY_BINDING_REQUIRED: business IPC is denied.');
+    }
+    return listener(event, ...args);
+  });
   ipcMain.handle('boc:dashboard:get', () => sqliteService.getDashboardData());
   ipcMain.handle('boc:approval:decide', (_event, payload) => sqliteService.decideApproval(payload));
   ipcMain.handle('boc:action:record', (_event, payload) => sqliteService.recordAction(payload));
@@ -501,15 +525,36 @@ function registerIpcHandlers() {
   });
   ipcMain.handle('boc:identity:assignments', () => {
     assertCurrentIdentityPermission('system.settings.view');
-    const context = localIdentityProvider.getCurrentContext();
+    const context = authSessionCoordinator.getCurrentContext();
     const identityId = context.identity?.identityId || '';
     return roleAssignmentService.listRoleAssignments(identityId);
   });
   ipcMain.handle('boc:identity:authorize', (_event, payload = {}) => rolePermissionService.evaluateAuthorization(stripClaimedAuthorizationContext(payload)));
   ipcMain.handle('boc:identity:provider-status', () => ({
+    active: authSessionCoordinator.getStatus(),
     local: localIdentityProvider.getProviderStatus(),
-    external: authProviderAdapter.getProviderStatus()
+    external: supabaseAuthProvider.getProviderStatus()
   }));
+  ipcMain.handle('boc:auth:get-status', () => authSessionCoordinator.getStatus());
+  ipcMain.handle('boc:auth:sign-in', (_event, payload = {}) => authSessionCoordinator.signIn({
+    email: payload.email,
+    password: payload.password
+  }));
+  ipcMain.handle('boc:auth:sign-out', () => authSessionCoordinator.signOut());
+  ipcMain.handle('boc:auth:restore', () => authSessionCoordinator.restoreSession());
+  ipcMain.handle('boc:auth:get-binding-status', () => authSessionCoordinator.getStatus());
+  ipcMain.handle('boc:auth:list-safe-bindings', (_event, payload = {}) => externalIdentityBindingService.listSafeBindings({
+    status: payload.status
+  }));
+  ipcMain.handle('boc:auth:create-binding', (_event, payload = {}) => externalIdentityBindingService.createBinding({
+    providerType: payload.providerType,
+    providerUserId: payload.providerUserId,
+    identityId: payload.identityId
+  }));
+  ipcMain.handle('boc:auth:revoke-binding', (_event, payload = {}) => externalIdentityBindingService.revokeBinding(
+    payload.bindingId,
+    payload.reason
+  ));
   ipcMain.handle('boc:portfolio:get', () => sqliteService.getPortfolioDashboardData());
   ipcMain.handle('boc:crew:get', () => sqliteService.getCrewDashboardData());
   ipcMain.handle('boc:finance:get', () => sqliteService.getCompanyFinanceDashboardData());
@@ -571,6 +616,7 @@ function registerIpcHandlers() {
     return backupService.exportExcel(payload);
   });
   ipcMain.handle('boc:db:stats', () => sqliteService.getDbStats());
+  ipcMain.handle = originalHandle;
 }
 
 function createWindow() {
@@ -619,7 +665,7 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   sqliteService = createSqliteService({ app });
   backupService = createBackupService({ dbPaths: sqliteService.dbPaths, databaseDir: path.dirname(sqliteService.dbPaths.project) });
   backupRestoreService = createBackupRestoreService({ app, sqliteService });
@@ -673,14 +719,58 @@ app.whenReady().then(() => {
     sessionService,
     roleAssignmentService
   });
-  authProviderAdapter = createAuthProviderAdapter();
   localIdentityProvider = createLocalIdentityProvider({ identityService, sessionService });
-  localIdentityProvider.initialize();
+  const configuredAuthMode = normalizeAuthMode(process.env.ECOREAN_AUTH_MODE || 'LOCAL');
   identityService.migrateLegacyLocalRole({
     rolePermissionService,
     roleAssignmentService,
-    sessionService
+    sessionService,
+    ensureSession: configuredAuthMode === 'LOCAL'
   });
+  const secureSessionStore = createSecureSessionStore({
+    safeStorage,
+    storagePath: path.join(app.getPath('userData'), 'auth', 'supabase-session.secure.json')
+  });
+  supabaseAuthProvider = createSupabaseAuthProvider({
+    createClient: (...args) => require('@supabase/supabase-js').createClient(...args),
+    storage: secureSessionStore,
+    config: {
+      url: process.env.SUPABASE_URL,
+      publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY,
+      forbiddenSecretsConfigured: Boolean(
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+        || process.env.SUPABASE_DB_PASSWORD
+        || process.env.SUPABASE_JWT_SECRET
+      )
+    }
+  });
+  authProviderAdapter = createAuthProviderAdapter({
+    mode: configuredAuthMode,
+    localProvider: localIdentityProvider,
+    supabaseProvider: supabaseAuthProvider
+  });
+  externalIdentityBindingService = createExternalIdentityBindingService({
+    sqliteService,
+    identityService,
+    permissionAuditService,
+    getCurrentActorContext: () => authSessionCoordinator?.getCurrentContext(),
+    authorizeAction: (permissionKey) => rolePermissionService.evaluateAuthorization({
+      permissionKey,
+      resourceType: 'EXTERNAL_IDENTITY_BINDING',
+      resourceId: 'ADMIN',
+      auditDecision: false
+    })
+  });
+  authSessionCoordinator = createAuthSessionCoordinator({
+    authMode: configuredAuthMode,
+    authProviderAdapter,
+    bindingService: externalIdentityBindingService,
+    identityService,
+    sessionService,
+    roleAssignmentService,
+    permissionAuditService
+  });
+  await authSessionCoordinator.initialize();
   roleChangeApprovalService = createRoleChangeApprovalService({
     sqliteService,
     rolePermissionService,
@@ -709,4 +799,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('before-quit', () => {
+  authSessionCoordinator?.dispose?.();
 });

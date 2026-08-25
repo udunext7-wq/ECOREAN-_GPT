@@ -114,7 +114,9 @@ const ALWAYS_BLOCKED_KEY_PARTS = [
   'password', 'credential', 'secret', 'token', 'api_key', 'apikey',
   'private_key', 'hash', 'provider_payload', 'session_id', 'sessionid',
   'identity_id', 'identityid', 'actor_identity', 'role_assignment',
-  'organization_membership', 'provider_subject'
+  'organization_membership', 'provider_subject', 'provider_user_id',
+  'provider_user_fingerprint', 'provider_session_ref', 'external_identity_binding',
+  'auth_session', 'access_token', 'refresh_token'
 ];
 const CUSTOMER_PRIVATE_KEY_PARTS = [
   'customer_phone', 'customer_email', 'detailed_address', 'memo', 'raw_phone',

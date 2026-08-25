@@ -64,9 +64,7 @@ export function IdentityAccessSummaryPanel() {
           ))}
         </section>
       </div>
-      <p className="small-note">
-        외부 인증은 비활성 상태입니다. 권한은 main 프로세스의 Identity, Session, Role Assignment, 리소스 범위를 함께 검증합니다.
-      </p>
+      <p className="small-note">권한은 main 프로세스의 현재 인증 Identity, Session, Role Assignment, 리소스 범위를 함께 검증합니다.</p>
     </section>
   );
 }

@@ -15,7 +15,7 @@ export type IdentitySummary = {
     status: string;
   }>;
   architectureVersion: string;
-  externalAuthentication: 'DISABLED';
+  externalAuthentication: string;
 };
 
 export type SessionSummary = {
@@ -28,7 +28,7 @@ export type SessionSummary = {
     expiresAt: string;
   };
   validation: { valid: boolean; reasonCode: string; reasonKo?: string };
-  externalAuthentication: 'DISABLED';
+  externalAuthentication: string;
 };
 
 export type RoleAssignment = {
@@ -52,10 +52,11 @@ export async function loadIdentityAccessSummary() {
     { external: { status: 'DISABLED' }, local: { status: 'UNAVAILABLE' } }
   ];
   if (!api?.getIdentitySummary) return fallback;
-  return Promise.all([
+  const results = await Promise.allSettled([
     api.getIdentitySummary() as Promise<IdentitySummary>,
     api.getIdentitySessionSummary() as Promise<SessionSummary>,
     api.getIdentityRoleAssignments() as Promise<RoleAssignment[]>,
     api.getAuthProviderStatus() as Promise<Record<string, unknown>>
   ]);
+  return results.map((result, index) => result.status === 'fulfilled' ? result.value : fallback[index]) as typeof fallback;
 }

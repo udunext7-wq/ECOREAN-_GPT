@@ -403,6 +403,14 @@ declare global {
         getIdentityRoleAssignments: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>[]>;
         evaluateIdentityAuthorization: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getAuthProviderStatus: () => Promise<Record<string, unknown>>;
+        getAuthenticationStatus: () => Promise<Record<string, unknown>>;
+        signInWithSupabase: (payload: { email: string; password: string }) => Promise<Record<string, unknown>>;
+        signOutAuthentication: () => Promise<Record<string, unknown>>;
+        restoreAuthentication: () => Promise<Record<string, unknown>>;
+        getExternalIdentityBindingStatus: () => Promise<Record<string, unknown>>;
+        listSafeExternalIdentityBindings: (payload?: Record<string, unknown>) => Promise<Record<string, unknown>[]>;
+        createExternalIdentityBinding: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+        revokeExternalIdentityBinding: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
         getPortfolioDashboardData: () => Promise<Record<string, unknown>>;
         getCrewDashboardData: () => Promise<Record<string, unknown>>;
         getCompanyFinanceDashboardData: () => Promise<Record<string, unknown>>;

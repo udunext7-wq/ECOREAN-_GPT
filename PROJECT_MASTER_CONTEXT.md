@@ -1,5 +1,21 @@
 # Project Master Context
 
+## v0.6.1 Supabase Authentication & Multi-user Identity Binding
+
+- Active branch: `v0.6.1-supabase-auth-multi-user-binding`
+- Base: official `v0.6.0` (`c54cc338a0b38f57bd229cd5635c84980fb6e62b`)
+- Authentication mode defaults to `LOCAL`; `SUPABASE` is explicit and fail-closed.
+- Supabase provider session is verified before local binding lookup.
+- External Identity binding is local SQLite, administrator-controlled, idempotent, and raw-provider-ID safe in UI/audit.
+- Tokens use Electron main `safeStorage`; SQLite, renderer, logs and customer payloads never receive them.
+- Authenticated-unbound users receive no ECOREAN session and all business IPCs are blocked.
+- Bound sessions derive authorization only from active Identity, membership, Role Assignment and resource scope.
+- Multi-user switching revokes the prior ECOREAN session and reevaluates roles/scopes.
+- Focused v0.6.1 smoke, requested regressions `36/36`, UI build and Electron release smoke: `PASSED`.
+- `LIVE_SUPABASE_AUTH = NOT_RUN_NOT_CONFIGURED`.
+- Current decision: `CONDITIONAL_MERGE_READY`.
+- Main merge / tag / package / release: not performed.
+
 ## v0.5.2 RC Desktop Package
 
 - Branch: `main`

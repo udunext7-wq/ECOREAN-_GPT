@@ -13,6 +13,7 @@ import { RoleChangeApprovalQueue } from './RoleChangeApprovalQueue';
 import { RoleChangeRequestPanel } from './RoleChangeRequestPanel';
 import { RoleVisibilityPreview } from './RoleVisibilityPreview';
 import { IdentityAccessSummaryPanel } from './IdentityAccessSummaryPanel';
+import { AuthenticationAccessPanel } from './AuthenticationAccessPanel';
 
 const permissionGroups = [
   { label: '프로젝트', prefix: ['dashboard.', 'project.', 'crm.'] },
@@ -113,6 +114,7 @@ export function UserRolePermissionCenterView() {
       </div>
 
       <IdentityAccessSummaryPanel />
+      <AuthenticationAccessPanel />
 
       <div className="permission-summary-grid">
         {(data?.roleSummaries || []).map((summary) => (
@@ -142,9 +144,7 @@ export function UserRolePermissionCenterView() {
 
       <div className="role-control-row"><button onClick={checkAuditPermission}>감사 권한 확인</button></div>
 
-      <p className="small-note">
-        외부 로그인과 공개 인증은 비활성화되어 있습니다. 이 화면은 로컬 운영 역할과 권한 경계를 검증합니다.
-      </p>
+      <p className="small-note">인증 성공 후에도 현재 Identity, 역할 할당과 리소스 범위를 모두 통과해야 업무 기능이 허용됩니다.</p>
 
       <div className="estimate-preview-card">
         <div className="estimate-panel-head">

@@ -1,0 +1,31 @@
+const assert = require('assert');
+const { createV061AuthHarness } = require('./helpers/v061AuthHarness');
+
+(async () => {
+  const h = createV061AuthHarness('boc-v061-session-');
+  await h.coordinator.initialize();
+  assert.strictEqual(h.session.getCurrentSession(), null, 'Supabase mode does not fall back to local CEO');
+  const signedIn = await h.coordinator.signIn({ email: 'user-a@example.invalid', password: 'synthetic-password' });
+  assert.strictEqual(signedIn.status.bindingStatus, 'BOUND');
+  const session = h.session.getCurrentSession();
+  assert.strictEqual(session.identityId, 'IDN-AUTH-A');
+  assert.strictEqual(session.providerKey, 'SUPABASE');
+  assert.ok(session.providerSessionRef.startsWith('SUP-'));
+  assert.strictEqual(h.roles.evaluateAuthorization({ permissionKey: 'project.edit' }).decision, 'ALLOW');
+  h.session.clearCurrentSession();
+  const restored = await h.coordinator.restoreSession();
+  assert.strictEqual(restored.status.bindingStatus, 'BOUND');
+  assert.strictEqual(h.session.getCurrentSession().identityId, 'IDN-AUTH-A');
+  h.identity.updateIdentityStatus('IDN-AUTH-A', 'DISABLED');
+  assert.strictEqual(h.coordinator.getStatus().businessAccess, 'DENIED');
+  assert.strictEqual(h.session.getCurrentSession(), null);
+  await h.coordinator.signOut();
+  assert.strictEqual(h.session.getCurrentSession(), null);
+  assert.strictEqual(h.roles.evaluateAuthorization({ permissionKey: 'project.edit' }).decision, 'DENY');
+  const unbound = createV061AuthHarness('boc-v061-unbound-', { createBindings: false });
+  await unbound.coordinator.initialize();
+  const unboundResult = await unbound.coordinator.signIn({ email: 'unbound@example.invalid', password: 'synthetic-password' });
+  assert.strictEqual(unboundResult.status.bindingStatus, 'AUTHENTICATED_UNBOUND');
+  assert.strictEqual(unboundResult.status.businessAccess, 'DENIED');
+  console.log(JSON.stringify({ ok: true, test: 'v0-6-1-auth-session', noLocalFallback: 'PASSED', boundSession: 'PASSED', restore: 'PASSED', disabledIdentity: 'DENIED', authenticatedUnbound: 'DENIED', signOutRevocation: 'PASSED', denyAfterSignOut: 'PASSED' }, null, 2));
+})().catch((error) => { console.error(error); process.exit(1); });

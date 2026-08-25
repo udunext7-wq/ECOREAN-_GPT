@@ -1,5 +1,23 @@
 # Handoff Summary
 
+## v0.6.1 Supabase Authentication Handoff
+
+- Branch: `v0.6.1-supabase-auth-multi-user-binding`
+- Base official: `v0.6.0` at `c54cc338a0b38f57bd229cd5635c84980fb6e62b`
+- Default mode: `LOCAL`; explicit external mode: `SUPABASE`.
+- Supabase JS `2.112.4` is exact pinned under Electron main.
+- Tokens are main-process only and use OS-encrypted custom storage; memory-only fallback never writes plaintext.
+- External provider users require an administrator-created binding to an active ECOREAN Identity.
+- Unbound or invalid users have no ECOREAN session and cannot invoke business IPCs.
+- User switching revokes the previous local session and reevaluates Identity/role/scope.
+- Role-change requester/approver/apply actors come from the current validated ECOREAN session.
+- Audit and customer payload filters hide credentials, tokens, raw provider IDs, binding/session metadata and existing internal/personal data.
+- Focused v0.6.1 smoke, requested regressions `36/36`, build, production smoke, release diagnostics and aggregate release smoke: `PASSED`.
+- Production dependency audit: `0 vulnerabilities`.
+- Live Supabase project: not configured; `LIVE_SUPABASE_AUTH = NOT_RUN_NOT_CONFIGURED`.
+- Current decision: `CONDITIONAL_MERGE_READY` pending full regression and later live provider validation.
+- Main merge, tag, package and GitHub Release were not performed.
+
 ## v0.5.2 RC Desktop Package Handoff
 
 `v0.5.2-rc` Windows Desktop Package verification is complete on `main`.

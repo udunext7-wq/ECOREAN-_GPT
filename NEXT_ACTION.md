@@ -1,5 +1,24 @@
 # Next Action
 
+## v0.6.1 Current Task
+
+Complete regression validation and push `v0.6.1-supabase-auth-multi-user-binding` without merging or tagging.
+
+Current status:
+
+- Base official `v0.6.0` preserved.
+- LOCAL compatibility, synthetic Supabase authentication, secure storage, external binding, multi-user switch, role-change binding, migration and customer safety: `PASSED`.
+- Live Supabase authentication: `NOT_RUN_NOT_CONFIGURED`.
+- Decision target: `CONDITIONAL_MERGE_READY` when all historical regression/build smoke passes.
+
+Before any merge:
+
+1. Configure a non-production Supabase test project outside Git.
+2. Run live sign-in, refresh, app restart restore, local-scope sign-out and network failure recovery.
+3. Verify two real test users bind to distinct ECOREAN identities and cannot inherit each other's role/scope.
+4. Keep service role key, DB password and JWT secret out of the desktop runtime.
+5. Only then stabilize the branch and decide whether it can become `MERGE_READY`.
+
 ## After v0.5.2 Official Acceptance
 
 The v0.5.2 Acceptance QA decision is `ACCEPTED_WITH_WARNINGS`.

@@ -37,6 +37,8 @@ function createSessionService({ sqliteService, databasePath, identityService, cl
         CREATE INDEX IF NOT EXISTS idx_identity_sessions_identity
           ON identity_sessions(identity_id, status, expires_at);
       `);
+      const columns = new Set(database.prepare('PRAGMA table_info(identity_sessions)').all().map((row) => row.name));
+      if (!columns.has('provider_session_ref')) database.exec('ALTER TABLE identity_sessions ADD COLUMN provider_session_ref TEXT');
       return callback(database);
     } finally { database.close(); }
   }
@@ -47,6 +49,7 @@ function createSessionService({ sqliteService, databasePath, identityService, cl
       identityId: row.identity_id,
       organizationId: row.organization_id,
       providerKey: row.provider_key,
+      providerSessionRef: row.provider_session_ref || '',
       status: row.status,
       issuedAt: row.issued_at,
       expiresAt: row.expires_at,
@@ -67,9 +70,9 @@ function createSessionService({ sqliteService, databasePath, identityService, cl
       database.prepare(`
         INSERT INTO identity_sessions (
           session_id, identity_id, organization_id, provider_key, status,
-          issued_at, expires_at, last_seen_at
-        ) VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?, ?)
-      `).run(sessionId, identityId, String(payload.organizationId || DEFAULT_ORGANIZATION_ID), String(payload.providerKey || 'LOCAL'), issuedAt, expiresAt, issuedAt);
+          issued_at, expires_at, last_seen_at, provider_session_ref
+        ) VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?)
+      `).run(sessionId, identityId, String(payload.organizationId || DEFAULT_ORGANIZATION_ID), String(payload.providerKey || 'LOCAL'), issuedAt, expiresAt, issuedAt, String(payload.providerSessionRef || ''));
       if (payload.makeCurrent !== false) database.prepare(`
         INSERT INTO identity_runtime_state (state_key, state_value, updated_at)
         VALUES ('CURRENT_SESSION_ID', ?, ?)
@@ -94,6 +97,24 @@ function createSessionService({ sqliteService, databasePath, identityService, cl
         'SELECT * FROM identity_sessions WHERE session_id = ?'
       ).get(state.state_value)) : null;
     });
+  }
+
+  function setCurrentSession(sessionId) {
+    const validation = validateSession(sessionId);
+    if (!validation.valid) throw new Error(`${validation.reasonCode}: current session is denied.`);
+    withDb((database) => database.prepare(`
+      INSERT INTO identity_runtime_state (state_key, state_value, updated_at)
+      VALUES ('CURRENT_SESSION_ID', ?, ?)
+      ON CONFLICT(state_key) DO UPDATE SET state_value = excluded.state_value, updated_at = excluded.updated_at
+    `).run(String(sessionId), nowIso()));
+    return getCurrentSession();
+  }
+
+  function clearCurrentSession() {
+    withDb((database) => database.prepare(
+      "DELETE FROM identity_runtime_state WHERE state_key = 'CURRENT_SESSION_ID'"
+    ).run());
+    return null;
   }
 
   function validateSession(sessionId) {
@@ -147,7 +168,7 @@ function createSessionService({ sqliteService, databasePath, identityService, cl
     return { session, validation: session ? validateSession(session.sessionId) : { valid: false, reasonCode: 'MISSING_SESSION' }, externalAuthentication: 'DISABLED' };
   }
 
-  return { createSession, getSession, getCurrentSession, validateSession, revokeSession, revokeIdentitySessions, ensureLocalSession, getSessionSummary };
+  return { createSession, getSession, getCurrentSession, setCurrentSession, clearCurrentSession, validateSession, revokeSession, revokeIdentitySessions, ensureLocalSession, getSessionSummary };
 }
 
 module.exports = { SESSION_STATUSES, DEFAULT_SESSION_ID, createSessionService };

@@ -25,7 +25,9 @@
     "dist": "npm run build:ui && electron-builder --win --x64 --dir",
     "dist:installer": "npm run build:ui && electron-builder --win --x64"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@supabase/supabase-js": "2.112.4"
+  },
   "devDependencies": {
     "cross-env": "^10.0.0",
     "electron": "^38.0.0",

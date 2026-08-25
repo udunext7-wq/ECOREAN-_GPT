@@ -1,5 +1,23 @@
 # ECOREAN BOC Release Notes
 
+## v0.6.1 Supabase Authentication & Multi-user Identity Binding
+
+- Branch: `v0.6.1-supabase-auth-multi-user-binding`
+- Base official tag: `v0.6.0` at `c54cc338a0b38f57bd229cd5635c84980fb6e62b`
+- Default auth mode: `LOCAL`, v0.6.0 behavior preserved.
+- Optional auth mode: `SUPABASE`, fail-closed when configuration or binding is missing.
+- Supabase JS: `2.112.4`, exact pinned in Electron main.
+- OS-encrypted custom session storage; plaintext token persistence: `BLOCKED`.
+- External provider user -> ECOREAN Identity binding with safe fingerprint lists and redacted audit.
+- Authenticated-unbound business UI/IPC access: `DENIED`.
+- Multi-user session, role, organization and scope reevaluation: `PASSED`.
+- Role-change current authenticated Identity binding: `PASSED`.
+- Customer auth/internal/personal data filtering: `PASSED`.
+- Requested root regressions `36/36`, UI build, production smoke, release diagnostics and aggregate release smoke: `PASSED`.
+- `LIVE_SUPABASE_AUTH = NOT_RUN_NOT_CONFIGURED`.
+- Main merge / tag / package / release: `NOT_PERFORMED`.
+- Decision: `CONDITIONAL_MERGE_READY`.
+
 ## v0.5.2 RC Desktop Package
 
 - RC tag: `v0.5.2-rc`
