@@ -12,7 +12,7 @@
 - Production customer/employee credentials used: `NO`
 - Credential values recorded: `NO`
 
-## QA 환경 감지
+## 초기 QA 환경 감지 (2026-08-25)
 
 값을 출력하지 않고 환경 변수와 로컬 `.env`의 구성 여부만 확인했다.
 
@@ -27,7 +27,7 @@
 
 QA 전용 Supabase project와 synthetic user credential이 제공되지 않았으므로 실제 provider 요청은 수행하지 않았다. Production 환경을 추측하거나 임의 credential을 생성하지 않았다.
 
-## Live E2E 결과
+## 초기 Live E2E 결과 (2026-08-25)
 
 실행하지 않은 항목은 통과로 기록하지 않는다.
 
@@ -49,6 +49,61 @@ QA 전용 Supabase project와 synthetic user credential이 제공되지 않았�
 | `LIVE_ROLE_CHANGE_IDENTITY_BINDING` | `NOT_RUN_NOT_CONFIGURED` | current session actor binding `PASSED_SYNTHETIC` |
 | Forged approver/requester | `NOT_RUN_NOT_CONFIGURED` | forged actor `BLOCKED` |
 | Restart persistence | `NOT_RUN_NOT_CONFIGURED` | secure restore design `PASSED_SYNTHETIC` |
+
+## GPTBOC QA 환경 연결 재검증 (2026-08-27)
+
+값을 문서나 로그에 기록하지 않고 GPTBOC Supabase QA project 구성과 provider 초기화를 다시 검증했다.
+
+| 항목 | 결과 |
+| --- | --- |
+| Organization / Project | `Ecorean / GPTBOC` |
+| Project ref | `itmsgcewseihwxpvoiey` |
+| Region | `ap-northeast-2` |
+| Project status | `ACTIVE_HEALTHY` |
+| API URL | `CONFIGURED`, `https://itmsgcewseihwxpvoiey.supabase.co` |
+| Publishable key | `CONFIGURED`, modern publishable format, value `NOT_RECORDED` |
+| Auth mode | `SUPABASE` |
+| Provider validation | `PASSED` |
+| Provider initialization | `READY` |
+| Auth endpoint reachability | `PASSED`, HTTP `200` |
+| Public tables / migrations | `0 / 0`, no schema changes performed |
+| Service role / DB password / JWT secret | `NOT_CONFIGURED_NOT_USED` |
+| Previous BOC project isolation | `PASSED`, previous project not used or modified |
+| `auth.users` aggregate count | `0`, no email or raw user data read |
+| `QA_USER_A` | `NOT_CONFIGURED` |
+| `QA_USER_B` | `NOT_CONFIGURED` |
+| `QA_USER_UNBOUND` | `NOT_CONFIGURED` |
+
+환경값은 QA 명령의 process scope에만 주입했다. Repository `.env` 파일, credential 파일, userData, SQLite, audit payload에는 publishable key를 저장하지 않았다.
+
+### GPTBOC Live E2E 상태
+
+QA Auth User가 없으므로 provider 실로그인이나 live session 생성은 수행하지 않았다. 연결 및 provider 준비 상태와 합성 fail-closed 회귀를 구분해 기록한다.
+
+| 검증 항목 | GPTBOC Live 결과 | 합성/로컬 근거 |
+| --- | --- | --- |
+| `LOGIN_USER_A` | `BLOCKED_BY_QA_USER_SETUP` | password sign-in flow `PASSED_SYNTHETIC` |
+| `AUTHENTICATED_UNBOUND` | `BLOCKED_BY_QA_USER_SETUP` | unbound business access `DENIED_SYNTHETIC` |
+| `SESSION_RESTORE` | `BLOCKED_BY_QA_USER_SETUP` | secure restore/exception fail-closed `PASSED_SYNTHETIC` |
+| `TOKEN_REFRESH` | `BLOCKED_BY_QA_USER_SETUP` | context reevaluation `PASSED_SYNTHETIC` |
+| `SIGN_OUT_CLEANUP` | `BLOCKED_BY_QA_USER_SETUP` | local cleanup `PASSED_SYNTHETIC` |
+| `MULTI_USER_ISOLATION` | `BLOCKED_BY_QA_USER_SETUP` | identity/role/cache isolation `PASSED_SYNTHETIC` |
+| Organization / Project / Site scope | `BLOCKED_BY_QA_USER_SETUP` | mismatch deny rules `PASSED_SYNTHETIC` |
+| `DISABLED_IDENTITY_FAIL_CLOSED` | `BLOCKED_BY_QA_USER_SETUP` | business access `DENIED_SYNTHETIC` |
+| `REVOKED_BINDING` | `BLOCKED_BY_QA_USER_SETUP` | active binding required `DENIED_SYNTHETIC` |
+| `NETWORK_FAILURE_FAIL_CLOSED` | `NOT_RUN_LIVE` | synthetic network failure `DENIED_SYNTHETIC` |
+| `LIVE_ROLE_CHANGE_IDENTITY_BINDING` | `BLOCKED_BY_QA_USER_SETUP` | actor binding reevaluation `PASSED_SYNTHETIC` |
+| Restart persistence | `BLOCKED_BY_QA_USER_SETUP` | no live session token created |
+
+### GPTBOC Focused QA
+
+- `v0-6-1-live-auth-fail-closed.smoke.js`: `PASSED`; configuration `CONFIGURED`, Live auth `NOT_RUN_MISSING_SYNTHETIC_USER_INPUTS`
+- `v0-6-1-auth-audit-redaction.smoke.js`: `PASSED`; credential/token/raw provider user `REDACTED`
+- `v0-6-1-customer-safety.smoke.js`: `PASSED`; auth/internal/personal metadata `HIDDEN`
+- Provider exception / restore exception fail-closed: `PASSED_SYNTHETIC`
+- Sign-out local cleanup: `PASSED_SYNTHETIC`
+- Secret marker leak: `ABSENT`
+- Full historical regression/build suite: not repeated because no code or runtime configuration loader changed
 
 ## 안정화 수정
 
@@ -99,8 +154,11 @@ QA 전용 Supabase project와 synthetic user credential이 제공되지 않았�
 
 ## 최종 판정
 
-- `LIVE_SUPABASE_AUTH = NOT_RUN_NOT_CONFIGURED`
+- `GPTBOC_CONFIGURATION = PASSED`
+- `LIVE_PROVIDER_INITIALIZATION = PASSED`
+- `QA_AUTH_USERS = NOT_CONFIGURED`
+- `LIVE_SUPABASE_AUTH = BLOCKED_BY_QA_USER_SETUP`
 - Decision: `CONDITIONAL_MERGE_READY`
 - Main merge / v0.6.1 tag / package / release: `NOT_PERFORMED`
 
-`v0.6.1 Live Supabase Authentication Integration QA 미실행, CONDITIONAL_MERGE_READY — LIVE_SUPABASE_AUTH NOT_RUN_NOT_CONFIGURED`
+`v0.6.1 GPTBOC Supabase 연결 완료, QA Auth User 생성 대기 — CONDITIONAL_MERGE_READY`
